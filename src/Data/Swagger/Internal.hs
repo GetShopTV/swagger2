@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.Swagger.Internal where
 
+import           Data.Aeson               (ToJSON, FromJSON)
 import qualified Data.Aeson               as JSON
 import           Data.HashMap.Strict      (HashMap)
 import           Data.Text                (Text)
@@ -8,7 +10,6 @@ import           Data.Hashable            (Hashable)
 import           GHC.Generics             (Generic)
 import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
-import           Network.URL              (URL)
 
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
@@ -621,4 +622,6 @@ data SwaggerExternalDocs = SwaggerExternalDocs
     -- | The URL for the target documentation.
   , swaggerExternalDocsUrl :: URL
   } deriving (Show)
+
+newtype URL = URL { getUrl :: Text } deriving (Show, ToJSON, FromJSON)
 
