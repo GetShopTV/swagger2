@@ -350,11 +350,54 @@ data SwaggerCollectionFormat
   | SwaggerCollectionMulti
   deriving (Show)
 
+data SwaggerItemsType
+  = SwaggerItemsString
+  | SwaggerItemsNumber
+  | SwaggerItemsInteger
+  | SwaggerItemsBoolean
+  | SwaggerItemsArray
+  deriving (Show)
+
+-- | Determines the format of the nested array.
+data SwaggerItemsCollectionFormat
+  = SwaggerItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
+  | SwaggerItemsCollectionSSV   -- ^ Space separated values @foo bar@.
+  | SwaggerItemsCollectionTSV   -- ^ Tab separated values @foo\\tbar@.
+  | SwaggerItemsCollectionPipes -- ^ Pipe separated values @foo|bar@.
+  deriving (Show)
+
 data SwaggerSchema = SwaggerSchema
   deriving (Show)
 
 data SwaggerItems = SwaggerItems
-  deriving (Show)
+  { -- | The internal type of the array.
+    swaggerItemsType :: SwaggerItemsType
+
+    -- | The extending format for the previously mentioned type.
+  , swaggerItemsFormat :: SwaggerFormat
+
+    -- | __Required if type is @'SwaggerItemsArray'@.__
+    -- Describes the type of items in the array.
+  , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
+
+    -- | Declares the value of the item that the server will use if none is provided.
+    -- (Note: "default" has no meaning for required items.)
+    -- Unlike JSON Schema this value MUST conform to the defined type for the data type.
+  , swaggerItemsDefault :: JSON.Value
+
+  , swaggerItemsMaximum :: Maybe Integer
+  , swaggerItemsExclusiveMaximum :: Maybe Bool
+  , swaggerItemsMinimum :: Maybe Integer
+  , swaggerItemsExclusiveMinimum :: Maybe Bool
+  , swaggerItemsMaxLength :: Maybe Integer
+  , swaggerItemsMinLength :: Maybe Integer
+  , swaggerItemsPattern :: Maybe Text
+  , swaggerItemsMaxItems :: Maybe Integer
+  , swaggerItemsMinItems :: Maybe Integer
+  , swaggerItemsUniqueItems :: Maybe Bool
+  , swaggerItemsEnum :: Maybe [JSON.Value]
+  , swaggerItemsMultipleOf :: Maybe Integer
+  } deriving (Show)
 
 data SwaggerResponses = SwaggerResponses
   deriving (Show)
