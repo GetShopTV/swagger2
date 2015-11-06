@@ -355,6 +355,16 @@ data SwaggerItemsType
   | SwaggerItemsArray
   deriving (Show)
 
+data SwaggerSchemaType
+  = SwaggerSchemaArray
+  | SwaggerSchemaBoolean
+  | SwaggerSchemaInteger
+  | SwaggerSchemaNumber
+  | SwaggerSchemaNull
+  | SwaggerSchemaObject
+  | SwaggerSchemaString
+  deriving (Show)
+
 -- | Determines the format of the nested array.
 data SwaggerItemsCollectionFormat
   = SwaggerItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
@@ -364,6 +374,51 @@ data SwaggerItemsCollectionFormat
   deriving (Show)
 
 data SwaggerSchema = SwaggerSchema
+  { swaggerSchemaType :: SwaggerSchemaType
+  , swaggerSchemaFormat :: SwaggerFormat
+  , swaggerSchemaTitle :: Maybe Text
+  , swaggerSchemaDescription :: Maybe Text
+  , swaggerSchemaRequired :: Maybe Bool
+
+  , swaggerSchemaItems :: SwaggerSchemaItems
+  , swaggerSchemaAllOf :: [SwaggerSchema]
+  , swaggerSchemaProperties :: HashMap Text SwaggerSchema
+  , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
+
+  , swaggerSchemaDiscriminator :: Maybe Text
+  , swaggerSchemaReadOnly :: Maybe Bool
+  , swaggerSchemaXML :: Maybe SwaggerXML
+  , swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
+  , swaggerSchemaExample :: Maybe JSON.Value
+
+  , swaggerSchemaMaxProperties :: Maybe Integer
+  , swaggerSchemaMinProperties :: Maybe Integer
+
+    -- | Declares the value of the parameter that the server will use if none is provided,
+    -- for example a @"count"@ to control the number of results per page might default to @100@
+    -- if not supplied by the client in the request.
+    -- (Note: "default" has no meaning for required parameters.)
+    -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
+  , swaggerSchemaDefault :: Maybe JSON.Value
+
+  , swaggerSchemaMaximum :: Maybe Integer
+  , swaggerSchemaExclusiveMaximum :: Maybe Bool
+  , swaggerSchemaMinimum :: Maybe Integer
+  , swaggerSchemaExclusiveMinimum :: Maybe Bool
+  , swaggerSchemaMaxLength :: Maybe Integer
+  , swaggerSchemaMinLength :: Maybe Integer
+  , swaggerSchemaPattern :: Maybe Text
+  , swaggerSchemaMaxItems :: Maybe Integer
+  , swaggerSchemaMinItems :: Maybe Integer
+  , swaggerSchemaUniqueItems :: Maybe Bool
+  , swaggerSchemaEnum :: Maybe [JSON.Value]
+  , swaggerSchemaMultipleOf :: Maybe Integer
+  } deriving (Show)
+
+data SwaggerSchemaItems = SwaggerSchemaItems
+  deriving (Show)
+
+data SwaggerXML = SwaggerXML
   deriving (Show)
 
 data SwaggerItems = SwaggerItems
