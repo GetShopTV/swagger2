@@ -378,6 +378,10 @@ data SwaggerItems = SwaggerItems
 
     -- | __Required if type is @'SwaggerItemsArray'@.__
     -- Describes the type of items in the array.
+  , swaggerItemsItems :: SwaggerItems
+
+    -- | Determines the format of the array if type array is used.
+    -- Default value is @'SwaggerItemsCollectionCSV'@.
   , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
 
     -- | Declares the value of the item that the server will use if none is provided.
@@ -427,17 +431,53 @@ data SwaggerResponse = SwaggerResponse
     -- If this field does not exist, it means no content is returned as part of the response.
     -- As an extension to the Schema Object, its root type value may also be "file".
     -- This SHOULD be accompanied by a relevant produces mime-type.
-  , swaggerResponseSchema :: SwaggerSchema
+  , swaggerResponseSchema :: Maybe SwaggerSchema
 
     -- | A list of headers that are sent with the response.
-  , swaggerResponseHeaders :: SwaggerHeaders
+  , swaggerResponseHeaders :: HashMap HeaderName SwaggerHeader
 
     -- | An example of the response message.
-  , swaggerResponseExamples :: SwaggerExample
+  , swaggerResponseExamples :: Maybe SwaggerExample
   } deriving (Show)
 
-data SwaggerHeaders = SwaggerHeaders
-  deriving (Show)
+type HeaderName = Text
+
+data SwaggerHeader = SwaggerHeader
+  { -- | A short description of the header.
+    swaggerHeaderDescription :: Maybe String
+
+    -- | The type of the object.
+  , swaggerHeaderType :: SwaggerItemsType
+
+    -- | The extending format for the previously mentioned type. See Data Type Formats for further details.
+  , swaggerHeaderFormat :: Maybe SwaggerFormat
+
+    -- | __Required if type is @'SwaggerItemsArray'@__.
+    -- Describes the type of items in the array.
+  , swaggerHeaderItems :: SwaggerItems
+
+    -- | Determines the format of the array if type array is used.
+    -- Default value is @'SwaggerItemsCollectionCSV'@.
+  , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
+
+    -- | Declares the value of the item that the server will use if none is provided.
+    -- (Note: "default" has no meaning for required items.)
+    -- Unlike JSON Schema this value MUST conform to the defined type for the data type.
+  , swaggerHeaderDefault :: JSON.Value
+
+  , swaggerHeaderMaximum :: Maybe Integer
+  , swaggerHeaderExclusiveMaximum :: Maybe Bool
+  , swaggerHeaderMinimum :: Maybe Integer
+  , swaggerHeaderExclusiveMinimum :: Maybe Bool
+  , swaggerHeaderMaxLength :: Maybe Integer
+  , swaggerHeaderMinLength :: Maybe Integer
+  , swaggerHeaderPattern :: Maybe Text
+  , swaggerHeaderMaxItems :: Maybe Integer
+  , swaggerHeaderMinItems :: Maybe Integer
+  , swaggerHeaderUniqueItems :: Maybe Bool
+  , swaggerHeaderEnum :: Maybe [JSON.Value]
+  , swaggerHeaderMultipleOf :: Maybe Integer
+  } deriving (Show)
 
 data SwaggerExample = SwaggerExample
   deriving (Show)
