@@ -407,7 +407,7 @@ data SwaggerItems = SwaggerItems
 data SwaggerResponses = SwaggerResponses
   { -- | The documentation of responses other than the ones declared for specific HTTP response codes.
     -- It can be used to cover undeclared responses.
-    swaggerResponsesDefault :: SwaggerResponse
+    swaggerResponsesDefault :: Maybe SwaggerResponse
 
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
@@ -416,7 +416,30 @@ data SwaggerResponses = SwaggerResponses
 
 type HttpStatusCode = Int
 
+-- | Describes a single response from an API Operation.
 data SwaggerResponse = SwaggerResponse
+  { -- | A short description of the response.
+    -- GFM syntax can be used for rich text representation.
+    swaggerResponseDescription :: Text
+
+    -- | A definition of the response structure.
+    -- It can be a primitive, an array or an object.
+    -- If this field does not exist, it means no content is returned as part of the response.
+    -- As an extension to the Schema Object, its root type value may also be "file".
+    -- This SHOULD be accompanied by a relevant produces mime-type.
+  , swaggerResponseSchema :: SwaggerSchema
+
+    -- | A list of headers that are sent with the response.
+  , swaggerResponseHeaders :: SwaggerHeaders
+
+    -- | An example of the response message.
+  , swaggerResponseExamples :: SwaggerExample
+  } deriving (Show)
+
+data SwaggerHeaders = SwaggerHeaders
+  deriving (Show)
+
+data SwaggerExample = SwaggerExample
   deriving (Show)
 
 data SwaggerExtension = SwaggerExtension
