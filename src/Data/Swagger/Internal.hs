@@ -102,7 +102,7 @@ data SwaggerContact = SwaggerContact
     swaggerContactName  :: Maybe Text
 
     -- | The URL pointing to the contact information.
-  , swaggerContactURL   :: Maybe URL
+  , swaggerContactUrl   :: Maybe URL
 
     -- | The email address of the contact person/organization.
   , swaggerContactEmail :: Maybe Text
@@ -114,7 +114,7 @@ data SwaggerLicense = SwaggerLicense
     swaggerLicenseName :: Text
 
     -- | A URL to the license used for the API.
-  , swaggerLicenseURL :: Maybe URL
+  , swaggerLicenseUrl :: Maybe URL
   } deriving (Show)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
@@ -619,6 +619,6 @@ data SwaggerExternalDocs = SwaggerExternalDocs
     swaggerExternalDocsDescription :: Maybe Text
 
     -- | The URL for the target documentation.
-  , swaggerExternalDocsURL :: URL
+  , swaggerExternalDocsUrl :: URL
   } deriving (Show)
 
