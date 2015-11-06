@@ -3,6 +3,7 @@ module Data.Swagger.Internal where
 import Data.Text          (Text)
 import Network            (HostName, PortNumber)
 import Network.HTTP.Media (MediaType)
+import Network.URL        (URL)
 
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
@@ -90,11 +91,26 @@ data SwaggerInfo = SwaggerInfo
   , swaggerInfoVersion :: Text
   } deriving (Show)
 
+-- | Contact information for the exposed API.
 data SwaggerContact = SwaggerContact
-  deriving (Show)
+  { -- | The identifying name of the contact person/organization.
+    swaggerContactName  :: Maybe Text
 
+    -- | The URL pointing to the contact information.
+  , swaggerContactURL   :: Maybe URL
+
+    -- | The email address of the contact person/organization.
+  , swaggerContactEmail :: Maybe Text
+  } deriving (Show)
+
+-- | License information for the exposed API.
 data SwaggerLicense = SwaggerLicense
-  deriving (Show)
+  { -- | The license name used for the API.
+    swaggerLicenseName :: Text
+
+    -- | A URL to the license used for the API.
+  , swaggerLicenseURL :: Maybe URL
+  } deriving (Show)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
 data SwaggerHost = SwaggerHost
