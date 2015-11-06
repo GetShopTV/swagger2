@@ -38,18 +38,18 @@ data Swagger = Swagger
   , swaggerPaths :: SwaggerPaths
 
     -- | An object to hold data types produced and consumed by operations.
-  , swaggerDefinitions :: [SwaggerDefinition]
+  , swaggerDefinitions :: HashMap Text SwaggerSchema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , swaggerParameters :: [SwaggerParamDefinition]
+  , swaggerParameters :: HashMap Text SwaggerParameter
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , swaggerResponses :: [SwaggerResponseDefinition]
+  , swaggerResponses :: HashMap Text SwaggerResponse
 
     -- | Security scheme definitions that can be used across the specification.
-  , swaggerSecurityDefinitions :: [SwaggerSecurityDefinition]
+  , swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
@@ -559,17 +559,54 @@ data SwaggerHeader = SwaggerHeader
 data SwaggerExample = SwaggerExample
   deriving (Show)
 
-data SwaggerDefinition = SwaggerDefinition
+-- | The location of the API key.
+data SwaggerApiKeyLocation
+  = SwaggerApiKeyQuery
+  | SwaggerApiKeyHeader
   deriving (Show)
 
-data SwaggerParamDefinition = SwaggerParamDefinition
+data SwaggerApiKeyParams = SwaggerApiKeyParams
+  { -- | The name of the header or query parameter to be used.
+    swaggerApiKeyName :: Text
+
+    -- | The location of the API key.
+  , swaggerApiKeyIn :: SwaggerApiKeyLocation
+  } deriving (Show)
+
+-- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
+type AuthorizationURL = Text
+
+-- | The token URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
+type TokenURL = Text
+
+data SwaggerOAuth2Flow
+  = SwaggerOAuth2Implicit AuthorizationURL
+  | SwaggerOAuth2Password TokenURL
+  | SwaggerOAuth2Application TokenURL
+  | SwaggerOAuth2AccessCode AuthorizationURL TokenURL
   deriving (Show)
 
-data SwaggerResponseDefinition = SwaggerResponseDefinition
+data SwaggerOAuth2Params = SwaggerOAuth2Params
+  { -- | The flow used by the OAuth2 security scheme.
+    swaggerOAuth2Flow :: SwaggerOAuth2Flow
+
+    -- | The available scopes for the OAuth2 security scheme.
+  , swaggerOAuth2Scopes :: HashMap Text Text
+  } deriving (Show)
+
+data SwaggerSecuritySchemeType
+  = SwaggerSecuritySchemeBasic
+  | SwaggerSecuritySchemeApiKey SwaggerApiKeyParams
+  | SwaggerSecuritySchemeOAuth2 SwaggerOAuth2Params
   deriving (Show)
 
-data SwaggerSecurityDefinition = SwaggerSecurityDefinition
-  deriving (Show)
+data SwaggerSecurityScheme = SwaggerSecurityScheme
+  { -- | The type of the security scheme.
+    swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
+
+    -- | A short description for security scheme.
+  , swaggerSecuritySchemeDescription :: Maybe Text
+  } deriving (Show)
 
 data SwaggerSecurityRequirement = SwaggerSecurityRequirement
   deriving (Show)
