@@ -1,8 +1,11 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Data.Swagger.Internal where
 
 import qualified Data.Aeson               as JSON
 import           Data.HashMap.Strict      (HashMap)
 import           Data.Text                (Text)
+import           Data.Hashable            (Hashable)
+import           GHC.Generics             (Generic)
 import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
 import           Network.URL              (URL)
@@ -574,6 +577,14 @@ data SwaggerSecuritySchemeType
   | SwaggerSecuritySchemeOAuth2 SwaggerOAuth2Params
   deriving (Show)
 
+data SwaggerSecuritySchemeTypeName
+  = SwaggerSecuritySchemeTypeBasic
+  | SwaggerSecuritySchemeTypeApiKey
+  | SwaggerSecuritySchemeTypeOAuth2
+  deriving (Show, Generic)
+
+instance Hashable SwaggerSecuritySchemeTypeName
+
 data SwaggerSecurityScheme = SwaggerSecurityScheme
   { -- | The type of the security scheme.
     swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
@@ -582,8 +593,10 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
   , swaggerSecuritySchemeDescription :: Maybe Text
   } deriving (Show)
 
-data SwaggerSecurityRequirement = SwaggerSecurityRequirement
-  deriving (Show)
+-- | Lists the required security schemes to execute this operation.
+-- The object can have multiple security schemes declared in it which are all required
+-- (that is, there is a logical AND between the schemes).
+type SwaggerSecurityRequirement = HashMap SwaggerSecuritySchemeTypeName Text
 
 -- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
