@@ -500,8 +500,19 @@ data SwaggerSecurityDefinition = SwaggerSecurityDefinition
 data SwaggerSecurityRequirement = SwaggerSecurityRequirement
   deriving (Show)
 
+-- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
+-- It is not mandatory to have a @SwaggerTag@ per tag used there.
 data SwaggerTag = SwaggerTag
-  deriving (Show)
+  { -- | The name of the tag.
+    swaggerTagName :: Text
+
+    -- | A short description for the tag.
+    -- GFM syntax can be used for rich text representation.
+  , swaggerTagDescription :: Maybe Text
+
+    -- | Additional external documentation for this tag.
+  , swaggerTagExternalDocs :: Maybe SwaggerExternalDocs
+  } deriving (Show)
 
 -- | Allows referencing an external resource for extended documentation.
 data SwaggerExternalDocs = SwaggerExternalDocs
