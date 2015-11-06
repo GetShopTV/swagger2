@@ -257,6 +257,13 @@ data SwaggerSecurityRequirement = SwaggerSecurityRequirement
 data SwaggerTag = SwaggerTag
   deriving (Show)
 
+-- | Allows referencing an external resource for extended documentation.
 data SwaggerExternalDocs = SwaggerExternalDocs
-  deriving (Show)
+  { -- | A short description of the target documentation.
+    -- GFM syntax can be used for rich text representation.
+    swaggerExternalDocsDescription :: Maybe Text
+
+    -- | The URL for the target documentation.
+  , swaggerExternalDocsURL :: URL
+  } deriving (Show)
 
