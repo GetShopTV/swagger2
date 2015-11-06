@@ -387,7 +387,7 @@ data SwaggerSchema = SwaggerSchema
 
   , swaggerSchemaDiscriminator :: Maybe Text
   , swaggerSchemaReadOnly :: Maybe Bool
-  , swaggerSchemaXML :: Maybe SwaggerXML
+  , swaggerSchemaXml :: Maybe SwaggerXml
   , swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
   , swaggerSchemaExample :: Maybe JSON.Value
 
@@ -418,8 +418,33 @@ data SwaggerSchema = SwaggerSchema
 data SwaggerSchemaItems = SwaggerSchemaItems
   deriving (Show)
 
-data SwaggerXML = SwaggerXML
-  deriving (Show)
+data SwaggerXml = SwaggerXml
+  { -- | Replaces the name of the element/attribute used for the described schema property.
+    -- When defined within the @'SwaggerItems'@ (items), it will affect the name of the individual XML elements within the list.
+    -- When defined alongside type being array (outside the items),
+    -- it will affect the wrapping element and only if wrapped is true.
+    -- If wrapped is false, it will be ignored.
+    swaggerXmlName :: Maybe Text
+
+    -- | The URL of the namespace definition.
+    -- Value SHOULD be in the form of a URL.
+  , swaggerXmlNamespace :: Maybe Text
+
+    -- | The prefix to be used for the name.
+  , swaggerXmlPrefix :: Maybe Text
+
+    -- | Declares whether the property definition translates to an attribute instead of an element.
+    -- Default value is @False@.
+  , swaggerXmlAttribute :: Bool
+
+    -- | MAY be used only for an array definition.
+    -- Signifies whether the array is wrapped
+    -- (for example, @\<books\>\<book/\>\<book/\>\</books\>@)
+    -- or unwrapped (@\<book/\>\<book/\>@).
+    -- Default value is @False@.
+    -- The definition takes effect only when defined alongside type being array (outside the items).
+  , swaggerXmlWrapped :: Bool
+  } deriving (Show)
 
 data SwaggerItems = SwaggerItems
   { -- | The internal type of the array.
