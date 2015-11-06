@@ -133,9 +133,6 @@ data SwaggerPaths = SwaggerPaths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
     swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
-
-    -- | Allows extensions to the Swagger Schema.
-  , swaggerPathsExtensions  :: [SwaggerExtension]
   } deriving (Show)
 
 -- | Describes the operations available on a single path.
@@ -480,9 +477,6 @@ data SwaggerHeader = SwaggerHeader
   } deriving (Show)
 
 data SwaggerExample = SwaggerExample
-  deriving (Show)
-
-data SwaggerExtension = SwaggerExtension
   deriving (Show)
 
 data SwaggerDefinition = SwaggerDefinition
