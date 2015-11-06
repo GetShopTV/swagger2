@@ -394,12 +394,21 @@ data SwaggerSchema = SwaggerSchema
   , swaggerSchemaMaxProperties :: Maybe Integer
   , swaggerSchemaMinProperties :: Maybe Integer
 
-    -- | Declares the value of the parameter that the server will use if none is provided,
+  , swaggerSchemaCommon :: SwaggerSchemaCommon
+  } deriving (Show)
+
+data SwaggerSchemaItems
+  = SwaggerSchemaItemsObject SwaggerSchema
+  | SwaggerSchemaItemsArray [SwaggerSchema]
+  deriving (Show)
+
+data SwaggerSchemaCommon = SwaggerSchemaCommon
+  { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
     -- (Note: "default" has no meaning for required parameters.)
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-  , swaggerSchemaDefault :: Maybe JSON.Value
+    swaggerSchemaDefault :: Maybe JSON.Value
 
   , swaggerSchemaMaximum :: Maybe Integer
   , swaggerSchemaExclusiveMaximum :: Maybe Bool
@@ -414,9 +423,6 @@ data SwaggerSchema = SwaggerSchema
   , swaggerSchemaEnum :: Maybe [JSON.Value]
   , swaggerSchemaMultipleOf :: Maybe Integer
   } deriving (Show)
-
-data SwaggerSchemaItems = SwaggerSchemaItems
-  deriving (Show)
 
 data SwaggerXml = SwaggerXml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -461,23 +467,7 @@ data SwaggerItems = SwaggerItems
     -- Default value is @'SwaggerItemsCollectionCSV'@.
   , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
 
-    -- | Declares the value of the item that the server will use if none is provided.
-    -- (Note: "default" has no meaning for required items.)
-    -- Unlike JSON Schema this value MUST conform to the defined type for the data type.
-  , swaggerItemsDefault :: JSON.Value
-
-  , swaggerItemsMaximum :: Maybe Integer
-  , swaggerItemsExclusiveMaximum :: Maybe Bool
-  , swaggerItemsMinimum :: Maybe Integer
-  , swaggerItemsExclusiveMinimum :: Maybe Bool
-  , swaggerItemsMaxLength :: Maybe Integer
-  , swaggerItemsMinLength :: Maybe Integer
-  , swaggerItemsPattern :: Maybe Text
-  , swaggerItemsMaxItems :: Maybe Integer
-  , swaggerItemsMinItems :: Maybe Integer
-  , swaggerItemsUniqueItems :: Maybe Bool
-  , swaggerItemsEnum :: Maybe [JSON.Value]
-  , swaggerItemsMultipleOf :: Maybe Integer
+  , swaggerItemsCommon :: SwaggerSchemaCommon
   } deriving (Show)
 
 -- | A container for the expected responses of an operation.
@@ -537,23 +527,7 @@ data SwaggerHeader = SwaggerHeader
     -- Default value is @'SwaggerItemsCollectionCSV'@.
   , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
 
-    -- | Declares the value of the item that the server will use if none is provided.
-    -- (Note: "default" has no meaning for required items.)
-    -- Unlike JSON Schema this value MUST conform to the defined type for the data type.
-  , swaggerHeaderDefault :: JSON.Value
-
-  , swaggerHeaderMaximum :: Maybe Integer
-  , swaggerHeaderExclusiveMaximum :: Maybe Bool
-  , swaggerHeaderMinimum :: Maybe Integer
-  , swaggerHeaderExclusiveMinimum :: Maybe Bool
-  , swaggerHeaderMaxLength :: Maybe Integer
-  , swaggerHeaderMinLength :: Maybe Integer
-  , swaggerHeaderPattern :: Maybe Text
-  , swaggerHeaderMaxItems :: Maybe Integer
-  , swaggerHeaderMinItems :: Maybe Integer
-  , swaggerHeaderUniqueItems :: Maybe Bool
-  , swaggerHeaderEnum :: Maybe [JSON.Value]
-  , swaggerHeaderMultipleOf :: Maybe Integer
+  , swaggerHeaderCommon :: SwaggerSchemaCommon
   } deriving (Show)
 
 data SwaggerExample = SwaggerExample
