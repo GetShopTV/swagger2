@@ -1,5 +1,6 @@
 module Data.Swagger.Internal where
 
+import qualified Data.Aeson               as JSON
 import           Data.HashMap.Strict      (HashMap)
 import           Data.Text                (Text)
 import           Network                  (HostName, PortNumber)
@@ -230,7 +231,129 @@ data SwaggerOperation = SwaggerOperation
   , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
   } deriving (Show)
 
+-- | Describes a single operation parameter.
+-- A unique parameter is defined by a combination of a name and location.
 data SwaggerParameter = SwaggerParameter
+  { -- | The name of the parameter.
+    -- Parameter names are case sensitive.
+    swaggerParameterName :: Text
+
+    -- | A brief description of the parameter.
+    -- This could contain examples of use.
+    -- GFM syntax can be used for rich text representation.
+  , swaggerParameterDescription :: Maybe Text
+
+    -- | Determines whether this parameter is mandatory.
+    -- If the parameter is in "path", this property is required and its value MUST be true.
+    -- Otherwise, the property MAY be included and its default value is @False@.
+  , swaggerParameterRequired :: Bool
+
+    -- | Parameter schema.
+  , swaggerParameterSchema :: SwaggerParameterSchema
+  } deriving (Show)
+
+data SwaggerParameterSchema
+  = SwaggerParameterBody SwaggerSchema
+  | SwaggerParameterOther SwaggerParameterOtherSchema
+  deriving (Show)
+
+data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
+  { -- | The location of the parameter.
+    swaggerParameterOtherSchemaIn :: SwaggerParameterLocation
+
+    -- | The type of the parameter.
+    -- Since the parameter is not located at the request body,
+    -- it is limited to simple types (that is, not an object).
+    -- If type is @'SwaggerParamFile'@, the @consumes@ MUST be either
+    -- "multipart/form-data" or " application/x-www-form-urlencoded"
+    -- and the parameter MUST be in @'SwaggerParameterFormData'@.
+  , swaggerParameterOtherSchemaType :: SwaggerParameterType
+
+    -- | The extending format for the previously mentioned type.
+  , swaggerParameterOtherSchemaFormat :: Maybe SwaggerFormat
+
+    -- | Sets the ability to pass empty-valued parameters.
+    -- This is valid only for either @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@
+    -- and allows you to send a parameter with a name only or an empty value.
+    -- Default value is @False@.
+  , swaggerParameterOtherSchemaAllowEmptyValue :: Bool
+
+    -- | __Required if type is @'SwaggerParamArray'@__.
+    -- Describes the type of items in the array.
+  , swaggerParameterOtherSchemaItems :: Maybe SwaggerItems
+
+    -- | Determines the format of the array if @'SwaggerParamArray'@ is used.
+    -- Default value is csv.
+  , swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
+
+    -- | Declares the value of the parameter that the server will use if none is provided,
+    -- for example a @"count"@ to control the number of results per page might default to @100@
+    -- if not supplied by the client in the request.
+    -- (Note: "default" has no meaning for required parameters.)
+    -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
+  , swaggerParameterOtherSchemaDefault :: Maybe JSON.Value
+
+  , swaggerParameterOtherSchemaMaximum :: Maybe Integer
+  , swaggerParameterOtherSchemaExclusiveMaximum :: Maybe Bool
+  , swaggerParameterOtherSchemaMinimum :: Maybe Integer
+  , swaggerParameterOtherSchemaExclusiveMinimum :: Maybe Bool
+  , swaggerParameterOtherSchemaMaxLength :: Maybe Integer
+  , swaggerParameterOtherSchemaMinLength :: Maybe Integer
+  , swaggerParameterOtherSchemaPattern :: Maybe Text
+  , swaggerParameterOtherSchemaMaxItems :: Maybe Integer
+  , swaggerParameterOtherSchemaMinItems :: Maybe Integer
+  , swaggerParameterOtherSchemaUniqueItems :: Maybe Bool
+  , swaggerParameterOtherSchemaEnum :: Maybe [JSON.Value]
+  , swaggerParameterOtherSchemaMultipleOf :: Maybe Integer
+  } deriving (Show)
+
+data SwaggerParameterType
+  = SwaggerParamString
+  | SwaggerParamNumber
+  | SwaggerParamInteger
+  | SwaggerParamBoolean
+  | SwaggerParamArray
+  | SwaggerParamFile
+  deriving (Show)
+
+data SwaggerParameterLocation
+  = -- | Parameters that are appended to the URL.
+    -- For example, in @/items?id=###@, the query parameter is @id@.
+    SwaggerParameterQuery
+    -- | Custom headers that are expected as part of the request.
+  | SwaggerParameterHeader
+    -- | Used together with Path Templating, where the parameter value is actually part of the operation's URL.
+    -- This does not include the host or base path of the API.
+    -- For example, in @/items/{itemId}@, the path parameter is @itemId@.
+  | SwaggerParameterPath
+    -- | Used to describe the payload of an HTTP request when either @application/x-www-form-urlencoded@
+    -- or @multipart/form-data@ are used as the content type of the request
+    -- (in Swagger's definition, the @consumes@ property of an operation).
+    -- This is the only parameter type that can be used to send files, thus supporting the @'SwaggerParamFile'@ type.
+    -- Since form parameters are sent in the payload, they cannot be declared together with a body parameter for the same operation.
+    -- Form parameters have a different format based on the content-type used
+    -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
+  | SwaggerParameterFormData
+  deriving (Show)
+
+type SwaggerFormat = Text
+
+-- | Determines the format of the array.
+data SwaggerCollectionFormat
+  = SwaggerCollectionCSV   -- ^ Comma separated values: @foo,bar@.
+  | SwaggerCollectionSSV   -- ^ Space separated values @foo bar@.
+  | SwaggerCollectionTSV   -- ^ Tab separated values @foo\\tbar@.
+  | SwaggerCollectionPipes -- ^ Pipe separated values @foo|bar@.
+    -- | Corresponds to multiple parameter instances
+    -- instead of multiple values for a single instance @foo=bar&foo=baz@.
+    -- This is valid only for parameters in @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@.
+  | SwaggerCollectionMulti
+  deriving (Show)
+
+data SwaggerSchema = SwaggerSchema
+  deriving (Show)
+
+data SwaggerItems = SwaggerItems
   deriving (Show)
 
 data SwaggerResponses = SwaggerResponses
