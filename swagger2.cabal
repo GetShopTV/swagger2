@@ -24,6 +24,7 @@ library
                      , http-media
                      , network
                      , text
+                     , unordered-containers
                      , url
   default-language:    Haskell2010
 

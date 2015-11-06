@@ -1,9 +1,10 @@
 module Data.Swagger.Internal where
 
-import Data.Text          (Text)
-import Network            (HostName, PortNumber)
-import Network.HTTP.Media (MediaType)
-import Network.URL        (URL)
+import           Data.HashMap.Strict      (HashMap)
+import           Data.Text                (Text)
+import           Network                  (HostName, PortNumber)
+import           Network.HTTP.Media       (MediaType)
+import           Network.URL              (URL)
 
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
@@ -130,13 +131,109 @@ data SwaggerScheme
 data SwaggerPaths = SwaggerPaths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
-    swaggerPathsMap         :: [SwaggerPath]
+    swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
 
     -- | Allows extensions to the Swagger Schema.
   , swaggerPathsExtensions  :: [SwaggerExtension]
   } deriving (Show)
 
-data SwaggerPath = SwaggerPath
+-- | Describes the operations available on a single path.
+-- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
+-- The path itself is still exposed to the documentation viewer
+-- but they will not know which operations and parameters are available.
+data SwaggerPathItem = SwaggerPathItem
+  { -- | A definition of a GET operation on this path.
+    swaggerPathItemGet :: Maybe SwaggerOperation
+
+    -- | A definition of a PUT operation on this path.
+  , swaggerPathItemPut :: Maybe SwaggerOperation
+
+    -- | A definition of a POST operation on this path.
+  , swaggerPathItemPost :: Maybe SwaggerOperation
+
+    -- | A definition of a DELETE operation on this path.
+  , swaggerPathItemDelete :: Maybe SwaggerOperation
+
+    -- | A definition of a OPTIONS operation on this path.
+  , swaggerPathItemOptions :: Maybe SwaggerOperation
+
+    -- | A definition of a HEAD operation on this path.
+  , swaggerPathItemHead :: Maybe SwaggerOperation
+
+    -- | A definition of a PATCH operation on this path.
+  , swaggerPathItemPatch :: Maybe SwaggerOperation
+
+    -- | A list of parameters that are applicable for all the operations described under this path.
+    -- These parameters can be overridden at the operation level, but cannot be removed there.
+    -- The list MUST NOT include duplicated parameters.
+    -- A unique parameter is defined by a combination of a name and location.
+  , swaggerPathItemParameters :: [SwaggerParameter]
+  } deriving (Show)
+
+-- | Describes a single API operation on a path.
+data SwaggerOperation = SwaggerOperation
+  { -- | A list of tags for API documentation control.
+    -- Tags can be used for logical grouping of operations by resources or any other qualifier.
+    swaggerOperationTags :: [Text]
+
+    -- | A short summary of what the operation does.
+    -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
+  , swaggerOperationSummary :: Maybe Text
+
+    -- | A verbose explanation of the operation behavior.
+    -- GFM syntax can be used for rich text representation.
+  , swaggerOperationDescription :: Maybe Text
+
+    -- | Additional external documentation for this operation.
+  , swaggerOperationExternalDocs :: Maybe SwaggerExternalDocs
+
+    -- | Unique string used to identify the operation.
+    -- The id MUST be unique among all operations described in the API.
+    -- Tools and libraries MAY use the it to uniquely identify an operation,
+    -- therefore, it is recommended to follow common programming naming conventions.
+  , swaggerOperationOperationId :: Maybe Text
+
+    -- | A list of MIME types the operation can consume.
+    -- This overrides the @'swaggerConsumes'@.
+    -- @Just []@ MAY be used to clear the global definition.
+  , swaggerOperationConsumes :: Maybe [MediaType]
+
+    -- | A list of MIME types the operation can produce.
+    -- This overrides the @'swaggerProduces'@.
+    -- @Just []@ MAY be used to clear the global definition.
+  , swaggerOperationProduces :: Maybe [MediaType]
+
+    -- | A list of parameters that are applicable for this operation.
+    -- If a parameter is already defined at the @'SwaggerPathItem'@,
+    -- the new definition will override it, but can never remove it.
+    -- The list MUST NOT include duplicated parameters.
+    -- A unique parameter is defined by a combination of a name and location.
+  , swaggerOperationParameters :: [SwaggerParameter]
+
+    -- | The list of possible responses as they are returned from executing this operation.
+  , swaggerOperationResponses :: SwaggerResponses
+
+    -- | The transfer protocol for the operation.
+    -- The value overrides @'swaggerSchemes'@.
+  , swaggerOperationSchemes :: Maybe [SwaggerScheme]
+
+    -- | Declares this operation to be deprecated.
+    -- Usage of the declared operation should be refrained.
+    -- Default value is @False@.
+  , swaggerOperationDeprecated :: Bool
+
+    -- | A declaration of which security schemes are applied for this operation.
+    -- The list of values describes alternative security schemes that can be used
+    -- (that is, there is a logical OR between the security requirements).
+    -- This definition overrides any declared top-level security.
+    -- To remove a top-level security declaration, @Just []@ can be used.
+  , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
+  } deriving (Show)
+
+data SwaggerParameter = SwaggerParameter
+  deriving (Show)
+
+data SwaggerResponses = SwaggerResponses
   deriving (Show)
 
 data SwaggerExtension = SwaggerExtension
