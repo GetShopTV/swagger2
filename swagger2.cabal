@@ -19,11 +19,13 @@ library
   exposed-modules:
     Data.Swagger
     Data.Swagger.Internal
+    Data.Swagger.Internal.Utils
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , hashable
                      , http-media
                      , network
+                     , template-haskell
                      , text
                      , unordered-containers
   default-language:    Haskell2010
