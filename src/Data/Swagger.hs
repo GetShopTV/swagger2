@@ -25,6 +25,7 @@ module Data.Swagger (
   SwaggerOperation(..),
 
   -- * Types and formats
+  SwaggerParameterType(..),
   SwaggerItemsType(..),
   SwaggerSchemaType(..),
   SwaggerFormat(..),
