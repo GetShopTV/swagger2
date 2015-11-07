@@ -579,25 +579,6 @@ data SwaggerSecuritySchemeType
   | SwaggerSecuritySchemeOAuth2 SwaggerOAuth2Params
   deriving (Eq, Show)
 
-data SwaggerSecuritySchemeTypeName
-  = SwaggerSecuritySchemeTypeBasic
-  | SwaggerSecuritySchemeTypeApiKey
-  | SwaggerSecuritySchemeTypeOAuth2
-  deriving (Eq, Read, Show, Generic)
-
-swaggerSecuritySchemeTypeNameToText :: SwaggerSecuritySchemeTypeName -> Text
-swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeBasic  = "basic"
-swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeApiKey = "apiKey"
-swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeOAuth2 = "oauth2"
-
-swaggerSecuritySchemeTypeNameFromText :: Alternative f => Text -> f SwaggerSecuritySchemeTypeName
-swaggerSecuritySchemeTypeNameFromText "basic"  = pure SwaggerSecuritySchemeTypeBasic
-swaggerSecuritySchemeTypeNameFromText "apiKey" = pure SwaggerSecuritySchemeTypeApiKey
-swaggerSecuritySchemeTypeNameFromText "oauth2" = pure SwaggerSecuritySchemeTypeOAuth2
-swaggerSecuritySchemeTypeNameFromText _ = empty
-
-instance Hashable SwaggerSecuritySchemeTypeName
-
 data SwaggerSecurityScheme = SwaggerSecurityScheme
   { -- | The type of the security scheme.
     swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
@@ -610,8 +591,8 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
 newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
-  { getSwaggerSecurityRequirement :: HashMap SwaggerSecuritySchemeTypeName Text
-  } deriving (Eq, Read, Show, Monoid)
+  { getSwaggerSecurityRequirement :: HashMap Text [Text]
+  } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON)
 
 -- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
@@ -654,7 +635,6 @@ deriveJSON (jsonPrefix "SwaggerSchema") ''SwaggerSchemaType
 deriveJSON (jsonPrefix "SwaggerItems") ''SwaggerItemsType
 deriveJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
 deriveJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
-deriveJSON (jsonPrefix "SwaggerSecuritySchemeType") ''SwaggerSecuritySchemeTypeName
 deriveJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
 deriveJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
 deriveJSON' ''SwaggerResponse
@@ -688,13 +668,13 @@ instance ToJSON SwaggerOAuth2Params where
 
 instance ToJSON SwaggerSecuritySchemeType where
   toJSON SwaggerSecuritySchemeBasic
-      = object [ "type" .= SwaggerSecuritySchemeTypeBasic ]
+      = object [ "type" .= ("basic" :: Text) ]
   toJSON (SwaggerSecuritySchemeApiKey params)
       = toJSON params
-    <+> object [ "type" .= SwaggerSecuritySchemeTypeApiKey ]
+    <+> object [ "type" .= ("apiKey" :: Text) ]
   toJSON (SwaggerSecuritySchemeOAuth2 params)
       = toJSON params
-    <+> object [ "type" .= SwaggerSecuritySchemeTypeOAuth2 ]
+    <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
   toJSON = addVersion . genericToJSON (jsonPrefix "swagger")
@@ -748,9 +728,6 @@ instance ToJSON SwaggerResponses where
 instance ToJSON SwaggerExample where
   toJSON = toJSON . Map.mapKeys show . getSwaggerExample
 
-instance ToJSON SwaggerSecurityRequirement where
-  toJSON (SwaggerSecurityRequirement m) = toJSON (hashMapMapKeys swaggerSecuritySchemeTypeNameToText m)
-
 -- =======================================================================
 -- Manual FromJSON instances
 -- =======================================================================
@@ -773,11 +750,12 @@ instance FromJSON SwaggerOAuth2Params where
 
 instance FromJSON SwaggerSecuritySchemeType where
   parseJSON json@(Object o) = do
-    t <- o .: "type"
+    (t :: Text) <- o .: "type"
     case t of
-      SwaggerSecuritySchemeTypeBasic  -> pure SwaggerSecuritySchemeBasic
-      SwaggerSecuritySchemeTypeApiKey -> SwaggerSecuritySchemeApiKey <$> parseJSON json
-      SwaggerSecuritySchemeTypeOAuth2 -> SwaggerSecuritySchemeOAuth2 <$> parseJSON json
+      "basic"  -> pure SwaggerSecuritySchemeBasic
+      "apiKey" -> SwaggerSecuritySchemeApiKey <$> parseJSON json
+      "oauth2" -> SwaggerSecuritySchemeOAuth2 <$> parseJSON json
+      _ -> empty
   parseJSON _ = empty
 
 instance FromJSON Swagger where
@@ -844,9 +822,4 @@ instance FromJSON SwaggerExample where
   parseJSON json = do
     m <- parseJSON json
     pure $ SwaggerExample (Map.mapKeys fromString m)
-
-instance FromJSON SwaggerSecurityRequirement where
-  parseJSON json = do
-    m <- parseJSON json
-    SwaggerSecurityRequirement <$> hashMapTraverseKeys swaggerSecuritySchemeTypeNameFromText m
 
