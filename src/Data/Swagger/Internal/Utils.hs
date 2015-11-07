@@ -5,7 +5,7 @@ import Control.Arrow (first)
 import Control.Applicative
 import Data.Aeson
 import Data.Aeson.TH
-import Data.Aeson.Types (Parser)
+import Data.Aeson.Types (Parser, Pair)
 import Data.Char
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
@@ -69,3 +69,8 @@ genericParseJSONWithSub _ _ _ = error "impossible"
 (<+>) :: Value -> Value -> Value
 Object x <+> Object y = Object (x <> y)
 _ <+> _ = error "impossible"
+
+withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
+withDefaults parser defs json@(Object _) = parser (json <+> object defs)
+withDefaults _ _ _ = empty
+
