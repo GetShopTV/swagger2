@@ -87,7 +87,7 @@ data Swagger = Swagger
 
     -- | Additional external documentation.
   , swaggerExternalDocs :: SwaggerExternalDocs
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 -- | The object provides metadata about the API.
 -- The metadata can be used by the clients if needed,
@@ -112,7 +112,7 @@ data SwaggerInfo = SwaggerInfo
     -- | Provides the version of the application API
     -- (not to be confused with the specification version).
   , swaggerInfoVersion :: Text
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | Contact information for the exposed API.
 data SwaggerContact = SwaggerContact
@@ -124,7 +124,7 @@ data SwaggerContact = SwaggerContact
 
     -- | The email address of the contact person/organization.
   , swaggerContactEmail :: Maybe Text
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | License information for the exposed API.
 data SwaggerLicense = SwaggerLicense
@@ -133,13 +133,13 @@ data SwaggerLicense = SwaggerLicense
 
     -- | A URL to the license used for the API.
   , swaggerLicenseUrl :: Maybe URL
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
 data SwaggerHost = SwaggerHost
   { swaggerHostName :: HostName         -- ^ Host name.
   , swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | The transfer protocol of the API.
 data SwaggerScheme
@@ -147,14 +147,14 @@ data SwaggerScheme
   | Https
   | Ws
   | Wss
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | The available paths and operations for the API.
 data SwaggerPaths = SwaggerPaths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
     swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | Describes the operations available on a single path.
 -- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
@@ -187,7 +187,7 @@ data SwaggerPathItem = SwaggerPathItem
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
   , swaggerPathItemParameters :: [SwaggerParameter]
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | Describes a single API operation on a path.
 data SwaggerOperation = SwaggerOperation
@@ -247,10 +247,10 @@ data SwaggerOperation = SwaggerOperation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
@@ -271,12 +271,12 @@ data SwaggerParameter = SwaggerParameter
 
     -- | Parameter schema.
   , swaggerParameterSchema :: SwaggerParameterSchema
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerParameterSchema
   = SwaggerParameterBody SwaggerSchema
   | SwaggerParameterOther SwaggerParameterOtherSchema
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
   { -- | The location of the parameter.
@@ -308,7 +308,7 @@ data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
   , swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
 
   , swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerParameterType
   = SwaggerParamString
@@ -317,7 +317,7 @@ data SwaggerParameterType
   | SwaggerParamBoolean
   | SwaggerParamArray
   | SwaggerParamFile
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerParameterLocation
   = -- | Parameters that are appended to the URL.
@@ -337,7 +337,7 @@ data SwaggerParameterLocation
     -- Form parameters have a different format based on the content-type used
     -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
   | SwaggerParameterFormData
-  deriving (Show)
+  deriving (Eq, Show)
 
 type SwaggerFormat = Text
 
@@ -350,7 +350,7 @@ data SwaggerCollectionFormat
   | SwaggerCollectionMulti -- ^ Corresponds to multiple parameter instances
                            -- instead of multiple values for a single instance @foo=bar&foo=baz@.
                            -- This is valid only for parameters in @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@.
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerItemsType
   = SwaggerItemsString
@@ -358,7 +358,7 @@ data SwaggerItemsType
   | SwaggerItemsInteger
   | SwaggerItemsBoolean
   | SwaggerItemsArray
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerSchemaType
   = SwaggerSchemaArray
@@ -368,7 +368,7 @@ data SwaggerSchemaType
   | SwaggerSchemaNull
   | SwaggerSchemaObject
   | SwaggerSchemaString
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | Determines the format of the nested array.
 data SwaggerItemsCollectionFormat
@@ -376,7 +376,7 @@ data SwaggerItemsCollectionFormat
   | SwaggerItemsCollectionSSV   -- ^ Space separated values: @foo bar@.
   | SwaggerItemsCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
   | SwaggerItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerSchema = SwaggerSchema
   { swaggerSchemaType :: SwaggerSchemaType
@@ -400,12 +400,12 @@ data SwaggerSchema = SwaggerSchema
   , swaggerSchemaMinProperties :: Maybe Integer
 
   , swaggerSchemaCommon :: SwaggerSchemaCommon
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerSchemaItems
   = SwaggerSchemaItemsObject SwaggerSchema
   | SwaggerSchemaItemsArray [SwaggerSchema]
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerSchemaCommon = SwaggerSchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
@@ -427,7 +427,7 @@ data SwaggerSchemaCommon = SwaggerSchemaCommon
   , swaggerSchemaUniqueItems :: Maybe Bool
   , swaggerSchemaEnum :: Maybe [Value]
   , swaggerSchemaMultipleOf :: Maybe Integer
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerXml = SwaggerXml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -455,7 +455,7 @@ data SwaggerXml = SwaggerXml
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
   , swaggerXmlWrapped :: Bool
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 data SwaggerItems = SwaggerItems
   { -- | The internal type of the array.
@@ -473,7 +473,7 @@ data SwaggerItems = SwaggerItems
   , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
 
   , swaggerItemsCommon :: SwaggerSchemaCommon
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
 -- The container maps a HTTP response code to the expected response.
@@ -488,7 +488,7 @@ data SwaggerResponses = SwaggerResponses
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
   , swaggerResponsesResponses :: HashMap HttpStatusCode SwaggerResponse
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 type HttpStatusCode = Int
 
@@ -510,7 +510,7 @@ data SwaggerResponse = SwaggerResponse
 
     -- | An example of the response message.
   , swaggerResponseExamples :: Maybe SwaggerExample
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 type HeaderName = Text
 
@@ -533,16 +533,16 @@ data SwaggerHeader = SwaggerHeader
   , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
 
   , swaggerHeaderCommon :: SwaggerSchemaCommon
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerExample = SwaggerExample { getSwaggerExample :: Map MediaType Value }
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | The location of the API key.
 data SwaggerApiKeyLocation
   = SwaggerApiKeyQuery
   | SwaggerApiKeyHeader
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerApiKeyParams = SwaggerApiKeyParams
   { -- | The name of the header or query parameter to be used.
@@ -550,7 +550,7 @@ data SwaggerApiKeyParams = SwaggerApiKeyParams
 
     -- | The location of the API key.
   , swaggerApiKeyIn :: SwaggerApiKeyLocation
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type AuthorizationURL = Text
@@ -563,7 +563,7 @@ data SwaggerOAuth2Flow
   | SwaggerOAuth2Password TokenURL
   | SwaggerOAuth2Application TokenURL
   | SwaggerOAuth2AccessCode AuthorizationURL TokenURL
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerOAuth2Params = SwaggerOAuth2Params
   { -- | The flow used by the OAuth2 security scheme.
@@ -571,13 +571,13 @@ data SwaggerOAuth2Params = SwaggerOAuth2Params
 
     -- | The available scopes for the OAuth2 security scheme.
   , swaggerOAuth2Scopes :: HashMap Text Text
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerSecuritySchemeType
   = SwaggerSecuritySchemeBasic
   | SwaggerSecuritySchemeApiKey SwaggerApiKeyParams
   | SwaggerSecuritySchemeOAuth2 SwaggerOAuth2Params
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SwaggerSecuritySchemeTypeName
   = SwaggerSecuritySchemeTypeBasic
@@ -604,7 +604,7 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 
     -- | A short description for security scheme.
   , swaggerSecuritySchemeDescription :: Maybe Text
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
@@ -625,7 +625,7 @@ data SwaggerTag = SwaggerTag
 
     -- | Additional external documentation for this tag.
   , swaggerTagExternalDocs :: Maybe SwaggerExternalDocs
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 -- | Allows referencing an external resource for extended documentation.
 data SwaggerExternalDocs = SwaggerExternalDocs
@@ -635,9 +635,9 @@ data SwaggerExternalDocs = SwaggerExternalDocs
 
     -- | The URL for the target documentation.
   , swaggerExternalDocsUrl :: URL
-  } deriving (Show)
+  } deriving (Eq, Show)
 
-newtype URL = URL { getUrl :: Text } deriving (Show, ToJSON, FromJSON)
+newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
 
 -- =======================================================================
 -- TH derived ToJSON and FromJSON instances
