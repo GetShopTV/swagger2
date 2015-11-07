@@ -2,13 +2,15 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Internal where
 
-import           Data.Aeson               (ToJSON, FromJSON)
-import qualified Data.Aeson               as JSON
+import           Data.Aeson
+import           Data.Aeson.TH            (deriveToJSON)
 import           Data.Foldable            (Foldable)
 import           Data.HashMap.Strict      (HashMap)
+import qualified Data.HashMap.Strict      as HashMap
 import           Data.Text                (Text)
 import           Data.Traversable         (Traversable)
 import           Data.Hashable            (Hashable)
@@ -39,28 +41,28 @@ data Swagger = Swagger
 
     -- | A list of MIME types the APIs can consume.
     -- This is global to all APIs but can be overridden on specific API calls.
-  , swaggerConsumes :: [MediaType]
+  , swaggerConsumes :: SwaggerMimeList
 
     -- | A list of MIME types the APIs can produce.
     -- This is global to all APIs but can be overridden on specific API calls. 
-  , swaggerProduces :: [MediaType]
+  , swaggerProduces :: SwaggerMimeList
 
     -- | The available paths and operations for the API.
   , swaggerPaths :: SwaggerPaths
 
     -- | An object to hold data types produced and consumed by operations.
-  , swaggerDefinitions :: Definitions SwaggerSchema
+  , swaggerDefinitions :: HashMap Text SwaggerSchema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , swaggerParameters :: Definitions SwaggerParameter
+  , swaggerParameters :: HashMap Text SwaggerParameter
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , swaggerResponses :: Definitions SwaggerResponse
+  , swaggerResponses :: HashMap Text SwaggerResponse
 
     -- | Security scheme definitions that can be used across the specification.
-  , swaggerSecurityDefinitions :: Definitions SwaggerSecurityScheme
+  , swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
@@ -77,7 +79,7 @@ data Swagger = Swagger
 
     -- | Additional external documentation.
   , swaggerExternalDocs :: SwaggerExternalDocs
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 -- | The object provides metadata about the API.
 -- The metadata can be used by the clients if needed,
@@ -131,6 +133,12 @@ data SwaggerHost = SwaggerHost
   , swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
   } deriving (Show)
 
+instance ToJSON SwaggerHost where
+  toJSON (SwaggerHost host mport) = toJSON $
+    case mport of
+      Nothing -> host
+      Just port -> host ++ ":" ++ show port
+
 -- | The transfer protocol of the API.
 data SwaggerScheme
   = Http
@@ -145,6 +153,9 @@ data SwaggerPaths = SwaggerPaths
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
     swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
   } deriving (Show)
+
+instance ToJSON SwaggerPaths where
+  toJSON (SwaggerPaths m) = toJSON m
 
 -- | Describes the operations available on a single path.
 -- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
@@ -205,12 +216,12 @@ data SwaggerOperation = SwaggerOperation
     -- | A list of MIME types the operation can consume.
     -- This overrides the @'swaggerConsumes'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , swaggerOperationConsumes :: Maybe [MediaType]
+  , swaggerOperationConsumes :: Maybe SwaggerMimeList
 
     -- | A list of MIME types the operation can produce.
     -- This overrides the @'swaggerProduces'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , swaggerOperationProduces :: Maybe [MediaType]
+  , swaggerOperationProduces :: Maybe SwaggerMimeList
 
     -- | A list of parameters that are applicable for this operation.
     -- If a parameter is already defined at the @'SwaggerPathItem'@,
@@ -239,6 +250,12 @@ data SwaggerOperation = SwaggerOperation
   , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
   } deriving (Show)
 
+newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
+  deriving (Show)
+
+instance ToJSON SwaggerMimeList where
+  toJSON (SwaggerMimeList xs) = toJSON (map show xs)
+
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
 data SwaggerParameter = SwaggerParameter
@@ -258,12 +275,19 @@ data SwaggerParameter = SwaggerParameter
 
     -- | Parameter schema.
   , swaggerParameterSchema :: SwaggerParameterSchema
-  } deriving (Show)
+  } deriving (Show, Generic)
+
+instance ToJSON SwaggerParameter where
+  toJSON = genericToJSONWithSub "schema" (jsonPrefix "swaggerParameter")
 
 data SwaggerParameterSchema
   = SwaggerParameterBody SwaggerSchema
   | SwaggerParameterOther SwaggerParameterOtherSchema
   deriving (Show)
+
+instance ToJSON SwaggerParameterSchema where
+  toJSON (SwaggerParameterBody s) = toJSON s <+> object [ "in" .= ("body" :: Text) ]
+  toJSON (SwaggerParameterOther s) = toJSON s
 
 data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
   { -- | The location of the parameter.
@@ -294,26 +318,11 @@ data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
     -- Default value is csv.
   , swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
 
-    -- | Declares the value of the parameter that the server will use if none is provided,
-    -- for example a @"count"@ to control the number of results per page might default to @100@
-    -- if not supplied by the client in the request.
-    -- (Note: "default" has no meaning for required parameters.)
-    -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-  , swaggerParameterOtherSchemaDefault :: Maybe JSON.Value
+  , swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
+  } deriving (Show, Generic)
 
-  , swaggerParameterOtherSchemaMaximum :: Maybe Integer
-  , swaggerParameterOtherSchemaExclusiveMaximum :: Maybe Bool
-  , swaggerParameterOtherSchemaMinimum :: Maybe Integer
-  , swaggerParameterOtherSchemaExclusiveMinimum :: Maybe Bool
-  , swaggerParameterOtherSchemaMaxLength :: Maybe Integer
-  , swaggerParameterOtherSchemaMinLength :: Maybe Integer
-  , swaggerParameterOtherSchemaPattern :: Maybe Text
-  , swaggerParameterOtherSchemaMaxItems :: Maybe Integer
-  , swaggerParameterOtherSchemaMinItems :: Maybe Integer
-  , swaggerParameterOtherSchemaUniqueItems :: Maybe Bool
-  , swaggerParameterOtherSchemaEnum :: Maybe [JSON.Value]
-  , swaggerParameterOtherSchemaMultipleOf :: Maybe Integer
-  } deriving (Show)
+instance ToJSON SwaggerParameterOtherSchema where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
 
 data SwaggerParameterType
   = SwaggerParamString
@@ -393,25 +402,29 @@ data SwaggerSchema = SwaggerSchema
 
   , swaggerSchemaItems :: SwaggerSchemaItems
   , swaggerSchemaAllOf :: [SwaggerSchema]
-  , swaggerSchemaProperties :: Definitions SwaggerSchema
+  , swaggerSchemaProperties :: HashMap Text SwaggerSchema
   , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
 
   , swaggerSchemaDiscriminator :: Maybe Text
   , swaggerSchemaReadOnly :: Maybe Bool
   , swaggerSchemaXml :: Maybe SwaggerXml
   , swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
-  , swaggerSchemaExample :: Maybe JSON.Value
+  , swaggerSchemaExample :: Maybe Value
 
   , swaggerSchemaMaxProperties :: Maybe Integer
   , swaggerSchemaMinProperties :: Maybe Integer
 
   , swaggerSchemaCommon :: SwaggerSchemaCommon
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 data SwaggerSchemaItems
   = SwaggerSchemaItemsObject SwaggerSchema
   | SwaggerSchemaItemsArray [SwaggerSchema]
   deriving (Show)
+
+instance ToJSON SwaggerSchemaItems where
+  toJSON (SwaggerSchemaItemsObject x) = toJSON x
+  toJSON (SwaggerSchemaItemsArray xs) = toJSON xs
 
 data SwaggerSchemaCommon = SwaggerSchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
@@ -419,7 +432,7 @@ data SwaggerSchemaCommon = SwaggerSchemaCommon
     -- if not supplied by the client in the request.
     -- (Note: "default" has no meaning for required parameters.)
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-    swaggerSchemaDefault :: Maybe JSON.Value
+    swaggerSchemaDefault :: Maybe Value
 
   , swaggerSchemaMaximum :: Maybe Integer
   , swaggerSchemaExclusiveMaximum :: Maybe Bool
@@ -431,9 +444,9 @@ data SwaggerSchemaCommon = SwaggerSchemaCommon
   , swaggerSchemaMaxItems :: Maybe Integer
   , swaggerSchemaMinItems :: Maybe Integer
   , swaggerSchemaUniqueItems :: Maybe Bool
-  , swaggerSchemaEnum :: Maybe [JSON.Value]
+  , swaggerSchemaEnum :: Maybe [Value]
   , swaggerSchemaMultipleOf :: Maybe Integer
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 data SwaggerXml = SwaggerXml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -479,7 +492,7 @@ data SwaggerItems = SwaggerItems
   , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
 
   , swaggerItemsCommon :: SwaggerSchemaCommon
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 -- | A container for the expected responses of an operation.
 -- The container maps a HTTP response code to the expected response.
@@ -495,6 +508,11 @@ data SwaggerResponses = SwaggerResponses
     -- Describes the expected response for those HTTP status codes.
   , swaggerResponsesResponses :: HashMap HttpStatusCode SwaggerResponse
   } deriving (Show)
+
+instance ToJSON SwaggerResponses where
+  toJSON (SwaggerResponses def rs) = object
+    [ "default"   .= def
+    , "responses" .= hashMapMapKeys show rs ]
 
 type HttpStatusCode = Int
 
@@ -539,10 +557,13 @@ data SwaggerHeader = SwaggerHeader
   , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
 
   , swaggerHeaderCommon :: SwaggerSchemaCommon
-  } deriving (Show)
+  } deriving (Show, Generic)
 
-data SwaggerExample = SwaggerExample
+data SwaggerExample = SwaggerExample { getSwaggerExample :: HashMap MediaType Value }
   deriving (Show)
+
+instance ToJSON SwaggerExample where
+  toJSON = toJSON . hashMapMapKeys show . getSwaggerExample
 
 -- | The location of the API key.
 data SwaggerApiKeyLocation
@@ -577,7 +598,7 @@ data SwaggerOAuth2Params = SwaggerOAuth2Params
 
     -- | The available scopes for the OAuth2 security scheme.
   , swaggerOAuth2Scopes :: HashMap Text Text
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 data SwaggerSecuritySchemeType
   = SwaggerSecuritySchemeBasic
@@ -591,6 +612,11 @@ data SwaggerSecuritySchemeTypeName
   | SwaggerSecuritySchemeTypeOAuth2
   deriving (Eq, Read, Show, Generic)
 
+swaggerSecuritySchemeTypeNameText :: SwaggerSecuritySchemeTypeName -> Text
+swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeBasic  = "basic"
+swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeApiKey = "apiKey"
+swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeOAuth2 = "oauth2"
+
 instance Hashable SwaggerSecuritySchemeTypeName
 
 data SwaggerSecurityScheme = SwaggerSecurityScheme
@@ -599,7 +625,7 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 
     -- | A short description for security scheme.
   , swaggerSecuritySchemeDescription :: Maybe Text
-  } deriving (Show)
+  } deriving (Show, Generic)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
@@ -607,6 +633,9 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
   { getSwaggerSecurityRequirement :: HashMap SwaggerSecuritySchemeTypeName Text
   } deriving (Eq, Read, Show, Monoid)
+
+instance ToJSON SwaggerSecurityRequirement where
+  toJSON (SwaggerSecurityRequirement m) = toJSON (hashMapMapKeys swaggerSecuritySchemeTypeNameText m)
 
 -- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
@@ -634,6 +663,70 @@ data SwaggerExternalDocs = SwaggerExternalDocs
 
 newtype URL = URL { getUrl :: Text } deriving (Show, ToJSON, FromJSON)
 
-newtype Definitions v = Definitions { getDefinitions :: HashMap Text v }
-  deriving (Eq, Read, Show, Monoid, Functor, Foldable, Traversable)
+deriveToJSON' ''SwaggerOperation
+deriveToJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
+deriveToJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
+deriveToJSON' ''SwaggerPathItem
+deriveToJSON' ''SwaggerInfo
+deriveToJSON' ''SwaggerContact
+deriveToJSON' ''SwaggerLicense
+deriveToJSON (jsonPrefix "SwaggerSchema") ''SwaggerSchemaType
+deriveToJSON (jsonPrefix "SwaggerItems") ''SwaggerItemsType
+deriveToJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
+deriveToJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
+deriveToJSON (jsonPrefix "SwaggerSecuritySchemeType") ''SwaggerSecuritySchemeTypeName
+deriveToJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
+deriveToJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
+deriveToJSON' ''SwaggerResponse
+deriveToJSON' ''SwaggerSchemaCommon
+deriveToJSONDefault ''SwaggerScheme
+deriveToJSON' ''SwaggerTag
+deriveToJSON' ''SwaggerExternalDocs
+deriveToJSON' ''SwaggerXml
+
+instance ToJSON SwaggerOAuth2Flow where
+  toJSON (SwaggerOAuth2Implicit authUrl) = object
+    [ "flow"             .= ("implicit" :: Text)
+    , "authorizationUrl" .= authUrl ]
+  toJSON (SwaggerOAuth2Password tokenUrl) = object
+    [ "flow"     .= ("password" :: Text)
+    , "tokenUrl" .= tokenUrl ]
+  toJSON (SwaggerOAuth2Application tokenUrl) = object
+    [ "flow"     .= ("application" :: Text)
+    , "tokenUrl" .= tokenUrl ]
+  toJSON (SwaggerOAuth2AccessCode authUrl tokenUrl) = object
+    [ "flow"             .= ("accessCode" :: Text)
+    , "authorizationUrl" .= authUrl
+    , "tokenUrl"         .= tokenUrl ]
+
+instance ToJSON SwaggerOAuth2Params where
+  toJSON = genericToJSONWithSub "flow" (jsonPrefix "swaggerOAuth2")
+
+instance ToJSON SwaggerSecuritySchemeType where
+  toJSON SwaggerSecuritySchemeBasic
+      = object [ "type" .= SwaggerSecuritySchemeTypeBasic ]
+  toJSON (SwaggerSecuritySchemeApiKey params)
+      = toJSON params
+    <+> object [ "type" .= SwaggerSecuritySchemeTypeApiKey ]
+  toJSON (SwaggerSecuritySchemeOAuth2 params)
+      = toJSON params
+    <+> object [ "type" .= SwaggerSecuritySchemeTypeOAuth2 ]
+
+instance ToJSON Swagger where
+  toJSON = addVersion . genericToJSON (jsonPrefix "swagger")
+    where
+      addVersion (Object o) = Object (HashMap.insert "swagger" "2.0" o)
+      addVersion _ = error "impossible"
+
+instance ToJSON SwaggerSecurityScheme where
+  toJSON = genericToJSONWithSub "type" (jsonPrefix "swaggerSecurityScheme")
+
+instance ToJSON SwaggerSchema where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerSchema")
+
+instance ToJSON SwaggerHeader where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerHeader")
+
+instance ToJSON SwaggerItems where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerItems")
 
