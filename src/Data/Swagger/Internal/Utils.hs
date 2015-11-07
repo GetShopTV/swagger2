@@ -24,10 +24,10 @@ jsonPrefix prefix = defaultOptions
   , sumEncoding             = ObjectWithSingleField
   }
   where
-    modifier = lowerFirstLetter . drop (length prefix)
+    modifier = lowerFirstUppers . drop (length prefix)
 
-    lowerFirstLetter (c:s) = toLower c : s
-    lowerFirstLetter s = s
+    lowerFirstUppers s = map toLower x ++ y
+      where (x, y) = span isUpper s
 
 deriveToJSONDefault :: Name -> Q [Dec]
 deriveToJSONDefault = deriveToJSON defaultOptions
