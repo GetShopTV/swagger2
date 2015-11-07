@@ -43,6 +43,8 @@ test-suite spec
                   , text
                   , aeson
                   , aeson-qq
+                  , unordered-containers
+                  , vector
   other-modules:
     Data.SwaggerSpec
   default-language: Haskell2010
