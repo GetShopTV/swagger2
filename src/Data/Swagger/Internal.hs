@@ -358,13 +358,12 @@ type SwaggerFormat = Text
 -- | Determines the format of the array.
 data SwaggerCollectionFormat
   = SwaggerCollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | SwaggerCollectionSSV   -- ^ Space separated values @foo bar@.
-  | SwaggerCollectionTSV   -- ^ Tab separated values @foo\\tbar@.
-  | SwaggerCollectionPipes -- ^ Pipe separated values @foo|bar@.
-    -- | Corresponds to multiple parameter instances
-    -- instead of multiple values for a single instance @foo=bar&foo=baz@.
-    -- This is valid only for parameters in @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@.
-  | SwaggerCollectionMulti
+  | SwaggerCollectionSSV   -- ^ Space separated values: @foo bar@.
+  | SwaggerCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
+  | SwaggerCollectionPipes -- ^ Pipe separated values: @foo|bar@.
+  | SwaggerCollectionMulti -- ^ Corresponds to multiple parameter instances
+                           -- instead of multiple values for a single instance @foo=bar&foo=baz@.
+                           -- This is valid only for parameters in @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@.
   deriving (Show)
 
 data SwaggerItemsType
@@ -388,9 +387,9 @@ data SwaggerSchemaType
 -- | Determines the format of the nested array.
 data SwaggerItemsCollectionFormat
   = SwaggerItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | SwaggerItemsCollectionSSV   -- ^ Space separated values @foo bar@.
-  | SwaggerItemsCollectionTSV   -- ^ Tab separated values @foo\\tbar@.
-  | SwaggerItemsCollectionPipes -- ^ Pipe separated values @foo|bar@.
+  | SwaggerItemsCollectionSSV   -- ^ Space separated values: @foo bar@.
+  | SwaggerItemsCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
+  | SwaggerItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
   deriving (Show)
 
 data SwaggerSchema = SwaggerSchema
