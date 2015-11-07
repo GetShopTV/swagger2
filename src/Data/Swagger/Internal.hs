@@ -380,13 +380,13 @@ data SwaggerItemsCollectionFormat
 
 data SwaggerSchema = SwaggerSchema
   { swaggerSchemaType :: SwaggerSchemaType
-  , swaggerSchemaFormat :: SwaggerFormat
+  , swaggerSchemaFormat :: Maybe SwaggerFormat
   , swaggerSchemaTitle :: Maybe Text
   , swaggerSchemaDescription :: Maybe Text
   , swaggerSchemaRequired :: Maybe Bool
 
-  , swaggerSchemaItems :: SwaggerSchemaItems
-  , swaggerSchemaAllOf :: [SwaggerSchema]
+  , swaggerSchemaItems :: Maybe SwaggerSchemaItems
+  , swaggerSchemaAllOf :: Maybe [SwaggerSchema]
   , swaggerSchemaProperties :: HashMap Text SwaggerSchema
   , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
 
@@ -769,6 +769,7 @@ instance FromJSON SwaggerSecurityScheme where
 
 instance FromJSON SwaggerSchema where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerSchema")
+    `withDefaults` [ "properties" .= (mempty :: HashMap Text SwaggerSchema) ]
 
 instance FromJSON SwaggerHeader where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerHeader")
