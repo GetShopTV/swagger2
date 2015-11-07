@@ -2,6 +2,7 @@
 module Data.Swagger.Internal.Utils where
 
 import Control.Arrow (first)
+import Control.Applicative
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types (Parser)
@@ -11,11 +12,21 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Monoid
 import Data.Text (Text)
+import Data.Traversable
 import GHC.Generics
 import Language.Haskell.TH
+import Text.Read (readMaybe)
 
 hashMapMapKeys :: (Eq k', Hashable k') => (k -> k') -> HashMap k v -> HashMap k' v
 hashMapMapKeys f = HashMap.fromList . map (first f) . HashMap.toList
+
+hashMapTraverseKeys :: (Eq k', Hashable k', Applicative f) => (k -> f k') -> HashMap k v -> f (HashMap k' v)
+hashMapTraverseKeys f = fmap HashMap.fromList . traverse g . HashMap.toList
+  where
+    g (x, y) = (\a -> (a, y)) <$> f x
+
+hashMapReadKeys :: (Eq k, Read k, Hashable k, Alternative f) => HashMap String v -> f (HashMap k v)
+hashMapReadKeys = hashMapTraverseKeys (maybe empty pure . readMaybe)
 
 jsonPrefix :: String -> Options
 jsonPrefix prefix = defaultOptions

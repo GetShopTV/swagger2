@@ -22,6 +22,7 @@ library
     Data.Swagger.Internal.Utils
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , containers
                      , hashable
                      , http-media
                      , network

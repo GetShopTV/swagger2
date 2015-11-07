@@ -3,20 +3,28 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Internal where
 
+import           Control.Applicative
+import           Control.Monad
 import           Data.Aeson
-import           Data.Aeson.TH            (deriveToJSON)
+import           Data.Aeson.TH            (deriveJSON)
 import           Data.Foldable            (Foldable)
 import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
+import           Data.Map                 (Map)
+import qualified Data.Map                 as Map
+import           Data.String              (fromString)
 import           Data.Text                (Text)
+import qualified Data.Text                as Text
 import           Data.Traversable         (Traversable)
 import           Data.Hashable            (Hashable)
 import           GHC.Generics             (Generic)
 import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
+import           Text.Read                (readMaybe)
 
 import Data.Swagger.Internal.Utils
 
@@ -133,12 +141,6 @@ data SwaggerHost = SwaggerHost
   , swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
   } deriving (Show)
 
-instance ToJSON SwaggerHost where
-  toJSON (SwaggerHost host mport) = toJSON $
-    case mport of
-      Nothing -> host
-      Just port -> host ++ ":" ++ show port
-
 -- | The transfer protocol of the API.
 data SwaggerScheme
   = Http
@@ -153,9 +155,6 @@ data SwaggerPaths = SwaggerPaths
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
     swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
   } deriving (Show)
-
-instance ToJSON SwaggerPaths where
-  toJSON (SwaggerPaths m) = toJSON m
 
 -- | Describes the operations available on a single path.
 -- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
@@ -253,9 +252,6 @@ data SwaggerOperation = SwaggerOperation
 newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
   deriving (Show)
 
-instance ToJSON SwaggerMimeList where
-  toJSON (SwaggerMimeList xs) = toJSON (map show xs)
-
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
 data SwaggerParameter = SwaggerParameter
@@ -277,17 +273,10 @@ data SwaggerParameter = SwaggerParameter
   , swaggerParameterSchema :: SwaggerParameterSchema
   } deriving (Show, Generic)
 
-instance ToJSON SwaggerParameter where
-  toJSON = genericToJSONWithSub "schema" (jsonPrefix "swaggerParameter")
-
 data SwaggerParameterSchema
   = SwaggerParameterBody SwaggerSchema
   | SwaggerParameterOther SwaggerParameterOtherSchema
   deriving (Show)
-
-instance ToJSON SwaggerParameterSchema where
-  toJSON (SwaggerParameterBody s) = toJSON s <+> object [ "in" .= ("body" :: Text) ]
-  toJSON (SwaggerParameterOther s) = toJSON s
 
 data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
   { -- | The location of the parameter.
@@ -320,9 +309,6 @@ data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
 
   , swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
   } deriving (Show, Generic)
-
-instance ToJSON SwaggerParameterOtherSchema where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
 
 data SwaggerParameterType
   = SwaggerParamString
@@ -421,10 +407,6 @@ data SwaggerSchemaItems
   | SwaggerSchemaItemsArray [SwaggerSchema]
   deriving (Show)
 
-instance ToJSON SwaggerSchemaItems where
-  toJSON (SwaggerSchemaItemsObject x) = toJSON x
-  toJSON (SwaggerSchemaItemsArray xs) = toJSON xs
-
 data SwaggerSchemaCommon = SwaggerSchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
@@ -508,11 +490,6 @@ data SwaggerResponses = SwaggerResponses
   , swaggerResponsesResponses :: HashMap HttpStatusCode SwaggerResponse
   } deriving (Show)
 
-instance ToJSON SwaggerResponses where
-  toJSON (SwaggerResponses def rs) = object
-    [ "default"   .= def
-    , "responses" .= hashMapMapKeys show rs ]
-
 type HttpStatusCode = Int
 
 -- | Describes a single response from an API Operation.
@@ -558,11 +535,8 @@ data SwaggerHeader = SwaggerHeader
   , swaggerHeaderCommon :: SwaggerSchemaCommon
   } deriving (Show, Generic)
 
-data SwaggerExample = SwaggerExample { getSwaggerExample :: HashMap MediaType Value }
+data SwaggerExample = SwaggerExample { getSwaggerExample :: Map MediaType Value }
   deriving (Show)
-
-instance ToJSON SwaggerExample where
-  toJSON = toJSON . hashMapMapKeys show . getSwaggerExample
 
 -- | The location of the API key.
 data SwaggerApiKeyLocation
@@ -611,10 +585,16 @@ data SwaggerSecuritySchemeTypeName
   | SwaggerSecuritySchemeTypeOAuth2
   deriving (Eq, Read, Show, Generic)
 
-swaggerSecuritySchemeTypeNameText :: SwaggerSecuritySchemeTypeName -> Text
-swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeBasic  = "basic"
-swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeApiKey = "apiKey"
-swaggerSecuritySchemeTypeNameText SwaggerSecuritySchemeTypeOAuth2 = "oauth2"
+swaggerSecuritySchemeTypeNameToText :: SwaggerSecuritySchemeTypeName -> Text
+swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeBasic  = "basic"
+swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeApiKey = "apiKey"
+swaggerSecuritySchemeTypeNameToText SwaggerSecuritySchemeTypeOAuth2 = "oauth2"
+
+swaggerSecuritySchemeTypeNameFromText :: Alternative f => Text -> f SwaggerSecuritySchemeTypeName
+swaggerSecuritySchemeTypeNameFromText "basic"  = pure SwaggerSecuritySchemeTypeBasic
+swaggerSecuritySchemeTypeNameFromText "apiKey" = pure SwaggerSecuritySchemeTypeApiKey
+swaggerSecuritySchemeTypeNameFromText "oauth2" = pure SwaggerSecuritySchemeTypeOAuth2
+swaggerSecuritySchemeTypeNameFromText _ = empty
 
 instance Hashable SwaggerSecuritySchemeTypeName
 
@@ -632,9 +612,6 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
   { getSwaggerSecurityRequirement :: HashMap SwaggerSecuritySchemeTypeName Text
   } deriving (Eq, Read, Show, Monoid)
-
-instance ToJSON SwaggerSecurityRequirement where
-  toJSON (SwaggerSecurityRequirement m) = toJSON (hashMapMapKeys swaggerSecuritySchemeTypeNameText m)
 
 -- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
@@ -662,26 +639,34 @@ data SwaggerExternalDocs = SwaggerExternalDocs
 
 newtype URL = URL { getUrl :: Text } deriving (Show, ToJSON, FromJSON)
 
-deriveToJSON' ''SwaggerOperation
-deriveToJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
-deriveToJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
-deriveToJSON' ''SwaggerPathItem
-deriveToJSON' ''SwaggerInfo
-deriveToJSON' ''SwaggerContact
-deriveToJSON' ''SwaggerLicense
-deriveToJSON (jsonPrefix "SwaggerSchema") ''SwaggerSchemaType
-deriveToJSON (jsonPrefix "SwaggerItems") ''SwaggerItemsType
-deriveToJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
-deriveToJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
-deriveToJSON (jsonPrefix "SwaggerSecuritySchemeType") ''SwaggerSecuritySchemeTypeName
-deriveToJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
-deriveToJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
-deriveToJSON' ''SwaggerResponse
-deriveToJSON' ''SwaggerSchemaCommon
-deriveToJSONDefault ''SwaggerScheme
-deriveToJSON' ''SwaggerTag
-deriveToJSON' ''SwaggerExternalDocs
-deriveToJSON' ''SwaggerXml
+-- =======================================================================
+-- TH derived ToJSON and FromJSON instances
+-- =======================================================================
+
+deriveJSON' ''SwaggerOperation
+deriveJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
+deriveJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
+deriveJSON' ''SwaggerPathItem
+deriveJSON' ''SwaggerInfo
+deriveJSON' ''SwaggerContact
+deriveJSON' ''SwaggerLicense
+deriveJSON (jsonPrefix "SwaggerSchema") ''SwaggerSchemaType
+deriveJSON (jsonPrefix "SwaggerItems") ''SwaggerItemsType
+deriveJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
+deriveJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
+deriveJSON (jsonPrefix "SwaggerSecuritySchemeType") ''SwaggerSecuritySchemeTypeName
+deriveJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
+deriveJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
+deriveJSON' ''SwaggerResponse
+deriveJSON' ''SwaggerSchemaCommon
+deriveJSONDefault ''SwaggerScheme
+deriveJSON' ''SwaggerTag
+deriveJSON' ''SwaggerExternalDocs
+deriveJSON' ''SwaggerXml
+
+-- =======================================================================
+-- Manual ToJSON instances
+-- =======================================================================
 
 instance ToJSON SwaggerOAuth2Flow where
   toJSON (SwaggerOAuth2Implicit authUrl) = object
@@ -728,4 +713,140 @@ instance ToJSON SwaggerHeader where
 
 instance ToJSON SwaggerItems where
   toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerItems")
+
+instance ToJSON SwaggerHost where
+  toJSON (SwaggerHost host mport) = toJSON $
+    case mport of
+      Nothing -> host
+      Just port -> host ++ ":" ++ show port
+
+instance ToJSON SwaggerPaths where
+  toJSON (SwaggerPaths m) = toJSON m
+
+instance ToJSON SwaggerMimeList where
+  toJSON (SwaggerMimeList xs) = toJSON (map show xs)
+
+instance ToJSON SwaggerParameter where
+  toJSON = genericToJSONWithSub "schema" (jsonPrefix "swaggerParameter")
+
+instance ToJSON SwaggerParameterSchema where
+  toJSON (SwaggerParameterBody s) = toJSON s <+> object [ "in" .= ("body" :: Text) ]
+  toJSON (SwaggerParameterOther s) = toJSON s
+
+instance ToJSON SwaggerParameterOtherSchema where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
+
+instance ToJSON SwaggerSchemaItems where
+  toJSON (SwaggerSchemaItemsObject x) = toJSON x
+  toJSON (SwaggerSchemaItemsArray xs) = toJSON xs
+
+instance ToJSON SwaggerResponses where
+  toJSON (SwaggerResponses def rs) = object
+    [ "default"   .= def
+    , "responses" .= hashMapMapKeys show rs ]
+
+instance ToJSON SwaggerExample where
+  toJSON = toJSON . Map.mapKeys show . getSwaggerExample
+
+instance ToJSON SwaggerSecurityRequirement where
+  toJSON (SwaggerSecurityRequirement m) = toJSON (hashMapMapKeys swaggerSecuritySchemeTypeNameToText m)
+
+-- =======================================================================
+-- Manual FromJSON instances
+-- =======================================================================
+
+instance FromJSON SwaggerOAuth2Flow where
+  parseJSON (Object o) = do
+    (flow :: Text) <- o .: "flow"
+    case flow of
+      "implicit"    -> SwaggerOAuth2Implicit    <$> o .: "authorizationUrl"
+      "password"    -> SwaggerOAuth2Password    <$> o .: "tokenUrl"
+      "application" -> SwaggerOAuth2Application <$> o .: "tokenUrl"
+      "accessCode"  -> SwaggerOAuth2AccessCode
+        <$> o .: "authorizationUrl"
+        <*> o .: "tokenUrl"
+      _ -> empty
+  parseJSON _ = empty
+
+instance FromJSON SwaggerOAuth2Params where
+  parseJSON = genericParseJSONWithSub "flow" (jsonPrefix "swaggerOAuth2")
+
+instance FromJSON SwaggerSecuritySchemeType where
+  parseJSON json@(Object o) = do
+    t <- o .: "type"
+    case t of
+      SwaggerSecuritySchemeTypeBasic  -> pure SwaggerSecuritySchemeBasic
+      SwaggerSecuritySchemeTypeApiKey -> SwaggerSecuritySchemeApiKey <$> parseJSON json
+      SwaggerSecuritySchemeTypeOAuth2 -> SwaggerSecuritySchemeOAuth2 <$> parseJSON json
+  parseJSON _ = empty
+
+instance FromJSON Swagger where
+  parseJSON json@(Object o) = do
+    (version :: Text) <- o .: "swagger"
+    when (version /= "2.0") empty
+    genericParseJSON (jsonPrefix "swagger") json
+  parseJSON _ = empty
+
+instance FromJSON SwaggerSecurityScheme where
+  parseJSON = genericParseJSONWithSub "type" (jsonPrefix "swaggerSecurityScheme")
+
+instance FromJSON SwaggerSchema where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerSchema")
+
+instance FromJSON SwaggerHeader where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerHeader")
+
+instance FromJSON SwaggerItems where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerItems")
+
+instance FromJSON SwaggerHost where
+  parseJSON (String s) =
+    case fromInteger <$> readMaybe portStr of
+      Nothing | not (null portStr) -> empty
+      mport -> pure $ SwaggerHost host mport
+    where
+      (hostText, portText) = Text.breakOnEnd ":" s
+      [host, portStr] = map Text.unpack [hostText, portText]
+  parseJSON _ = empty
+
+instance FromJSON SwaggerPaths where
+  parseJSON json = SwaggerPaths <$> parseJSON json
+
+instance FromJSON SwaggerMimeList where
+  parseJSON json = (SwaggerMimeList . map fromString) <$> parseJSON json
+
+instance FromJSON SwaggerParameter where
+  parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "swaggerParameter")
+
+instance FromJSON SwaggerParameterSchema where
+  parseJSON json@(Object o) = do
+    (i :: Text) <- o .: "in"
+    case i of
+      "body" -> SwaggerParameterBody <$> parseJSON json
+      _ -> SwaggerParameterOther <$> parseJSON json
+  parseJSON _ = empty
+
+instance FromJSON SwaggerParameterOtherSchema where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
+
+instance FromJSON SwaggerSchemaItems where
+  parseJSON json@(Object _) = SwaggerSchemaItemsObject <$> parseJSON json
+  parseJSON json@(Array _) = SwaggerSchemaItemsArray <$> parseJSON json
+  parseJSON _ = empty
+
+instance FromJSON SwaggerResponses where
+  parseJSON (Object o) = SwaggerResponses
+    <$> o .: "default"
+    <*> (parseJSON (Object (HashMap.delete "default" o)) >>= hashMapReadKeys)
+  parseJSON _ = empty
+
+instance FromJSON SwaggerExample where
+  parseJSON json = do
+    m <- parseJSON json
+    pure $ SwaggerExample (Map.mapKeys fromString m)
+
+instance FromJSON SwaggerSecurityRequirement where
+  parseJSON json = do
+    m <- parseJSON json
+    SwaggerSecurityRequirement <$> hashMapTraverseKeys swaggerSecuritySchemeTypeNameFromText m
 
