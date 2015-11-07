@@ -247,7 +247,7 @@ data SwaggerOperation = SwaggerOperation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
   deriving (Eq, Show)
@@ -510,7 +510,7 @@ data SwaggerResponse = SwaggerResponse
 
     -- | An example of the response message.
   , swaggerResponseExamples :: Maybe SwaggerExample
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 type HeaderName = Text
 
@@ -624,7 +624,6 @@ newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
 -- TH derived ToJSON and FromJSON instances
 -- =======================================================================
 
-deriveJSON' ''SwaggerOperation
 deriveJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
 deriveJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
 deriveJSON' ''SwaggerPathItem
@@ -637,12 +636,14 @@ deriveJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
 deriveJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
 deriveJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
 deriveJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
-deriveJSON' ''SwaggerResponse
-deriveJSON' ''SwaggerSchemaCommon
+deriveJSON (jsonPrefix "swaggerSchema") ''SwaggerSchemaCommon
 deriveJSONDefault ''SwaggerScheme
 deriveJSON' ''SwaggerTag
 deriveJSON' ''SwaggerExternalDocs
 deriveJSON' ''SwaggerXml
+
+deriveToJSON' ''SwaggerOperation
+deriveToJSON' ''SwaggerResponse
 
 -- =======================================================================
 -- Manual ToJSON instances
@@ -721,9 +722,7 @@ instance ToJSON SwaggerSchemaItems where
   toJSON (SwaggerSchemaItemsArray xs) = toJSON xs
 
 instance ToJSON SwaggerResponses where
-  toJSON (SwaggerResponses def rs) = object
-    [ "default"   .= def
-    , "responses" .= hashMapMapKeys show rs ]
+  toJSON (SwaggerResponses def rs) = toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
 
 instance ToJSON SwaggerExample where
   toJSON = toJSON . Map.mapKeys show . getSwaggerExample
@@ -795,6 +794,7 @@ instance FromJSON SwaggerMimeList where
 
 instance FromJSON SwaggerParameter where
   parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "swaggerParameter")
+    `withDefaults` [ "required" .= False ]
 
 instance FromJSON SwaggerParameterSchema where
   parseJSON json@(Object o) = do
@@ -806,6 +806,7 @@ instance FromJSON SwaggerParameterSchema where
 
 instance FromJSON SwaggerParameterOtherSchema where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
+    `withDefaults` [ "allowEmptyValue" .= False ]
 
 instance FromJSON SwaggerSchemaItems where
   parseJSON json@(Object _) = SwaggerSchemaItemsObject <$> parseJSON json
@@ -814,7 +815,7 @@ instance FromJSON SwaggerSchemaItems where
 
 instance FromJSON SwaggerResponses where
   parseJSON (Object o) = SwaggerResponses
-    <$> o .: "default"
+    <$> o .:? "default"
     <*> (parseJSON (Object (HashMap.delete "default" o)) >>= hashMapReadKeys)
   parseJSON _ = empty
 
@@ -823,3 +824,10 @@ instance FromJSON SwaggerExample where
     m <- parseJSON json
     pure $ SwaggerExample (Map.mapKeys fromString m)
 
+instance FromJSON SwaggerResponse where
+  parseJSON = genericParseJSON (jsonPrefix "swaggerResponse")
+    `withDefaults` [ "headers" .= (mempty :: HashMap HeaderName SwaggerHeader) ]
+
+instance FromJSON SwaggerOperation where
+  parseJSON = genericParseJSON (jsonPrefix "swaggerOperation")
+    `withDefaults` [ "deprecated" .= False ]
