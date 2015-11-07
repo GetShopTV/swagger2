@@ -38,10 +38,12 @@ x <=> json = do
 
 spec :: Spec
 spec = do
-  describe "Operation Object" $ operationExample <~> operationExampleJSON
   describe "License Object" $ licenseExample <=> licenseExampleJSON
   describe "Contact Object" $ contactExample <=> contactExampleJSON
   describe "Info Object" $ infoExample <=> infoExampleJSON
+  describe "Operation Object" $ operationExample <~> operationExampleJSON
+  describe "Schema Object" $ do
+    context "Primitive Sample" $ schemaPrimitiveExample <~> schemaPrimitiveExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -183,21 +185,6 @@ operationExample = SwaggerOperation
       , swaggerParameterOtherSchemaCommon = emptySchemaCommon
       }
 
-    emptySchemaCommon = SwaggerSchemaCommon
-      { swaggerSchemaDefault = Nothing
-      , swaggerSchemaMaximum = Nothing
-      , swaggerSchemaExclusiveMaximum = Nothing
-      , swaggerSchemaMinimum = Nothing
-      , swaggerSchemaExclusiveMinimum = Nothing
-      , swaggerSchemaMaxLength = Nothing
-      , swaggerSchemaMinLength = Nothing
-      , swaggerSchemaPattern = Nothing
-      , swaggerSchemaMaxItems = Nothing
-      , swaggerSchemaMinItems = Nothing
-      , swaggerSchemaUniqueItems = Nothing
-      , swaggerSchemaEnum = Nothing
-      , swaggerSchemaMultipleOf = Nothing }
-
 operationExampleJSON :: Value
 operationExampleJSON = [aesonQQ|
 {
@@ -255,3 +242,52 @@ operationExampleJSON = [aesonQQ|
   ]
 }
 |]
+
+-- =======================================================================
+-- Schema object
+-- =======================================================================
+
+schemaPrimitiveExample :: SwaggerSchema
+schemaPrimitiveExample = SwaggerSchema
+  { swaggerSchemaType = SwaggerSchemaString
+  , swaggerSchemaFormat = Just "email"
+  , swaggerSchemaTitle = Nothing
+  , swaggerSchemaDescription = Nothing
+  , swaggerSchemaRequired = Nothing
+  , swaggerSchemaItems = Nothing
+  , swaggerSchemaAllOf = Nothing
+  , swaggerSchemaProperties = mempty
+  , swaggerSchemaAdditionalProperties = Nothing
+  , swaggerSchemaDiscriminator = Nothing
+  , swaggerSchemaReadOnly = Nothing
+  , swaggerSchemaXml = Nothing
+  , swaggerSchemaExternalDocs = Nothing
+  , swaggerSchemaExample = Nothing
+  , swaggerSchemaMaxProperties = Nothing
+  , swaggerSchemaMinProperties = Nothing
+  , swaggerSchemaCommon = emptySchemaCommon }
+
+schemaPrimitiveExampleJSON :: Value
+schemaPrimitiveExampleJSON = [aesonQQ|
+{
+    "type": "string",
+    "format": "email"
+}
+|]
+
+emptySchemaCommon :: SwaggerSchemaCommon
+emptySchemaCommon = SwaggerSchemaCommon
+  { swaggerSchemaDefault = Nothing
+  , swaggerSchemaMaximum = Nothing
+  , swaggerSchemaExclusiveMaximum = Nothing
+  , swaggerSchemaMinimum = Nothing
+  , swaggerSchemaExclusiveMinimum = Nothing
+  , swaggerSchemaMaxLength = Nothing
+  , swaggerSchemaMinLength = Nothing
+  , swaggerSchemaPattern = Nothing
+  , swaggerSchemaMaxItems = Nothing
+  , swaggerSchemaMinItems = Nothing
+  , swaggerSchemaUniqueItems = Nothing
+  , swaggerSchemaEnum = Nothing
+  , swaggerSchemaMultipleOf = Nothing }
+
