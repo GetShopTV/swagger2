@@ -1,15 +1,22 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Internal where
 
 import           Data.Aeson               (ToJSON, FromJSON)
 import qualified Data.Aeson               as JSON
+import           Data.Foldable            (Foldable)
 import           Data.HashMap.Strict      (HashMap)
 import           Data.Text                (Text)
+import           Data.Traversable         (Traversable)
 import           Data.Hashable            (Hashable)
 import           GHC.Generics             (Generic)
 import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
+
+import Data.Swagger.Internal.Utils
 
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
@@ -42,18 +49,18 @@ data Swagger = Swagger
   , swaggerPaths :: SwaggerPaths
 
     -- | An object to hold data types produced and consumed by operations.
-  , swaggerDefinitions :: HashMap Text SwaggerSchema
+  , swaggerDefinitions :: Definitions SwaggerSchema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , swaggerParameters :: HashMap Text SwaggerParameter
+  , swaggerParameters :: Definitions SwaggerParameter
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , swaggerResponses :: HashMap Text SwaggerResponse
+  , swaggerResponses :: Definitions SwaggerResponse
 
     -- | Security scheme definitions that can be used across the specification.
-  , swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
+  , swaggerSecurityDefinitions :: Definitions SwaggerSecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
@@ -386,7 +393,7 @@ data SwaggerSchema = SwaggerSchema
 
   , swaggerSchemaItems :: SwaggerSchemaItems
   , swaggerSchemaAllOf :: [SwaggerSchema]
-  , swaggerSchemaProperties :: HashMap Text SwaggerSchema
+  , swaggerSchemaProperties :: Definitions SwaggerSchema
   , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
 
   , swaggerSchemaDiscriminator :: Maybe Text
@@ -582,7 +589,7 @@ data SwaggerSecuritySchemeTypeName
   = SwaggerSecuritySchemeTypeBasic
   | SwaggerSecuritySchemeTypeApiKey
   | SwaggerSecuritySchemeTypeOAuth2
-  deriving (Show, Generic)
+  deriving (Eq, Read, Show, Generic)
 
 instance Hashable SwaggerSecuritySchemeTypeName
 
@@ -597,7 +604,9 @@ data SwaggerSecurityScheme = SwaggerSecurityScheme
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
-type SwaggerSecurityRequirement = HashMap SwaggerSecuritySchemeTypeName Text
+newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
+  { getSwaggerSecurityRequirement :: HashMap SwaggerSecuritySchemeTypeName Text
+  } deriving (Eq, Read, Show, Monoid)
 
 -- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
@@ -624,4 +633,7 @@ data SwaggerExternalDocs = SwaggerExternalDocs
   } deriving (Show)
 
 newtype URL = URL { getUrl :: Text } deriving (Show, ToJSON, FromJSON)
+
+newtype Definitions v = Definitions { getDefinitions :: HashMap Text v }
+  deriving (Eq, Read, Show, Monoid, Functor, Foldable, Traversable)
 
