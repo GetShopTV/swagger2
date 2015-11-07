@@ -4,8 +4,8 @@ import Data.Aeson.TH
 import Data.Char
 import Language.Haskell.TH
 
-jsonOptions :: String -> Options
-jsonOptions prefix = defaultOptions
+jsonPrefix :: String -> Options
+jsonPrefix prefix = defaultOptions
   { fieldLabelModifier      = modifier
   , constructorTagModifier  = modifier
   , sumEncoding             = ObjectWithSingleField
@@ -17,4 +17,4 @@ jsonOptions prefix = defaultOptions
     lowerFirstLetter s = s
 
 deriveJSON' :: Name -> Q [Dec]
-deriveJSON' name = deriveJSON (jsonOptions (nameBase name)) name
+deriveJSON' name = deriveJSON (jsonPrefix (nameBase name)) name
