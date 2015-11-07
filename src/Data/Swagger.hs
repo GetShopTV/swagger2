@@ -67,6 +67,10 @@ module Data.Swagger (
 
   -- * External documentation
   SwaggerExternalDocs(..),
+
+  -- * Miscellaneous
+  SwaggerMimeList(..),
+  URL(..),
 ) where
 
 import Data.Swagger.Internal
