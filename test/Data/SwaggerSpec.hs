@@ -50,6 +50,8 @@ spec = do
   describe "Info Object" $ do
     it "encodes correctly" $ do
       toJSON infoExample `shouldBe` infoExampleJSON
+    it "decodes correctly" $ do
+      fromJSON infoExampleJSON `shouldBe` Success infoExample
 
 main :: IO ()
 main = hspec spec
