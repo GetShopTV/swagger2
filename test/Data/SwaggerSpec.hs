@@ -51,6 +51,7 @@ spec = do
   describe "Definitions Object" $ definitionsExample <~> definitionsExampleJSON
   describe "Parameters Definition Object" $ parametersDefinitionExample <~> parametersDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <~> responsesDefinitionExampleJSON
+  describe "Security Definitions Object" $ securityDefinitionsExample <~> securityDefinitionsExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -455,6 +456,43 @@ responsesDefinitionExampleJSON = [aesonQQ|
   },
   "IllegalInput": {
     "description": "Illegal input for operation."
+  }
+}
+|]
+
+-- =======================================================================
+-- Responses Definition object
+-- =======================================================================
+
+securityDefinitionsExample :: HashMap Text SwaggerSecurityScheme
+securityDefinitionsExample =
+  [ ("api_key", SwaggerSecurityScheme
+      { swaggerSecuritySchemeType = SwaggerSecuritySchemeApiKey (SwaggerApiKeyParams "api_key" SwaggerApiKeyHeader)
+      , swaggerSecuritySchemeDescription = Nothing })
+  , ("petstore_auth", SwaggerSecurityScheme
+      { swaggerSecuritySchemeType = SwaggerSecuritySchemeOAuth2 (SwaggerOAuth2Params
+          { swaggerOAuth2Flow = SwaggerOAuth2Implicit "http://swagger.io/api/oauth/dialog"
+          , swaggerOAuth2Scopes =
+              [ ("write:pets",  "modify pets in your account")
+              , ("read:pets", "read your pets") ] } )
+      , swaggerSecuritySchemeDescription = Nothing }) ]
+
+securityDefinitionsExampleJSON :: Value
+securityDefinitionsExampleJSON = [aesonQQ|
+{
+  "api_key": {
+    "type": "apiKey",
+    "name": "api_key",
+    "in": "header"
+  },
+  "petstore_auth": {
+    "type": "oauth2",
+    "authorizationUrl": "http://swagger.io/api/oauth/dialog",
+    "flow": "implicit",
+    "scopes": {
+      "write:pets": "modify pets in your account",
+      "read:pets": "read your pets"
+    }
   }
 }
 |]
