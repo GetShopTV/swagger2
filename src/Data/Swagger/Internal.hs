@@ -381,12 +381,14 @@ data SwaggerItemsCollectionFormat
   | SwaggerItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
   deriving (Eq, Show)
 
+type SwaggerParamName = Text
+
 data SwaggerSchema = SwaggerSchema
   { swaggerSchemaType :: SwaggerSchemaType
   , swaggerSchemaFormat :: Maybe SwaggerFormat
   , swaggerSchemaTitle :: Maybe Text
   , swaggerSchemaDescription :: Maybe Text
-  , swaggerSchemaRequired :: Maybe Bool
+  , swaggerSchemaRequired :: [SwaggerParamName]
 
   , swaggerSchemaItems :: Maybe SwaggerSchemaItems
   , swaggerSchemaAllOf :: Maybe [SwaggerSchema]
@@ -889,7 +891,8 @@ instance FromJSON SwaggerSecurityScheme where
 
 instance FromJSON SwaggerSchema where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerSchema")
-    `withDefaults` [ "properties" .= (mempty :: HashMap Text SwaggerSchema) ]
+    `withDefaults` [ "properties" .= (mempty :: HashMap Text SwaggerSchema)
+                   , "required"   .= ([] :: [SwaggerParamName]) ]
 
 instance FromJSON SwaggerHeader where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerHeader")

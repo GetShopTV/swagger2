@@ -37,6 +37,7 @@ module Data.Swagger (
   SwaggerParameterSchema(..),
   SwaggerParameterOtherSchema(..),
   SwaggerParameterLocation(..),
+  SwaggerParamName(..),
   SwaggerItems(..),
   SwaggerHeader(..),
   SwaggerExample(..),
