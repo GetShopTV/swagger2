@@ -45,6 +45,7 @@ spec = do
     context "Primitive Sample" $ schemaPrimitiveExample <~> schemaPrimitiveExampleJSON
     context "Simple Model" $ schemaSimpleModelExample <~> schemaSimpleModelExampleJSON
     context "Model with Map/Dictionary Properties" $ schemaModelDictExample <~> schemaModelDictExampleJSON
+    context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -290,6 +291,46 @@ schemaModelDictExampleJSON = [aesonQQ|
   "type": "object",
   "additionalProperties": {
     "type": "string"
+  }
+}
+|]
+
+schemaWithExampleExample :: SwaggerSchema
+schemaWithExampleExample = mempty
+  { swaggerSchemaType = SwaggerSchemaObject
+  , swaggerSchemaProperties =
+      [ ("id", mempty
+            { swaggerSchemaType   = SwaggerSchemaInteger
+            , swaggerSchemaFormat = Just "int64" })
+      , ("name", mempty
+            { swaggerSchemaType = SwaggerSchemaString }) ]
+  , swaggerSchemaRequired = [ "name" ]
+  , swaggerSchemaExample = Just [aesonQQ|
+      {
+        "name": "Puma",
+        "id": 1
+      }
+    |] }
+
+schemaWithExampleExampleJSON :: Value
+schemaWithExampleExampleJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "format": "int64"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "example": {
+    "name": "Puma",
+    "id": 1
   }
 }
 |]
