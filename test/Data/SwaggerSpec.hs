@@ -126,7 +126,7 @@ licenseExampleJSON = [aesonQQ|
 -- =======================================================================
 
 operationExample :: SwaggerOperation
-operationExample = SwaggerOperation
+operationExample = mempty
   { swaggerOperationTags = ["pet"]
   , swaggerOperationSummary = Just "Updates a pet in the store with form data"
   , swaggerOperationDescription = Just ""
@@ -136,26 +136,14 @@ operationExample = SwaggerOperation
   , swaggerOperationParameters = params
   , swaggerOperationResponses = responses
   , swaggerOperationSecurity = security
-  , swaggerOperationExternalDocs = Nothing
-  , swaggerOperationSchemes = Nothing
-  , swaggerOperationDeprecated = False
   }
   where
     security = [SwaggerSecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
 
-    responses = SwaggerResponses
-      { swaggerResponsesDefault = Nothing
-      , swaggerResponsesResponses =
-          [ (200, SwaggerResponse
-                    { swaggerResponseDescription = "Pet updated."
-                    , swaggerResponseSchema = Nothing
-                    , swaggerResponseHeaders = mempty
-                    , swaggerResponseExamples = Nothing } )
-          , (405, SwaggerResponse
-                    { swaggerResponseDescription = "Invalid input"
-                    , swaggerResponseSchema = Nothing
-                    , swaggerResponseHeaders = mempty
-                    , swaggerResponseExamples = Nothing } ) ] }
+    responses = mempty
+      { swaggerResponsesResponses =
+          [ (200, mempty { swaggerResponseDescription = "Pet updated." })
+          , (405, mempty { swaggerResponseDescription = "Invalid input" }) ] }
 
     params =
       [ SwaggerParameter
@@ -175,14 +163,9 @@ operationExample = SwaggerOperation
           , swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterFormData) }
       ]
 
-    stringSchema i = SwaggerParameterOtherSchema
+    stringSchema i = mempty
       { swaggerParameterOtherSchemaIn = i
       , swaggerParameterOtherSchemaType = SwaggerParamString
-      , swaggerParameterOtherSchemaFormat = Nothing
-      , swaggerParameterOtherSchemaAllowEmptyValue = False
-      , swaggerParameterOtherSchemaItems = Nothing
-      , swaggerParameterOtherSchemaCollectionFormat = Nothing
-      , swaggerParameterOtherSchemaCommon = emptySchemaCommon
       }
 
 operationExampleJSON :: Value
@@ -248,24 +231,10 @@ operationExampleJSON = [aesonQQ|
 -- =======================================================================
 
 schemaPrimitiveExample :: SwaggerSchema
-schemaPrimitiveExample = SwaggerSchema
+schemaPrimitiveExample = mempty
   { swaggerSchemaType = SwaggerSchemaString
   , swaggerSchemaFormat = Just "email"
-  , swaggerSchemaTitle = Nothing
-  , swaggerSchemaDescription = Nothing
-  , swaggerSchemaRequired = Nothing
-  , swaggerSchemaItems = Nothing
-  , swaggerSchemaAllOf = Nothing
-  , swaggerSchemaProperties = mempty
-  , swaggerSchemaAdditionalProperties = Nothing
-  , swaggerSchemaDiscriminator = Nothing
-  , swaggerSchemaReadOnly = Nothing
-  , swaggerSchemaXml = Nothing
-  , swaggerSchemaExternalDocs = Nothing
-  , swaggerSchemaExample = Nothing
-  , swaggerSchemaMaxProperties = Nothing
-  , swaggerSchemaMinProperties = Nothing
-  , swaggerSchemaCommon = emptySchemaCommon }
+  }
 
 schemaPrimitiveExampleJSON :: Value
 schemaPrimitiveExampleJSON = [aesonQQ|
@@ -274,20 +243,4 @@ schemaPrimitiveExampleJSON = [aesonQQ|
     "format": "email"
 }
 |]
-
-emptySchemaCommon :: SwaggerSchemaCommon
-emptySchemaCommon = SwaggerSchemaCommon
-  { swaggerSchemaDefault = Nothing
-  , swaggerSchemaMaximum = Nothing
-  , swaggerSchemaExclusiveMaximum = Nothing
-  , swaggerSchemaMinimum = Nothing
-  , swaggerSchemaExclusiveMinimum = Nothing
-  , swaggerSchemaMaxLength = Nothing
-  , swaggerSchemaMinLength = Nothing
-  , swaggerSchemaPattern = Nothing
-  , swaggerSchemaMaxItems = Nothing
-  , swaggerSchemaMinItems = Nothing
-  , swaggerSchemaUniqueItems = Nothing
-  , swaggerSchemaEnum = Nothing
-  , swaggerSchemaMultipleOf = Nothing }
 
