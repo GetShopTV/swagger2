@@ -5,9 +5,11 @@ module Data.SwaggerSpec where
 
 import Data.Aeson
 import Data.Aeson.QQ
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe
 import qualified Data.Vector as Vector
+import Data.Text (Text)
 
 import Data.Swagger
 
@@ -46,6 +48,7 @@ spec = do
     context "Simple Model" $ schemaSimpleModelExample <~> schemaSimpleModelExampleJSON
     context "Model with Map/Dictionary Properties" $ schemaModelDictExample <~> schemaModelDictExampleJSON
     context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
+  describe "Schema Object" $ definitionsExample <~> definitionsExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -331,6 +334,59 @@ schemaWithExampleExampleJSON = [aesonQQ|
   "example": {
     "name": "Puma",
     "id": 1
+  }
+}
+|]
+
+-- =======================================================================
+-- Definitions object
+-- =======================================================================
+
+definitionsExample :: HashMap Text SwaggerSchema
+definitionsExample =
+  [ ("Category", mempty
+      { swaggerSchemaType = SwaggerSchemaObject
+      , swaggerSchemaProperties =
+          [ ("id", mempty
+              { swaggerSchemaType = SwaggerSchemaInteger
+              , swaggerSchemaFormat = Just "int64" })
+          , ("name", mempty
+              { swaggerSchemaType = SwaggerSchemaString }) ] })
+  , ("Tag", mempty
+      { swaggerSchemaType = SwaggerSchemaObject
+      , swaggerSchemaProperties =
+          [ ("id", mempty
+              { swaggerSchemaType = SwaggerSchemaInteger
+              , swaggerSchemaFormat = Just "int64" })
+          , ("name", mempty
+              { swaggerSchemaType = SwaggerSchemaString }) ] }) ]
+
+definitionsExampleJSON :: Value
+definitionsExampleJSON = [aesonQQ|
+{
+  "Category": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int64"
+      },
+      "name": {
+        "type": "string"
+      }
+    }
+  },
+  "Tag": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer",
+        "format": "int64"
+      },
+      "name": {
+        "type": "string"
+      }
+    }
   }
 }
 |]
