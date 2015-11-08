@@ -89,7 +89,7 @@ data Swagger = Swagger
   , swaggerTags :: [SwaggerTag]
 
     -- | Additional external documentation.
-  , swaggerExternalDocs :: SwaggerExternalDocs
+  , swaggerExternalDocs :: Maybe SwaggerExternalDocs
   } deriving (Eq, Show, Generic)
 
 -- | The object provides metadata about the API.
@@ -748,7 +748,6 @@ instance SwaggerMonoid SwaggerParameterSchema where
 
 deriveJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
 deriveJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
-deriveJSON' ''SwaggerPathItem
 deriveJSON' ''SwaggerInfo
 deriveJSON' ''SwaggerContact
 deriveJSON' ''SwaggerLicense
@@ -766,6 +765,7 @@ deriveJSON' ''SwaggerXml
 
 deriveToJSON' ''SwaggerOperation
 deriveToJSON' ''SwaggerResponse
+deriveToJSON' ''SwaggerPathItem
 
 -- =======================================================================
 -- Manual ToJSON instances
@@ -883,7 +883,16 @@ instance FromJSON Swagger where
   parseJSON json@(Object o) = do
     (version :: Text) <- o .: "swagger"
     when (version /= "2.0") empty
-    genericParseJSON (jsonPrefix "swagger") json
+    (genericParseJSON (jsonPrefix "swagger")
+      `withDefaults` [ "consumes" .= (mempty :: SwaggerMimeList)
+                     , "produces" .= (mempty :: SwaggerMimeList)
+                     , "security" .= ([] :: [SwaggerSecurityRequirement])
+                     , "tags" .= ([] :: [SwaggerTag])
+                     , "definitions" .= (mempty :: HashMap Text SwaggerSchema)
+                     , "parameters" .= (mempty :: HashMap Text SwaggerParameter)
+                     , "responses" .= (mempty :: HashMap Text SwaggerResponse)
+                     , "securityDefinitions" .= (mempty :: HashMap Text SwaggerSecurityScheme)
+                     ] ) json
   parseJSON _ = empty
 
 instance FromJSON SwaggerSecurityScheme where
@@ -954,5 +963,10 @@ instance FromJSON SwaggerResponse where
 
 instance FromJSON SwaggerOperation where
   parseJSON = genericParseJSON (jsonPrefix "swaggerOperation")
-    `withDefaults` [ "deprecated" .= False ]
+    `withDefaults` [ "deprecated" .= False
+                   , "security"   .= ([] :: [SwaggerSecurityRequirement]) ]
+
+instance FromJSON SwaggerPathItem where
+  parseJSON = genericParseJSON (jsonPrefix "swaggerPathItem")
+    `withDefaults` [ "parameters" .= ([] :: [SwaggerParameter]) ]
 

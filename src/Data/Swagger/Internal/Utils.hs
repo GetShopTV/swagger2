@@ -42,14 +42,11 @@ jsonPrefix prefix = defaultOptions
     lowerFirstUppers s = map toLower x ++ y
       where (x, y) = span isUpper s
 
-deriveToJSONDefault :: Name -> Q [Dec]
-deriveToJSONDefault = deriveToJSON defaultOptions
-
 deriveToJSON' :: Name -> Q [Dec]
 deriveToJSON' name = deriveToJSON (jsonPrefix (nameBase name)) name
 
 deriveJSONDefault :: Name -> Q [Dec]
-deriveJSONDefault = deriveJSON defaultOptions
+deriveJSONDefault = deriveJSON (jsonPrefix "")
 
 deriveJSON' :: Name -> Q [Dec]
 deriveJSON' name = deriveJSON (jsonPrefix (nameBase name)) name
