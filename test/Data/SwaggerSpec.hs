@@ -52,6 +52,7 @@ spec = do
   describe "Parameters Definition Object" $ parametersDefinitionExample <~> parametersDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <~> responsesDefinitionExampleJSON
   describe "Security Definitions Object" $ securityDefinitionsExample <~> securityDefinitionsExampleJSON
+  describe "Swagger Object" $ swaggerExample <~> swaggerExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -494,5 +495,116 @@ securityDefinitionsExampleJSON = [aesonQQ|
       "read:pets": "read your pets"
     }
   }
+}
+|]
+
+-- =======================================================================
+-- Swagger object
+-- =======================================================================
+
+swaggerExample :: Swagger
+swaggerExample = mempty
+  { swaggerBasePath = Just "/"
+  , swaggerSchemes = Just [Http]
+  , swaggerInfo = mempty
+      { swaggerInfoVersion = "1.0"
+      , swaggerInfoTitle = "Todo API"
+      , swaggerInfoLicense = Just SwaggerLicense
+          { swaggerLicenseName = "MIT"
+          , swaggerLicenseUrl = Just (URL "http://mit.com") }
+      , swaggerInfoDescription = Just "This is a an API that tests servant-swagger support for a Todo API" }
+  , swaggerPaths = mempty
+      { swaggerPathsMap =
+          [ ("/todo/{id}", mempty
+              { swaggerPathItemGet = Just mempty
+                  { swaggerOperationResponses = mempty
+                      { swaggerResponsesResponses =
+                          [ (200, mempty
+                              { swaggerResponseSchema = Just mempty
+                                { swaggerSchemaExample = Just [aesonQQ|
+                                    {
+                                      "created": 100,
+                                      "description": "get milk"
+                                    } |]
+                                , swaggerSchemaType = SwaggerSchemaObject
+                                , swaggerSchemaDescription = Just "This is some real Todo right here"
+                                , swaggerSchemaProperties =
+                                    [ ("created", mempty
+                                        { swaggerSchemaType = SwaggerSchemaInteger
+                                        , swaggerSchemaFormat = Just "int32" })
+                                    , ("description", mempty
+                                        { swaggerSchemaType = SwaggerSchemaString }) ] }
+                              , swaggerResponseDescription = "OK" }) ] }
+                  , swaggerOperationProduces = Just (SwaggerMimeList [ "application/json" ])
+                  , swaggerOperationParameters =
+                      [ mempty
+                          { swaggerParameterRequired = True
+                          , swaggerParameterName = "id"
+                          , swaggerParameterDescription = Just "TodoId param"
+                          , swaggerParameterSchema = SwaggerParameterOther mempty
+                              { swaggerParameterOtherSchemaIn = SwaggerParameterPath
+                              , swaggerParameterOtherSchemaType = SwaggerParamString } } ]
+                  , swaggerOperationTags = [ "todo" ] } }) ] } }
+
+swaggerExampleJSON :: Value
+swaggerExampleJSON = [aesonQQ|
+{
+    "swagger": "2.0",
+    "basePath": "/",
+    "schemes": [
+        "http"
+    ],
+    "info": {
+        "version": "1.0",
+        "title": "Todo API",
+        "license": {
+            "url": "http://mit.com",
+            "name": "MIT"
+        },
+        "description": "This is a an API that tests servant-swagger support for a Todo API"
+    },
+    "paths": {
+        "/todo/{id}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "schema": {
+                            "example": {
+                                "created": 100,
+                                "description": "get milk"
+                            },
+                            "type": "object",
+                            "description": "This is some real Todo right here",
+                            "properties": {
+                                "created": {
+                                    "format": "int32",
+                                    "type": "integer"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "required": true,
+                        "in": "path",
+                        "name": "id",
+                        "type": "string",
+                        "description": "TodoId param"
+                    }
+                ],
+                "tags": [
+                    "todo"
+                ]
+            }
+        }
+    }
 }
 |]
