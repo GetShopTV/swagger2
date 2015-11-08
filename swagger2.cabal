@@ -20,7 +20,7 @@ library
     Data.Swagger
     Data.Swagger.Internal
     Data.Swagger.Internal.Utils
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base == 4.*
                      , aeson
                      , containers
                      , hashable
