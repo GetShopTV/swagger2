@@ -48,7 +48,8 @@ spec = do
     context "Simple Model" $ schemaSimpleModelExample <~> schemaSimpleModelExampleJSON
     context "Model with Map/Dictionary Properties" $ schemaModelDictExample <~> schemaModelDictExampleJSON
     context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
-  describe "Schema Object" $ definitionsExample <~> definitionsExampleJSON
+  describe "Definitions Object" $ definitionsExample <~> definitionsExampleJSON
+  describe "Parameters Definition Object" $ parametersDefinitionExample <~> parametersDefinitionExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -387,6 +388,51 @@ definitionsExampleJSON = [aesonQQ|
         "type": "string"
       }
     }
+  }
+}
+|]
+
+-- =======================================================================
+-- Parameters Definition object
+-- =======================================================================
+
+parametersDefinitionExample :: HashMap Text SwaggerParameter
+parametersDefinitionExample =
+  [ ("skipParam", mempty
+      { swaggerParameterName = "skip"
+      , swaggerParameterDescription = Just "number of items to skip"
+      , swaggerParameterRequired = True
+      , swaggerParameterSchema = SwaggerParameterOther mempty
+          { swaggerParameterOtherSchemaIn = SwaggerParameterQuery
+          , swaggerParameterOtherSchemaType = SwaggerParamInteger
+          , swaggerParameterOtherSchemaFormat = Just "int32" } })
+  , ("limitParam", mempty
+      { swaggerParameterName = "limit"
+      , swaggerParameterDescription = Just "max records to return"
+      , swaggerParameterRequired = True
+      , swaggerParameterSchema = SwaggerParameterOther mempty
+          { swaggerParameterOtherSchemaIn = SwaggerParameterQuery
+          , swaggerParameterOtherSchemaType = SwaggerParamInteger
+          , swaggerParameterOtherSchemaFormat = Just "int32" } }) ]
+
+parametersDefinitionExampleJSON :: Value
+parametersDefinitionExampleJSON = [aesonQQ|
+{
+  "skipParam": {
+    "name": "skip",
+    "in": "query",
+    "description": "number of items to skip",
+    "required": true,
+    "type": "integer",
+    "format": "int32"
+  },
+  "limitParam": {
+    "name": "limit",
+    "in": "query",
+    "description": "max records to return",
+    "required": true,
+    "type": "integer",
+    "format": "int32"
   }
 }
 |]
