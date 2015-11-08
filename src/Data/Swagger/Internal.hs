@@ -1,9 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Internal where
 
@@ -16,6 +18,7 @@ import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
+import           Data.Monoid
 import           Data.String              (fromString)
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
@@ -112,7 +115,7 @@ data SwaggerInfo = SwaggerInfo
     -- | Provides the version of the application API
     -- (not to be confused with the specification version).
   , swaggerInfoVersion :: Text
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 -- | Contact information for the exposed API.
 data SwaggerContact = SwaggerContact
@@ -154,7 +157,7 @@ data SwaggerPaths = SwaggerPaths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
     swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 -- | Describes the operations available on a single path.
 -- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
@@ -187,7 +190,7 @@ data SwaggerPathItem = SwaggerPathItem
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
   , swaggerPathItemParameters :: [SwaggerParameter]
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 -- | Describes a single API operation on a path.
 data SwaggerOperation = SwaggerOperation
@@ -250,7 +253,7 @@ data SwaggerOperation = SwaggerOperation
   } deriving (Eq, Show, Generic)
 
 newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Monoid)
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
@@ -488,7 +491,7 @@ data SwaggerResponses = SwaggerResponses
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
   , swaggerResponsesResponses :: HashMap HttpStatusCode SwaggerResponse
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 type HttpStatusCode = Int
 
@@ -616,9 +619,126 @@ data SwaggerExternalDocs = SwaggerExternalDocs
 
     -- | The URL for the target documentation.
   , swaggerExternalDocsUrl :: URL
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
+
+-- =======================================================================
+-- Monoid instances
+-- =======================================================================
+
+instance Monoid Swagger where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerInfo where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerPaths where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerPathItem where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerSchema where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerSchemaCommon where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerParameter where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerParameterOtherSchema where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerResponses where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerResponse where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerExternalDocs where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid SwaggerOperation where
+  mempty = genericMempty
+  mappend = genericMappend
+
+-- =======================================================================
+-- SwaggerMonoid helper instances
+-- =======================================================================
+
+instance SwaggerMonoid SwaggerInfo
+instance SwaggerMonoid SwaggerPaths
+instance SwaggerMonoid SwaggerPathItem
+instance SwaggerMonoid SwaggerSchema
+instance SwaggerMonoid SwaggerSchemaCommon
+instance SwaggerMonoid SwaggerParameter
+instance SwaggerMonoid SwaggerParameterOtherSchema
+instance SwaggerMonoid SwaggerResponses
+instance SwaggerMonoid SwaggerResponse
+instance SwaggerMonoid SwaggerExternalDocs
+instance SwaggerMonoid SwaggerOperation
+
+instance SwaggerMonoid SwaggerMimeList
+deriving instance SwaggerMonoid URL
+
+instance SwaggerMonoid SwaggerSchemaType where
+  swaggerMempty = SwaggerSchemaNull
+  swaggerMappend _ y = y
+
+instance SwaggerMonoid SwaggerParameterType where
+  swaggerMempty = SwaggerParamString
+  swaggerMappend _ y = y
+
+instance SwaggerMonoid SwaggerParameterLocation where
+  swaggerMempty = SwaggerParameterQuery
+  swaggerMappend _ y = y
+
+instance SwaggerMonoid (HashMap Text SwaggerSchema) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = HashMap.unionWith mappend
+
+instance SwaggerMonoid (HashMap Text SwaggerParameter) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = HashMap.unionWith mappend
+
+instance SwaggerMonoid (HashMap Text SwaggerResponse) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = flip HashMap.union
+
+instance SwaggerMonoid (HashMap Text SwaggerSecurityScheme) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = flip HashMap.union
+
+instance SwaggerMonoid (HashMap FilePath SwaggerPathItem) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = HashMap.unionWith mappend
+
+instance SwaggerMonoid (HashMap HeaderName SwaggerHeader) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = flip HashMap.union
+
+instance SwaggerMonoid (HashMap HttpStatusCode SwaggerResponse) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = flip HashMap.union
+
+instance SwaggerMonoid SwaggerParameterSchema where
+  swaggerMempty = SwaggerParameterOther swaggerMempty
+  swaggerMappend (SwaggerParameterBody x) (SwaggerParameterBody y) = SwaggerParameterBody (swaggerMappend x y)
+  swaggerMappend (SwaggerParameterOther x) (SwaggerParameterOther y) = SwaggerParameterOther (swaggerMappend x y)
+  swaggerMappend _ y = y
 
 -- =======================================================================
 -- TH derived ToJSON and FromJSON instances
@@ -832,3 +952,4 @@ instance FromJSON SwaggerResponse where
 instance FromJSON SwaggerOperation where
   parseJSON = genericParseJSON (jsonPrefix "swaggerOperation")
     `withDefaults` [ "deprecated" .= False ]
+

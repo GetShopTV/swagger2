@@ -1,4 +1,6 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators #-}
 module Data.Swagger.Internal.Utils where
 
 import Control.Arrow (first)
@@ -73,4 +75,53 @@ _ <+> _ = error "impossible"
 withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
 withDefaults parser defs json@(Object _) = parser (json <+> object defs)
 withDefaults _ _ _ = empty
+
+genericMempty :: (Generic a, GMonoid (Rep a)) => a
+genericMempty = to gmempty
+
+genericMappend :: (Generic a, GMonoid (Rep a)) => a -> a -> a
+genericMappend x y = to (gmappend (from x) (from y))
+
+class GMonoid f where
+  gmempty :: f p
+  gmappend :: f p -> f p -> f p
+
+instance GMonoid U1 where
+  gmempty = U1
+  gmappend _ _ = U1
+
+instance (GMonoid f, GMonoid g) => GMonoid (f :*: g) where
+  gmempty = gmempty :*: gmempty
+  gmappend (a :*: x) (b :*: y) = gmappend a b :*: gmappend x y
+
+instance SwaggerMonoid a => GMonoid (K1 i a) where
+  gmempty = K1 swaggerMempty
+  gmappend (K1 x) (K1 y) = K1 (swaggerMappend x y)
+
+instance GMonoid f => GMonoid (M1 i t f) where
+  gmempty = M1 gmempty
+  gmappend (M1 x) (M1 y) = M1 (gmappend x y)
+
+class SwaggerMonoid m where
+  swaggerMempty :: m
+  swaggerMappend :: m -> m -> m
+  default swaggerMempty :: Monoid m => m
+  swaggerMempty = mempty
+  default swaggerMappend :: Monoid m => m -> m -> m
+  swaggerMappend = mappend
+
+instance SwaggerMonoid [a]
+
+instance SwaggerMonoid Text where
+  swaggerMempty = mempty
+  swaggerMappend _ y = y
+
+instance SwaggerMonoid (Maybe a) where
+  swaggerMempty = Nothing
+  swaggerMappend x Nothing = x
+  swaggerMappend _ y = y
+
+instance SwaggerMonoid Bool where
+  swaggerMempty = False
+  swaggerMappend _ y = y
 
