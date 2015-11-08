@@ -12,7 +12,6 @@ import qualified Data.Vector as Vector
 import Data.Swagger
 
 import Test.Hspec
-import Test.Hspec.HUnit
 
 isSubJSON :: Value -> Value -> Bool
 isSubJSON Null _ = True
@@ -44,6 +43,7 @@ spec = do
   describe "Operation Object" $ operationExample <~> operationExampleJSON
   describe "Schema Object" $ do
     context "Primitive Sample" $ schemaPrimitiveExample <~> schemaPrimitiveExampleJSON
+    context "Simple Model" $ schemaSimpleModelExample <~> schemaSimpleModelExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -244,3 +244,35 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 }
 |]
 
+schemaSimpleModelExample :: SwaggerSchema
+schemaSimpleModelExample = mempty
+  { swaggerSchemaType = SwaggerSchemaObject
+  , swaggerSchemaRequired = [ "name" ]
+  , swaggerSchemaProperties =
+      [ ("name", mempty
+            { swaggerSchemaType = SwaggerSchemaString } )
+      , ("age", mempty
+            { swaggerSchemaType = SwaggerSchemaInteger
+            , swaggerSchemaFormat = Just "int32"
+            , swaggerSchemaCommon = mempty
+                { swaggerSchemaMinimum = Just 0 } } ) ] }
+
+schemaSimpleModelExampleJSON :: Value
+schemaSimpleModelExampleJSON = [aesonQQ|
+{
+  "type": "object",
+  "required": [
+    "name"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer",
+      "format": "int32",
+      "minimum": 0
+    }
+  }
+}
+|]
