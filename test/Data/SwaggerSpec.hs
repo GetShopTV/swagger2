@@ -50,6 +50,7 @@ spec = do
     context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
   describe "Definitions Object" $ definitionsExample <~> definitionsExampleJSON
   describe "Parameters Definition Object" $ parametersDefinitionExample <~> parametersDefinitionExampleJSON
+  describe "Responses Definition Object" $ responsesDefinitionExample <~> responsesDefinitionExampleJSON
 
 main :: IO ()
 main = hspec spec
@@ -433,6 +434,27 @@ parametersDefinitionExampleJSON = [aesonQQ|
     "required": true,
     "type": "integer",
     "format": "int32"
+  }
+}
+|]
+
+-- =======================================================================
+-- Responses Definition object
+-- =======================================================================
+
+responsesDefinitionExample :: HashMap Text SwaggerResponse
+responsesDefinitionExample =
+  [ ("NotFound", mempty { swaggerResponseDescription = "Entity not found." })
+  , ("IllegalInput", mempty { swaggerResponseDescription = "Illegal input for operation." }) ]
+
+responsesDefinitionExampleJSON :: Value
+responsesDefinitionExampleJSON = [aesonQQ|
+{
+  "NotFound": {
+    "description": "Entity not found."
+  },
+  "IllegalInput": {
+    "description": "Illegal input for operation."
   }
 }
 |]
