@@ -262,6 +262,7 @@ schemaSimpleModelExample = mempty
   , swaggerSchemaProperties =
       [ ("name", SwaggerInline mempty
             { swaggerSchemaType = SwaggerSchemaString } )
+      , ("address", SwaggerRef (SwaggerReference "#/definitions/Address"))
       , ("age", SwaggerInline mempty
             { swaggerSchemaType = SwaggerSchemaInteger
             , swaggerSchemaFormat = Just "int32"
@@ -278,6 +279,9 @@ schemaSimpleModelExampleJSON = [aesonQQ|
   "properties": {
     "name": {
       "type": "string"
+    },
+    "address": {
+      "$ref": "#/definitions/Address"
     },
     "age": {
       "type": "integer",
