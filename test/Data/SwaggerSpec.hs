@@ -531,7 +531,7 @@ swaggerExample = mempty
                   { swaggerOperationResponses = mempty
                       { swaggerResponsesResponses =
                           [ (200, SwaggerInline mempty
-                              { swaggerResponseSchema = Just mempty
+                              { swaggerResponseSchema = Just $ SwaggerInline mempty
                                 { swaggerSchemaExample = Just [aesonQQ|
                                     {
                                       "created": 100,
