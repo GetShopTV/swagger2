@@ -25,6 +25,7 @@ matrix:
         packages:
         - ghc-head
   allow_failures:
+    - env: GHCVER=7.8.4 STACK_YAML=stack-7.8.yaml
     - env: GHCVER=head STACK_YAML=stack-head.yaml
 
 cache:
