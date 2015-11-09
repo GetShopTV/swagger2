@@ -189,7 +189,7 @@ data SwaggerPathItem = SwaggerPathItem
     -- These parameters can be overridden at the operation level, but cannot be removed there.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , swaggerPathItemParameters :: [SwaggerParameter]
+  , swaggerPathItemParameters :: [SwaggerReferenced SwaggerParameter]
   } deriving (Eq, Show, Generic)
 
 -- | Describes a single API operation on a path.
@@ -230,7 +230,7 @@ data SwaggerOperation = SwaggerOperation
     -- the new definition will override it, but can never remove it.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , swaggerOperationParameters :: [SwaggerParameter]
+  , swaggerOperationParameters :: [SwaggerReferenced SwaggerParameter]
 
     -- | The list of possible responses as they are returned from executing this operation.
   , swaggerOperationResponses :: SwaggerResponses
@@ -392,7 +392,7 @@ data SwaggerSchema = SwaggerSchema
 
   , swaggerSchemaItems :: Maybe SwaggerSchemaItems
   , swaggerSchemaAllOf :: Maybe [SwaggerSchema]
-  , swaggerSchemaProperties :: HashMap Text SwaggerSchema
+  , swaggerSchemaProperties :: HashMap Text (SwaggerReferenced SwaggerSchema)
   , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
 
   , swaggerSchemaDiscriminator :: Maybe Text
@@ -488,11 +488,11 @@ data SwaggerItems = SwaggerItems
 data SwaggerResponses = SwaggerResponses
   { -- | The documentation of responses other than the ones declared for specific HTTP response codes.
     -- It can be used to cover undeclared responses.
-    swaggerResponsesDefault :: Maybe SwaggerResponse
+    swaggerResponsesDefault :: Maybe (SwaggerReferenced SwaggerResponse)
 
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
-  , swaggerResponsesResponses :: HashMap HttpStatusCode SwaggerResponse
+  , swaggerResponsesResponses :: HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)
   } deriving (Eq, Show, Generic)
 
 type HttpStatusCode = Int
@@ -623,6 +623,16 @@ data SwaggerExternalDocs = SwaggerExternalDocs
   , swaggerExternalDocsUrl :: URL
   } deriving (Eq, Show, Generic)
 
+-- | A simple object to allow referencing other definitions in the specification.
+-- It can be used to reference parameters and responses that are defined at the top level for reuse.
+newtype SwaggerReference = SwaggerReference { getSwaggerReference :: Text }
+  deriving (Eq, Show)
+
+data SwaggerReferenced a
+  = SwaggerRef SwaggerReference
+  | SwaggerInline a
+  deriving (Eq, Show)
+
 newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
 
 -- =======================================================================
@@ -712,6 +722,13 @@ instance SwaggerMonoid (HashMap Text SwaggerSchema) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
+instance SwaggerMonoid (HashMap Text (SwaggerReferenced SwaggerSchema)) where
+  swaggerMempty = HashMap.empty
+  swaggerMappend = HashMap.unionWith merge
+    where
+      merge (SwaggerInline x) (SwaggerInline y) = SwaggerInline (x <> y)
+      merge _ y = y
+
 instance SwaggerMonoid (HashMap Text SwaggerParameter) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
@@ -732,7 +749,7 @@ instance SwaggerMonoid (HashMap HeaderName SwaggerHeader) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid (HashMap HttpStatusCode SwaggerResponse) where
+instance SwaggerMonoid (HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
@@ -848,6 +865,13 @@ instance ToJSON SwaggerResponses where
 
 instance ToJSON SwaggerExample where
   toJSON = toJSON . Map.mapKeys show . getSwaggerExample
+
+instance ToJSON SwaggerReference where
+  toJSON (SwaggerReference ref) = object [ "$ref" .= ref ]
+
+instance ToJSON a => ToJSON (SwaggerReferenced a) where
+  toJSON (SwaggerRef ref) = toJSON ref
+  toJSON (SwaggerInline x) = toJSON x
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -969,4 +993,13 @@ instance FromJSON SwaggerOperation where
 instance FromJSON SwaggerPathItem where
   parseJSON = genericParseJSON (jsonPrefix "swaggerPathItem")
     `withDefaults` [ "parameters" .= ([] :: [SwaggerParameter]) ]
+
+instance FromJSON SwaggerReference where
+  parseJSON (Object o) = SwaggerReference <$> o .: "$ref"
+  parseJSON _ = empty
+
+instance FromJSON a => FromJSON (SwaggerReferenced a) where
+  parseJSON json
+      = SwaggerRef    <$> parseJSON json
+    <|> SwaggerInline <$> parseJSON json
 
