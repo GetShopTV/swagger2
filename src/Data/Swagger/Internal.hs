@@ -521,7 +521,7 @@ type HeaderName = Text
 
 data SwaggerHeader = SwaggerHeader
   { -- | A short description of the header.
-    _swaggerHeaderDescription :: Maybe String
+    _swaggerHeaderDescription :: Maybe Text
 
     -- | The type of the object.
   , _swaggerHeaderType :: SwaggerItemsType

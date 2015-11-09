@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -42,6 +43,19 @@ makeLenses ''SwaggerExternalDocs
 -- =======================================================================
 -- Helper classy lenses
 -- =======================================================================
+
+class HasDescription s d | s -> d where
+  description :: Lens' s d
+
+instance HasDescription SwaggerResponse       Text where description = swaggerResponseDescription
+instance HasDescription SwaggerInfo           (Maybe Text) where description = swaggerInfoDescription
+instance HasDescription SwaggerTag            (Maybe Text) where description = swaggerTagDescription
+instance HasDescription SwaggerOperation      (Maybe Text) where description = swaggerOperationDescription
+instance HasDescription SwaggerParameter      (Maybe Text) where description = swaggerParameterDescription
+instance HasDescription SwaggerHeader         (Maybe Text) where description = swaggerHeaderDescription
+instance HasDescription SwaggerSchema         (Maybe Text) where description = swaggerSchemaDescription
+instance HasDescription SwaggerSecurityScheme (Maybe Text) where description = swaggerSecuritySchemeDescription
+instance HasDescription SwaggerExternalDocs   (Maybe Text) where description = swaggerExternalDocsDescription
 
 class HasSwaggerSchemaCommon s where
   schemaCommon :: Lens' s SwaggerSchemaCommon
