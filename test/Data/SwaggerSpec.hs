@@ -153,10 +153,10 @@ operationExample = mempty
 
     responses = mempty
       { swaggerResponsesResponses =
-          [ (200, mempty { swaggerResponseDescription = "Pet updated." })
-          , (405, mempty { swaggerResponseDescription = "Invalid input" }) ] }
+          [ (200, SwaggerInline mempty { swaggerResponseDescription = "Pet updated." })
+          , (405, SwaggerInline mempty { swaggerResponseDescription = "Invalid input" }) ] }
 
-    params =
+    params = map SwaggerInline
       [ SwaggerParameter
           { swaggerParameterName = "petId"
           , swaggerParameterDescription = Just "ID of pet that needs to be updated"
@@ -260,9 +260,10 @@ schemaSimpleModelExample = mempty
   { swaggerSchemaType = SwaggerSchemaObject
   , swaggerSchemaRequired = [ "name" ]
   , swaggerSchemaProperties =
-      [ ("name", mempty
+      [ ("name", SwaggerInline mempty
             { swaggerSchemaType = SwaggerSchemaString } )
-      , ("age", mempty
+      , ("address", SwaggerRef (SwaggerReference "#/definitions/Address"))
+      , ("age", SwaggerInline mempty
             { swaggerSchemaType = SwaggerSchemaInteger
             , swaggerSchemaFormat = Just "int32"
             , swaggerSchemaCommon = mempty
@@ -278,6 +279,9 @@ schemaSimpleModelExampleJSON = [aesonQQ|
   "properties": {
     "name": {
       "type": "string"
+    },
+    "address": {
+      "$ref": "#/definitions/Address"
     },
     "age": {
       "type": "integer",
@@ -308,10 +312,10 @@ schemaWithExampleExample :: SwaggerSchema
 schemaWithExampleExample = mempty
   { swaggerSchemaType = SwaggerSchemaObject
   , swaggerSchemaProperties =
-      [ ("id", mempty
+      [ ("id", SwaggerInline mempty
             { swaggerSchemaType   = SwaggerSchemaInteger
             , swaggerSchemaFormat = Just "int64" })
-      , ("name", mempty
+      , ("name", SwaggerInline mempty
             { swaggerSchemaType = SwaggerSchemaString }) ]
   , swaggerSchemaRequired = [ "name" ]
   , swaggerSchemaExample = Just [aesonQQ|
@@ -353,18 +357,18 @@ definitionsExample =
   [ ("Category", mempty
       { swaggerSchemaType = SwaggerSchemaObject
       , swaggerSchemaProperties =
-          [ ("id", mempty
+          [ ("id", SwaggerInline mempty
               { swaggerSchemaType = SwaggerSchemaInteger
               , swaggerSchemaFormat = Just "int64" })
-          , ("name", mempty
+          , ("name", SwaggerInline mempty
               { swaggerSchemaType = SwaggerSchemaString }) ] })
   , ("Tag", mempty
       { swaggerSchemaType = SwaggerSchemaObject
       , swaggerSchemaProperties =
-          [ ("id", mempty
+          [ ("id", SwaggerInline mempty
               { swaggerSchemaType = SwaggerSchemaInteger
               , swaggerSchemaFormat = Just "int64" })
-          , ("name", mempty
+          , ("name", SwaggerInline mempty
               { swaggerSchemaType = SwaggerSchemaString }) ] }) ]
 
 definitionsExampleJSON :: Value
@@ -521,7 +525,7 @@ swaggerExample = mempty
               { swaggerPathItemGet = Just mempty
                   { swaggerOperationResponses = mempty
                       { swaggerResponsesResponses =
-                          [ (200, mempty
+                          [ (200, SwaggerInline mempty
                               { swaggerResponseSchema = Just mempty
                                 { swaggerSchemaExample = Just [aesonQQ|
                                     {
@@ -531,15 +535,15 @@ swaggerExample = mempty
                                 , swaggerSchemaType = SwaggerSchemaObject
                                 , swaggerSchemaDescription = Just "This is some real Todo right here"
                                 , swaggerSchemaProperties =
-                                    [ ("created", mempty
+                                    [ ("created", SwaggerInline mempty
                                         { swaggerSchemaType = SwaggerSchemaInteger
                                         , swaggerSchemaFormat = Just "int32" })
-                                    , ("description", mempty
+                                    , ("description", SwaggerInline mempty
                                         { swaggerSchemaType = SwaggerSchemaString }) ] }
                               , swaggerResponseDescription = "OK" }) ] }
                   , swaggerOperationProduces = Just (SwaggerMimeList [ "application/json" ])
                   , swaggerOperationParameters =
-                      [ mempty
+                      [ SwaggerInline mempty
                           { swaggerParameterRequired = True
                           , swaggerParameterName = "id"
                           , swaggerParameterDescription = Just "TodoId param"

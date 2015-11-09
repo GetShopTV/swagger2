@@ -70,6 +70,10 @@ module Data.Swagger (
   -- * External documentation
   SwaggerExternalDocs(..),
 
+  -- * References
+  SwaggerReference(..),
+  SwaggerReferenced(..),
+
   -- * Miscellaneous
   SwaggerMimeList(..),
   URL(..),
