@@ -471,11 +471,11 @@ data SwaggerItems = SwaggerItems
 
     -- | __Required if type is @'SwaggerItemsArray'@.__
     -- Describes the type of items in the array.
-  , swaggerItemsItems :: SwaggerItems
+  , swaggerItemsItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
+  , swaggerItemsCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
   , swaggerItemsCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
@@ -531,11 +531,11 @@ data SwaggerHeader = SwaggerHeader
 
     -- | __Required if type is @'SwaggerItemsArray'@__.
     -- Describes the type of items in the array.
-  , swaggerHeaderItems :: SwaggerItems
+  , swaggerHeaderItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
+  , swaggerHeaderCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
   , swaggerHeaderCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
