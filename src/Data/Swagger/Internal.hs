@@ -936,10 +936,10 @@ instance FromJSON SwaggerItems where
 instance FromJSON SwaggerHost where
   parseJSON (String s) =
     case fromInteger <$> readMaybe portStr of
-      Nothing | not (null portStr) -> empty
+      Nothing | not (null portStr) -> fail $ "Invalid port `" ++ portStr ++ "'"
       mport -> pure $ SwaggerHost host mport
     where
-      (hostText, portText) = Text.breakOnEnd ":" s
+      (hostText, portText) = Text.breakOn ":" s
       [host, portStr] = map Text.unpack [hostText, portText]
   parseJSON _ = empty
 
