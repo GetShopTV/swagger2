@@ -1,5 +1,5 @@
 name:                swagger2
-version:             0.1
+version:             0.2
 synopsis:            Swagger 2.0 data model
 description:         Please see README.md
 homepage:            https://github.com/GetShopTV/swagger2
@@ -12,6 +12,7 @@ category:            Web
 build-type:          Simple
 extra-source-files:
     README.md
+  , CHANGELOG.md
 cabal-version:       >=1.10
 
 library
