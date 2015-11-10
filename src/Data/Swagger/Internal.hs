@@ -277,7 +277,7 @@ data SwaggerParameter = SwaggerParameter
   } deriving (Eq, Show, Generic)
 
 data SwaggerParameterSchema
-  = SwaggerParameterBody SwaggerSchema
+  = SwaggerParameterBody (SwaggerReferenced SwaggerSchema)
   | SwaggerParameterOther SwaggerParameterOtherSchema
   deriving (Eq, Show)
 
@@ -408,8 +408,8 @@ data SwaggerSchema = SwaggerSchema
   } deriving (Eq, Show, Generic)
 
 data SwaggerSchemaItems
-  = SwaggerSchemaItemsObject SwaggerSchema
-  | SwaggerSchemaItemsArray [SwaggerSchema]
+  = SwaggerSchemaItemsObject (SwaggerReferenced SwaggerSchema)
+  | SwaggerSchemaItemsArray [SwaggerReferenced SwaggerSchema]
   deriving (Eq, Show)
 
 data SwaggerSchemaCommon = SwaggerSchemaCommon
@@ -460,22 +460,22 @@ data SwaggerXml = SwaggerXml
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
   , swaggerXmlWrapped :: Bool
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic)
 
 data SwaggerItems = SwaggerItems
   { -- | The internal type of the array.
     swaggerItemsType :: SwaggerItemsType
 
     -- | The extending format for the previously mentioned type.
-  , swaggerItemsFormat :: SwaggerFormat
+  , swaggerItemsFormat :: Maybe SwaggerFormat
 
     -- | __Required if type is @'SwaggerItemsArray'@.__
     -- Describes the type of items in the array.
-  , swaggerItemsItems :: SwaggerItems
+  , swaggerItemsItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerItemsCollectionFormat :: SwaggerItemsCollectionFormat
+  , swaggerItemsCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
   , swaggerItemsCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
@@ -508,7 +508,7 @@ data SwaggerResponse = SwaggerResponse
     -- If this field does not exist, it means no content is returned as part of the response.
     -- As an extension to the Schema Object, its root type value may also be "file".
     -- This SHOULD be accompanied by a relevant produces mime-type.
-  , swaggerResponseSchema :: Maybe SwaggerSchema
+  , swaggerResponseSchema :: Maybe (SwaggerReferenced SwaggerSchema)
 
     -- | A list of headers that are sent with the response.
   , swaggerResponseHeaders :: HashMap HeaderName SwaggerHeader
@@ -531,11 +531,11 @@ data SwaggerHeader = SwaggerHeader
 
     -- | __Required if type is @'SwaggerItemsArray'@__.
     -- Describes the type of items in the array.
-  , swaggerHeaderItems :: SwaggerItems
+  , swaggerHeaderItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerHeaderCollectionFormat :: SwaggerItemsCollectionFormat
+  , swaggerHeaderCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
   , swaggerHeaderCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
@@ -724,10 +724,12 @@ instance SwaggerMonoid (HashMap Text SwaggerSchema) where
 
 instance SwaggerMonoid (HashMap Text (SwaggerReferenced SwaggerSchema)) where
   swaggerMempty = HashMap.empty
-  swaggerMappend = HashMap.unionWith merge
-    where
-      merge (SwaggerInline x) (SwaggerInline y) = SwaggerInline (x <> y)
-      merge _ y = y
+  swaggerMappend = HashMap.unionWith swaggerMappend
+
+instance Monoid a => SwaggerMonoid (SwaggerReferenced a) where
+  swaggerMempty = SwaggerInline mempty
+  swaggerMappend (SwaggerInline x) (SwaggerInline y) = SwaggerInline (x <> y)
+  swaggerMappend _ y = y
 
 instance SwaggerMonoid (HashMap Text SwaggerParameter) where
   swaggerMempty = HashMap.empty
@@ -778,11 +780,11 @@ deriveJSON (jsonPrefix "swaggerSchema") ''SwaggerSchemaCommon
 deriveJSONDefault ''SwaggerScheme
 deriveJSON' ''SwaggerTag
 deriveJSON' ''SwaggerExternalDocs
-deriveJSON' ''SwaggerXml
 
 deriveToJSON' ''SwaggerOperation
 deriveToJSON' ''SwaggerResponse
 deriveToJSON' ''SwaggerPathItem
+deriveToJSON' ''SwaggerXml
 
 -- =======================================================================
 -- Manual ToJSON instances
@@ -850,7 +852,7 @@ instance ToJSON SwaggerParameter where
   toJSON = genericToJSONWithSub "schema" (jsonPrefix "swaggerParameter")
 
 instance ToJSON SwaggerParameterSchema where
-  toJSON (SwaggerParameterBody s) = toJSON s <+> object [ "in" .= ("body" :: Text) ]
+  toJSON (SwaggerParameterBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
   toJSON (SwaggerParameterOther s) = toJSON s
 
 instance ToJSON SwaggerParameterOtherSchema where
@@ -936,10 +938,10 @@ instance FromJSON SwaggerItems where
 instance FromJSON SwaggerHost where
   parseJSON (String s) =
     case fromInteger <$> readMaybe portStr of
-      Nothing | not (null portStr) -> empty
+      Nothing | not (null portStr) -> fail $ "Invalid port `" ++ portStr ++ "'"
       mport -> pure $ SwaggerHost host mport
     where
-      (hostText, portText) = Text.breakOnEnd ":" s
+      (hostText, portText) = Text.breakOn ":" s
       [host, portStr] = map Text.unpack [hostText, portText]
   parseJSON _ = empty
 
@@ -957,7 +959,9 @@ instance FromJSON SwaggerParameterSchema where
   parseJSON json@(Object o) = do
     (i :: Text) <- o .: "in"
     case i of
-      "body" -> SwaggerParameterBody <$> parseJSON json
+      "body" -> do
+        schema <- o .: "schema"
+        SwaggerParameterBody <$> parseJSON schema
       _ -> SwaggerParameterOther <$> parseJSON json
   parseJSON _ = empty
 
@@ -1002,4 +1006,8 @@ instance FromJSON a => FromJSON (SwaggerReferenced a) where
   parseJSON json
       = SwaggerRef    <$> parseJSON json
     <|> SwaggerInline <$> parseJSON json
+
+instance FromJSON SwaggerXml where
+  parseJSON = genericParseJSON (jsonPrefix "swaggerXml")
+    `withDefaults` [ "attribute" .= False, "wrapped" .= False ]
 
