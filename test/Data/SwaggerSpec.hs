@@ -267,6 +267,7 @@ schemaSimpleModelExample = mempty
   , _swaggerSchemaProperties =
       [ ("name", SwaggerInline mempty
             { _swaggerSchemaType = SwaggerSchemaString } )
+      , ("address", SwaggerRef (SwaggerReference "#/definitions/Address"))
       , ("age", SwaggerInline mempty
             { _swaggerSchemaType = SwaggerSchemaInteger
             , _swaggerSchemaFormat = Just "int32"
