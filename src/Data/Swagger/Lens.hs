@@ -60,18 +60,6 @@ instance HasDescription SwaggerExternalDocs   (Maybe Text) where description = s
 class HasSwaggerSchemaCommon s where
   schemaCommon :: Lens' s SwaggerSchemaCommon
 
-instance HasSwaggerSchemaCommon SwaggerParameter where
-  schemaCommon = swaggerParameterSchema.schemaCommon
-
-instance HasSwaggerSchemaCommon SwaggerParameterSchema where
-  schemaCommon = paramSchemaEither . choosing schemaCommon schemaCommon
-    where
-      paramSchemaEither = iso toEither fromEither
-      toEither (SwaggerParameterBody  x) = Left x
-      toEither (SwaggerParameterOther y) = Right y
-      fromEither (Left  x) = SwaggerParameterBody x
-      fromEither (Right y) = SwaggerParameterOther y
-
 instance HasSwaggerSchemaCommon SwaggerSchema where schemaCommon = swaggerSchemaCommon
 instance HasSwaggerSchemaCommon SwaggerParameterOtherSchema where schemaCommon = swaggerParameterOtherSchemaCommon
 instance HasSwaggerSchemaCommon SwaggerItems where schemaCommon = swaggerItemsCommon
