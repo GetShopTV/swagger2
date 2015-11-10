@@ -165,17 +165,17 @@ operationExample = mempty
       [ SwaggerParameter
           { _swaggerParameterName = "petId"
           , _swaggerParameterDescription = Just "ID of pet that needs to be updated"
-          , _swaggerParameterRequired = True
+          , _swaggerParameterRequired = Just True
           , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterPath) }
       , SwaggerParameter
           { _swaggerParameterName = "name"
           , _swaggerParameterDescription = Just "Updated name of the pet"
-          , _swaggerParameterRequired = False
+          , _swaggerParameterRequired = Just False
           , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterFormData) }
       , SwaggerParameter
           { _swaggerParameterName = "status"
           , _swaggerParameterDescription = Just "Updated status of the pet"
-          , _swaggerParameterRequired = False
+          , _swaggerParameterRequired = Just False
           , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterFormData) }
       ]
 
@@ -415,7 +415,7 @@ parametersDefinitionExample =
   [ ("skipParam", mempty
       { _swaggerParameterName = "skip"
       , _swaggerParameterDescription = Just "number of items to skip"
-      , _swaggerParameterRequired = True
+      , _swaggerParameterRequired = Just True
       , _swaggerParameterSchema = SwaggerParameterOther mempty
           { _swaggerParameterOtherSchemaIn = SwaggerParameterQuery
           , _swaggerParameterOtherSchemaType = SwaggerParamInteger
@@ -423,7 +423,7 @@ parametersDefinitionExample =
   , ("limitParam", mempty
       { _swaggerParameterName = "limit"
       , _swaggerParameterDescription = Just "max records to return"
-      , _swaggerParameterRequired = True
+      , _swaggerParameterRequired = Just True
       , _swaggerParameterSchema = SwaggerParameterOther mempty
           { _swaggerParameterOtherSchemaIn = SwaggerParameterQuery
           , _swaggerParameterOtherSchemaType = SwaggerParamInteger
@@ -549,7 +549,7 @@ swaggerExample = mempty
                   , _swaggerOperationProduces = Just (SwaggerMimeList [ "application/json" ])
                   , _swaggerOperationParameters =
                       [ SwaggerInline mempty
-                          { _swaggerParameterRequired = True
+                          { _swaggerParameterRequired = Just True
                           , _swaggerParameterName = "id"
                           , _swaggerParameterDescription = Just "TodoId param"
                           , _swaggerParameterSchema = SwaggerParameterOther mempty

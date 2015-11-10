@@ -1,8 +1,9 @@
 name:                swagger2
-version:             0.2
+version:             0.3
 synopsis:            Swagger 2.0 data model
 description:         Please see README.md
 homepage:            https://github.com/GetShopTV/swagger2
+bug-reports:         https://github.com/GetShopTV/swagger2/issues
 license:             BSD3
 license-file:        LICENSE
 author:              Nickolay Kudasov

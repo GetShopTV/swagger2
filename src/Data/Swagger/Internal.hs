@@ -242,7 +242,7 @@ data SwaggerOperation = SwaggerOperation
     -- | Declares this operation to be deprecated.
     -- Usage of the declared operation should be refrained.
     -- Default value is @False@.
-  , _swaggerOperationDeprecated :: Bool
+  , _swaggerOperationDeprecated :: Maybe Bool
 
     -- | A declaration of which security schemes are applied for this operation.
     -- The list of values describes alternative security schemes that can be used
@@ -270,7 +270,7 @@ data SwaggerParameter = SwaggerParameter
     -- | Determines whether this parameter is mandatory.
     -- If the parameter is in "path", this property is required and its value MUST be true.
     -- Otherwise, the property MAY be included and its default value is @False@.
-  , _swaggerParameterRequired :: Bool
+  , _swaggerParameterRequired :: Maybe Bool
 
     -- | Parameter schema.
   , _swaggerParameterSchema :: SwaggerParameterSchema
@@ -300,7 +300,7 @@ data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
     -- This is valid only for either @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@
     -- and allows you to send a parameter with a name only or an empty value.
     -- Default value is @False@.
-  , _swaggerParameterOtherSchemaAllowEmptyValue :: Bool
+  , _swaggerParameterOtherSchemaAllowEmptyValue :: Maybe Bool
 
     -- | __Required if type is @'SwaggerParamArray'@__.
     -- Describes the type of items in the array.
@@ -451,7 +451,7 @@ data SwaggerXml = SwaggerXml
 
     -- | Declares whether the property definition translates to an attribute instead of an element.
     -- Default value is @False@.
-  , _swaggerXmlAttribute :: Bool
+  , _swaggerXmlAttribute :: Maybe Bool
 
     -- | MAY be used only for an array definition.
     -- Signifies whether the array is wrapped
@@ -459,7 +459,7 @@ data SwaggerXml = SwaggerXml
     -- or unwrapped (@\<book/\>\<book/\>@).
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
-  , _swaggerXmlWrapped :: Bool
+  , _swaggerXmlWrapped :: Maybe Bool
   } deriving (Eq, Show, Generic)
 
 data SwaggerItems = SwaggerItems
@@ -953,7 +953,6 @@ instance FromJSON SwaggerMimeList where
 
 instance FromJSON SwaggerParameter where
   parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "swaggerParameter")
-    `withDefaults` [ "required" .= False ]
 
 instance FromJSON SwaggerParameterSchema where
   parseJSON json@(Object o) = do
@@ -967,7 +966,6 @@ instance FromJSON SwaggerParameterSchema where
 
 instance FromJSON SwaggerParameterOtherSchema where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
-    `withDefaults` [ "allowEmptyValue" .= False ]
 
 instance FromJSON SwaggerSchemaItems where
   parseJSON json@(Object _) = SwaggerSchemaItemsObject <$> parseJSON json
@@ -991,8 +989,7 @@ instance FromJSON SwaggerResponse where
 
 instance FromJSON SwaggerOperation where
   parseJSON = genericParseJSON (jsonPrefix "swaggerOperation")
-    `withDefaults` [ "deprecated" .= False
-                   , "security"   .= ([] :: [SwaggerSecurityRequirement]) ]
+    `withDefaults` [ "security"   .= ([] :: [SwaggerSecurityRequirement]) ]
 
 instance FromJSON SwaggerPathItem where
   parseJSON = genericParseJSON (jsonPrefix "swaggerPathItem")
@@ -1009,5 +1006,4 @@ instance FromJSON a => FromJSON (SwaggerReferenced a) where
 
 instance FromJSON SwaggerXml where
   parseJSON = genericParseJSON (jsonPrefix "swaggerXml")
-    `withDefaults` [ "attribute" .= False, "wrapped" .= False ]
 
