@@ -35,61 +35,61 @@ import Data.Swagger.Internal.Utils
 data Swagger = Swagger
   { -- | Provides metadata about the API.
     -- The metadata can be used by the clients if needed.
-    swaggerInfo :: SwaggerInfo
+    _swaggerInfo :: SwaggerInfo
 
     -- | The host (name or ip) serving the API. It MAY include a port.
     -- If the host is not included, the host serving the documentation is to be used (including the port).
-  , swaggerHost :: Maybe SwaggerHost
+  , _swaggerHost :: Maybe SwaggerHost
 
     -- | The base path on which the API is served, which is relative to the host.
     -- If it is not included, the API is served directly under the host.
     -- The value MUST start with a leading slash (/).
-  , swaggerBasePath :: Maybe FilePath
+  , _swaggerBasePath :: Maybe FilePath
 
     -- | The transfer protocol of the API.
     -- If the schemes is not included, the default scheme to be used is the one used to access the Swagger definition itself.
-  , swaggerSchemes :: Maybe [SwaggerScheme]
+  , _swaggerSchemes :: Maybe [SwaggerScheme]
 
     -- | A list of MIME types the APIs can consume.
     -- This is global to all APIs but can be overridden on specific API calls.
-  , swaggerConsumes :: SwaggerMimeList
+  , _swaggerConsumes :: SwaggerMimeList
 
     -- | A list of MIME types the APIs can produce.
     -- This is global to all APIs but can be overridden on specific API calls. 
-  , swaggerProduces :: SwaggerMimeList
+  , _swaggerProduces :: SwaggerMimeList
 
     -- | The available paths and operations for the API.
-  , swaggerPaths :: SwaggerPaths
+  , _swaggerPaths :: SwaggerPaths
 
     -- | An object to hold data types produced and consumed by operations.
-  , swaggerDefinitions :: HashMap Text SwaggerSchema
+  , _swaggerDefinitions :: HashMap Text SwaggerSchema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , swaggerParameters :: HashMap Text SwaggerParameter
+  , _swaggerParameters :: HashMap Text SwaggerParameter
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , swaggerResponses :: HashMap Text SwaggerResponse
+  , _swaggerResponses :: HashMap Text SwaggerResponse
 
     -- | Security scheme definitions that can be used across the specification.
-  , swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
+  , _swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
     -- (that is, there is a logical OR between the security requirements).
     -- Individual operations can override this definition.
-  , swaggerSecurity :: [SwaggerSecurityRequirement]
+  , _swaggerSecurity :: [SwaggerSecurityRequirement]
 
     -- | A list of tags used by the specification with additional metadata.
     -- The order of the tags can be used to reflect on their order by the parsing tools.
     -- Not all tags that are used by the Operation Object must be declared.
     -- The tags that are not declared may be organized randomly or based on the tools' logic.
     -- Each tag name in the list MUST be unique.
-  , swaggerTags :: [SwaggerTag]
+  , _swaggerTags :: [SwaggerTag]
 
     -- | Additional external documentation.
-  , swaggerExternalDocs :: Maybe SwaggerExternalDocs
+  , _swaggerExternalDocs :: Maybe SwaggerExternalDocs
   } deriving (Eq, Show, Generic)
 
 -- | The object provides metadata about the API.
@@ -97,51 +97,51 @@ data Swagger = Swagger
 -- and can be presented in the Swagger-UI for convenience.
 data SwaggerInfo = SwaggerInfo
   { -- | The title of the application.
-    swaggerInfoTitle :: Text
+    _swaggerInfoTitle :: Text
 
     -- | A short description of the application.
     -- GFM syntax can be used for rich text representation.
-  , swaggerInfoDescription :: Maybe Text
+  , _swaggerInfoDescription :: Maybe Text
 
     -- | The Terms of Service for the API.
-  , swaggerInfoTermsOfService :: Maybe Text
+  , _swaggerInfoTermsOfService :: Maybe Text
 
     -- | The contact information for the exposed API.
-  , swaggerInfoContact :: Maybe SwaggerContact
+  , _swaggerInfoContact :: Maybe SwaggerContact
 
     -- | The license information for the exposed API.
-  , swaggerInfoLicense :: Maybe SwaggerLicense
+  , _swaggerInfoLicense :: Maybe SwaggerLicense
 
     -- | Provides the version of the application API
     -- (not to be confused with the specification version).
-  , swaggerInfoVersion :: Text
+  , _swaggerInfoVersion :: Text
   } deriving (Eq, Show, Generic)
 
 -- | Contact information for the exposed API.
 data SwaggerContact = SwaggerContact
   { -- | The identifying name of the contact person/organization.
-    swaggerContactName  :: Maybe Text
+    _swaggerContactName  :: Maybe Text
 
     -- | The URL pointing to the contact information.
-  , swaggerContactUrl   :: Maybe URL
+  , _swaggerContactUrl   :: Maybe URL
 
     -- | The email address of the contact person/organization.
-  , swaggerContactEmail :: Maybe Text
+  , _swaggerContactEmail :: Maybe Text
   } deriving (Eq, Show)
 
 -- | License information for the exposed API.
 data SwaggerLicense = SwaggerLicense
   { -- | The license name used for the API.
-    swaggerLicenseName :: Text
+    _swaggerLicenseName :: Text
 
     -- | A URL to the license used for the API.
-  , swaggerLicenseUrl :: Maybe URL
+  , _swaggerLicenseUrl :: Maybe URL
   } deriving (Eq, Show)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
 data SwaggerHost = SwaggerHost
-  { swaggerHostName :: HostName         -- ^ Host name.
-  , swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
+  { _swaggerHostName :: HostName         -- ^ Host name.
+  , _swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
   } deriving (Eq, Show)
 
 -- | The transfer protocol of the API.
@@ -156,7 +156,7 @@ data SwaggerScheme
 data SwaggerPaths = SwaggerPaths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
-    swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
+    _swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
   } deriving (Eq, Show, Generic)
 
 -- | Describes the operations available on a single path.
@@ -165,91 +165,91 @@ data SwaggerPaths = SwaggerPaths
 -- but they will not know which operations and parameters are available.
 data SwaggerPathItem = SwaggerPathItem
   { -- | A definition of a GET operation on this path.
-    swaggerPathItemGet :: Maybe SwaggerOperation
+    _swaggerPathItemGet :: Maybe SwaggerOperation
 
     -- | A definition of a PUT operation on this path.
-  , swaggerPathItemPut :: Maybe SwaggerOperation
+  , _swaggerPathItemPut :: Maybe SwaggerOperation
 
     -- | A definition of a POST operation on this path.
-  , swaggerPathItemPost :: Maybe SwaggerOperation
+  , _swaggerPathItemPost :: Maybe SwaggerOperation
 
     -- | A definition of a DELETE operation on this path.
-  , swaggerPathItemDelete :: Maybe SwaggerOperation
+  , _swaggerPathItemDelete :: Maybe SwaggerOperation
 
     -- | A definition of a OPTIONS operation on this path.
-  , swaggerPathItemOptions :: Maybe SwaggerOperation
+  , _swaggerPathItemOptions :: Maybe SwaggerOperation
 
     -- | A definition of a HEAD operation on this path.
-  , swaggerPathItemHead :: Maybe SwaggerOperation
+  , _swaggerPathItemHead :: Maybe SwaggerOperation
 
     -- | A definition of a PATCH operation on this path.
-  , swaggerPathItemPatch :: Maybe SwaggerOperation
+  , _swaggerPathItemPatch :: Maybe SwaggerOperation
 
     -- | A list of parameters that are applicable for all the operations described under this path.
     -- These parameters can be overridden at the operation level, but cannot be removed there.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , swaggerPathItemParameters :: [SwaggerReferenced SwaggerParameter]
+  , _swaggerPathItemParameters :: [SwaggerReferenced SwaggerParameter]
   } deriving (Eq, Show, Generic)
 
 -- | Describes a single API operation on a path.
 data SwaggerOperation = SwaggerOperation
   { -- | A list of tags for API documentation control.
     -- Tags can be used for logical grouping of operations by resources or any other qualifier.
-    swaggerOperationTags :: [Text]
+    _swaggerOperationTags :: [Text]
 
     -- | A short summary of what the operation does.
     -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
-  , swaggerOperationSummary :: Maybe Text
+  , _swaggerOperationSummary :: Maybe Text
 
     -- | A verbose explanation of the operation behavior.
     -- GFM syntax can be used for rich text representation.
-  , swaggerOperationDescription :: Maybe Text
+  , _swaggerOperationDescription :: Maybe Text
 
     -- | Additional external documentation for this operation.
-  , swaggerOperationExternalDocs :: Maybe SwaggerExternalDocs
+  , _swaggerOperationExternalDocs :: Maybe SwaggerExternalDocs
 
     -- | Unique string used to identify the operation.
     -- The id MUST be unique among all operations described in the API.
     -- Tools and libraries MAY use the it to uniquely identify an operation,
     -- therefore, it is recommended to follow common programming naming conventions.
-  , swaggerOperationOperationId :: Maybe Text
+  , _swaggerOperationOperationId :: Maybe Text
 
     -- | A list of MIME types the operation can consume.
     -- This overrides the @'swaggerConsumes'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , swaggerOperationConsumes :: Maybe SwaggerMimeList
+  , _swaggerOperationConsumes :: Maybe SwaggerMimeList
 
     -- | A list of MIME types the operation can produce.
     -- This overrides the @'swaggerProduces'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , swaggerOperationProduces :: Maybe SwaggerMimeList
+  , _swaggerOperationProduces :: Maybe SwaggerMimeList
 
     -- | A list of parameters that are applicable for this operation.
     -- If a parameter is already defined at the @'SwaggerPathItem'@,
     -- the new definition will override it, but can never remove it.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , swaggerOperationParameters :: [SwaggerReferenced SwaggerParameter]
+  , _swaggerOperationParameters :: [SwaggerReferenced SwaggerParameter]
 
     -- | The list of possible responses as they are returned from executing this operation.
-  , swaggerOperationResponses :: SwaggerResponses
+  , _swaggerOperationResponses :: SwaggerResponses
 
     -- | The transfer protocol for the operation.
     -- The value overrides @'swaggerSchemes'@.
-  , swaggerOperationSchemes :: Maybe [SwaggerScheme]
+  , _swaggerOperationSchemes :: Maybe [SwaggerScheme]
 
     -- | Declares this operation to be deprecated.
     -- Usage of the declared operation should be refrained.
     -- Default value is @False@.
-  , swaggerOperationDeprecated :: Bool
+  , _swaggerOperationDeprecated :: Bool
 
     -- | A declaration of which security schemes are applied for this operation.
     -- The list of values describes alternative security schemes that can be used
     -- (that is, there is a logical OR between the security requirements).
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
-  , swaggerOperationSecurity :: [SwaggerSecurityRequirement]
+  , _swaggerOperationSecurity :: [SwaggerSecurityRequirement]
   } deriving (Eq, Show, Generic)
 
 newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
@@ -260,20 +260,20 @@ newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
 data SwaggerParameter = SwaggerParameter
   { -- | The name of the parameter.
     -- Parameter names are case sensitive.
-    swaggerParameterName :: Text
+    _swaggerParameterName :: Text
 
     -- | A brief description of the parameter.
     -- This could contain examples of use.
     -- GFM syntax can be used for rich text representation.
-  , swaggerParameterDescription :: Maybe Text
+  , _swaggerParameterDescription :: Maybe Text
 
     -- | Determines whether this parameter is mandatory.
     -- If the parameter is in "path", this property is required and its value MUST be true.
     -- Otherwise, the property MAY be included and its default value is @False@.
-  , swaggerParameterRequired :: Bool
+  , _swaggerParameterRequired :: Bool
 
     -- | Parameter schema.
-  , swaggerParameterSchema :: SwaggerParameterSchema
+  , _swaggerParameterSchema :: SwaggerParameterSchema
   } deriving (Eq, Show, Generic)
 
 data SwaggerParameterSchema
@@ -283,7 +283,7 @@ data SwaggerParameterSchema
 
 data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
   { -- | The location of the parameter.
-    swaggerParameterOtherSchemaIn :: SwaggerParameterLocation
+    _swaggerParameterOtherSchemaIn :: SwaggerParameterLocation
 
     -- | The type of the parameter.
     -- Since the parameter is not located at the request body,
@@ -291,26 +291,26 @@ data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
     -- If type is @'SwaggerParamFile'@, the @consumes@ MUST be either
     -- "multipart/form-data" or " application/x-www-form-urlencoded"
     -- and the parameter MUST be in @'SwaggerParameterFormData'@.
-  , swaggerParameterOtherSchemaType :: SwaggerParameterType
+  , _swaggerParameterOtherSchemaType :: SwaggerParameterType
 
     -- | The extending format for the previously mentioned type.
-  , swaggerParameterOtherSchemaFormat :: Maybe SwaggerFormat
+  , _swaggerParameterOtherSchemaFormat :: Maybe SwaggerFormat
 
     -- | Sets the ability to pass empty-valued parameters.
     -- This is valid only for either @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@
     -- and allows you to send a parameter with a name only or an empty value.
     -- Default value is @False@.
-  , swaggerParameterOtherSchemaAllowEmptyValue :: Bool
+  , _swaggerParameterOtherSchemaAllowEmptyValue :: Bool
 
     -- | __Required if type is @'SwaggerParamArray'@__.
     -- Describes the type of items in the array.
-  , swaggerParameterOtherSchemaItems :: Maybe SwaggerItems
+  , _swaggerParameterOtherSchemaItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if @'SwaggerParamArray'@ is used.
     -- Default value is csv.
-  , swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
+  , _swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
 
-  , swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
+  , _swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
 
 data SwaggerParameterType
@@ -384,27 +384,27 @@ data SwaggerItemsCollectionFormat
 type SwaggerParamName = Text
 
 data SwaggerSchema = SwaggerSchema
-  { swaggerSchemaType :: SwaggerSchemaType
-  , swaggerSchemaFormat :: Maybe SwaggerFormat
-  , swaggerSchemaTitle :: Maybe Text
-  , swaggerSchemaDescription :: Maybe Text
-  , swaggerSchemaRequired :: [SwaggerParamName]
+  { _swaggerSchemaType :: SwaggerSchemaType
+  , _swaggerSchemaFormat :: Maybe SwaggerFormat
+  , _swaggerSchemaTitle :: Maybe Text
+  , _swaggerSchemaDescription :: Maybe Text
+  , _swaggerSchemaRequired :: [SwaggerParamName]
 
-  , swaggerSchemaItems :: Maybe SwaggerSchemaItems
-  , swaggerSchemaAllOf :: Maybe [SwaggerSchema]
-  , swaggerSchemaProperties :: HashMap Text (SwaggerReferenced SwaggerSchema)
-  , swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
+  , _swaggerSchemaItems :: Maybe SwaggerSchemaItems
+  , _swaggerSchemaAllOf :: Maybe [SwaggerSchema]
+  , _swaggerSchemaProperties :: HashMap Text (SwaggerReferenced SwaggerSchema)
+  , _swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
 
-  , swaggerSchemaDiscriminator :: Maybe Text
-  , swaggerSchemaReadOnly :: Maybe Bool
-  , swaggerSchemaXml :: Maybe SwaggerXml
-  , swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
-  , swaggerSchemaExample :: Maybe Value
+  , _swaggerSchemaDiscriminator :: Maybe Text
+  , _swaggerSchemaReadOnly :: Maybe Bool
+  , _swaggerSchemaXml :: Maybe SwaggerXml
+  , _swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
+  , _swaggerSchemaExample :: Maybe Value
 
-  , swaggerSchemaMaxProperties :: Maybe Integer
-  , swaggerSchemaMinProperties :: Maybe Integer
+  , _swaggerSchemaMaxProperties :: Maybe Integer
+  , _swaggerSchemaMinProperties :: Maybe Integer
 
-  , swaggerSchemaCommon :: SwaggerSchemaCommon
+  , _swaggerSchemaCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
 
 data SwaggerSchemaItems
@@ -418,20 +418,20 @@ data SwaggerSchemaCommon = SwaggerSchemaCommon
     -- if not supplied by the client in the request.
     -- (Note: "default" has no meaning for required parameters.)
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-    swaggerSchemaDefault :: Maybe Value
+    _swaggerSchemaDefault :: Maybe Value
 
-  , swaggerSchemaMaximum :: Maybe Integer
-  , swaggerSchemaExclusiveMaximum :: Maybe Bool
-  , swaggerSchemaMinimum :: Maybe Integer
-  , swaggerSchemaExclusiveMinimum :: Maybe Bool
-  , swaggerSchemaMaxLength :: Maybe Integer
-  , swaggerSchemaMinLength :: Maybe Integer
-  , swaggerSchemaPattern :: Maybe Text
-  , swaggerSchemaMaxItems :: Maybe Integer
-  , swaggerSchemaMinItems :: Maybe Integer
-  , swaggerSchemaUniqueItems :: Maybe Bool
-  , swaggerSchemaEnum :: Maybe [Value]
-  , swaggerSchemaMultipleOf :: Maybe Integer
+  , _swaggerSchemaMaximum :: Maybe Integer
+  , _swaggerSchemaExclusiveMaximum :: Maybe Bool
+  , _swaggerSchemaMinimum :: Maybe Integer
+  , _swaggerSchemaExclusiveMinimum :: Maybe Bool
+  , _swaggerSchemaMaxLength :: Maybe Integer
+  , _swaggerSchemaMinLength :: Maybe Integer
+  , _swaggerSchemaPattern :: Maybe Text
+  , _swaggerSchemaMaxItems :: Maybe Integer
+  , _swaggerSchemaMinItems :: Maybe Integer
+  , _swaggerSchemaUniqueItems :: Maybe Bool
+  , _swaggerSchemaEnum :: Maybe [Value]
+  , _swaggerSchemaMultipleOf :: Maybe Integer
   } deriving (Eq, Show, Generic)
 
 data SwaggerXml = SwaggerXml
@@ -440,18 +440,18 @@ data SwaggerXml = SwaggerXml
     -- When defined alongside type being array (outside the items),
     -- it will affect the wrapping element and only if wrapped is true.
     -- If wrapped is false, it will be ignored.
-    swaggerXmlName :: Maybe Text
+    _swaggerXmlName :: Maybe Text
 
     -- | The URL of the namespace definition.
     -- Value SHOULD be in the form of a URL.
-  , swaggerXmlNamespace :: Maybe Text
+  , _swaggerXmlNamespace :: Maybe Text
 
     -- | The prefix to be used for the name.
-  , swaggerXmlPrefix :: Maybe Text
+  , _swaggerXmlPrefix :: Maybe Text
 
     -- | Declares whether the property definition translates to an attribute instead of an element.
     -- Default value is @False@.
-  , swaggerXmlAttribute :: Bool
+  , _swaggerXmlAttribute :: Bool
 
     -- | MAY be used only for an array definition.
     -- Signifies whether the array is wrapped
@@ -459,25 +459,25 @@ data SwaggerXml = SwaggerXml
     -- or unwrapped (@\<book/\>\<book/\>@).
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
-  , swaggerXmlWrapped :: Bool
+  , _swaggerXmlWrapped :: Bool
   } deriving (Eq, Show, Generic)
 
 data SwaggerItems = SwaggerItems
   { -- | The internal type of the array.
-    swaggerItemsType :: SwaggerItemsType
+    _swaggerItemsType :: SwaggerItemsType
 
     -- | The extending format for the previously mentioned type.
-  , swaggerItemsFormat :: Maybe SwaggerFormat
+  , _swaggerItemsFormat :: Maybe SwaggerFormat
 
     -- | __Required if type is @'SwaggerItemsArray'@.__
     -- Describes the type of items in the array.
-  , swaggerItemsItems :: Maybe SwaggerItems
+  , _swaggerItemsItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerItemsCollectionFormat :: Maybe SwaggerItemsCollectionFormat
+  , _swaggerItemsCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
-  , swaggerItemsCommon :: SwaggerSchemaCommon
+  , _swaggerItemsCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -488,11 +488,11 @@ data SwaggerItems = SwaggerItems
 data SwaggerResponses = SwaggerResponses
   { -- | The documentation of responses other than the ones declared for specific HTTP response codes.
     -- It can be used to cover undeclared responses.
-    swaggerResponsesDefault :: Maybe (SwaggerReferenced SwaggerResponse)
+   _swaggerResponsesDefault :: Maybe (SwaggerReferenced SwaggerResponse)
 
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
-  , swaggerResponsesResponses :: HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)
+  , _swaggerResponsesResponses :: HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)
   } deriving (Eq, Show, Generic)
 
 type HttpStatusCode = Int
@@ -501,43 +501,43 @@ type HttpStatusCode = Int
 data SwaggerResponse = SwaggerResponse
   { -- | A short description of the response.
     -- GFM syntax can be used for rich text representation.
-    swaggerResponseDescription :: Text
+    _swaggerResponseDescription :: Text
 
     -- | A definition of the response structure.
     -- It can be a primitive, an array or an object.
     -- If this field does not exist, it means no content is returned as part of the response.
     -- As an extension to the Schema Object, its root type value may also be "file".
     -- This SHOULD be accompanied by a relevant produces mime-type.
-  , swaggerResponseSchema :: Maybe (SwaggerReferenced SwaggerSchema)
+  , _swaggerResponseSchema :: Maybe (SwaggerReferenced SwaggerSchema)
 
     -- | A list of headers that are sent with the response.
-  , swaggerResponseHeaders :: HashMap HeaderName SwaggerHeader
+  , _swaggerResponseHeaders :: HashMap HeaderName SwaggerHeader
 
     -- | An example of the response message.
-  , swaggerResponseExamples :: Maybe SwaggerExample
+  , _swaggerResponseExamples :: Maybe SwaggerExample
   } deriving (Eq, Show, Generic)
 
 type HeaderName = Text
 
 data SwaggerHeader = SwaggerHeader
   { -- | A short description of the header.
-    swaggerHeaderDescription :: Maybe String
+    _swaggerHeaderDescription :: Maybe Text
 
     -- | The type of the object.
-  , swaggerHeaderType :: SwaggerItemsType
+  , _swaggerHeaderType :: SwaggerItemsType
 
     -- | The extending format for the previously mentioned type. See Data Type Formats for further details.
-  , swaggerHeaderFormat :: Maybe SwaggerFormat
+  , _swaggerHeaderFormat :: Maybe SwaggerFormat
 
     -- | __Required if type is @'SwaggerItemsArray'@__.
     -- Describes the type of items in the array.
-  , swaggerHeaderItems :: Maybe SwaggerItems
+  , _swaggerHeaderItems :: Maybe SwaggerItems
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , swaggerHeaderCollectionFormat :: Maybe SwaggerItemsCollectionFormat
+  , _swaggerHeaderCollectionFormat :: Maybe SwaggerItemsCollectionFormat
 
-  , swaggerHeaderCommon :: SwaggerSchemaCommon
+  , _swaggerHeaderCommon :: SwaggerSchemaCommon
   } deriving (Eq, Show, Generic)
 
 data SwaggerExample = SwaggerExample { getSwaggerExample :: Map MediaType Value }
@@ -551,10 +551,10 @@ data SwaggerApiKeyLocation
 
 data SwaggerApiKeyParams = SwaggerApiKeyParams
   { -- | The name of the header or query parameter to be used.
-    swaggerApiKeyName :: Text
+    _swaggerApiKeyName :: Text
 
     -- | The location of the API key.
-  , swaggerApiKeyIn :: SwaggerApiKeyLocation
+  , _swaggerApiKeyIn :: SwaggerApiKeyLocation
   } deriving (Eq, Show)
 
 -- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
@@ -572,10 +572,10 @@ data SwaggerOAuth2Flow
 
 data SwaggerOAuth2Params = SwaggerOAuth2Params
   { -- | The flow used by the OAuth2 security scheme.
-    swaggerOAuth2Flow :: SwaggerOAuth2Flow
+    _swaggerOAuth2Flow :: SwaggerOAuth2Flow
 
     -- | The available scopes for the OAuth2 security scheme.
-  , swaggerOAuth2Scopes :: HashMap Text Text
+  , _swaggerOAuth2Scopes :: HashMap Text Text
   } deriving (Eq, Show, Generic)
 
 data SwaggerSecuritySchemeType
@@ -586,10 +586,10 @@ data SwaggerSecuritySchemeType
 
 data SwaggerSecurityScheme = SwaggerSecurityScheme
   { -- | The type of the security scheme.
-    swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
+    _swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
 
     -- | A short description for security scheme.
-  , swaggerSecuritySchemeDescription :: Maybe Text
+  , _swaggerSecuritySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic)
 
 -- | Lists the required security schemes to execute this operation.
@@ -603,24 +603,24 @@ newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
 -- It is not mandatory to have a @SwaggerTag@ per tag used there.
 data SwaggerTag = SwaggerTag
   { -- | The name of the tag.
-    swaggerTagName :: Text
+    _swaggerTagName :: Text
 
     -- | A short description for the tag.
     -- GFM syntax can be used for rich text representation.
-  , swaggerTagDescription :: Maybe Text
+  , _swaggerTagDescription :: Maybe Text
 
     -- | Additional external documentation for this tag.
-  , swaggerTagExternalDocs :: Maybe SwaggerExternalDocs
+  , _swaggerTagExternalDocs :: Maybe SwaggerExternalDocs
   } deriving (Eq, Show)
 
 -- | Allows referencing an external resource for extended documentation.
 data SwaggerExternalDocs = SwaggerExternalDocs
   { -- | A short description of the target documentation.
     -- GFM syntax can be used for rich text representation.
-    swaggerExternalDocsDescription :: Maybe Text
+    _swaggerExternalDocsDescription :: Maybe Text
 
     -- | The URL for the target documentation.
-  , swaggerExternalDocsUrl :: URL
+  , _swaggerExternalDocsUrl :: URL
   } deriving (Eq, Show, Generic)
 
 -- | A simple object to allow referencing other definitions in the specification.

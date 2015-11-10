@@ -32,7 +32,7 @@ hashMapReadKeys = hashMapTraverseKeys (maybe empty pure . readMaybe)
 
 jsonPrefix :: String -> Options
 jsonPrefix prefix = defaultOptions
-  { fieldLabelModifier      = modifier
+  { fieldLabelModifier      = modifier . drop 1
   , constructorTagModifier  = modifier
   , sumEncoding             = ObjectWithSingleField
   }
