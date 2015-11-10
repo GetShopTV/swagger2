@@ -120,6 +120,7 @@ instance SwaggerMonoid (Maybe a) where
   swaggerMappend x Nothing = x
   swaggerMappend _ y = y
 
+-- | __WARNING:__ not a true monoid (`swaggerMempty` breaks right identity law).
 instance SwaggerMonoid Bool where
   swaggerMempty = False
   swaggerMappend _ y = y
