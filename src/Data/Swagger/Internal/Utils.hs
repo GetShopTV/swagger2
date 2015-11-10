@@ -1,5 +1,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 module Data.Swagger.Internal.Utils where
 
@@ -111,6 +112,7 @@ instance SwaggerMonoid [a]
 
 instance SwaggerMonoid Text where
   swaggerMempty = mempty
+  swaggerMappend x "" = x
   swaggerMappend _ y = y
 
 instance SwaggerMonoid (Maybe a) where
