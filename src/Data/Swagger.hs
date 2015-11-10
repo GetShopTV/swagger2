@@ -8,74 +8,74 @@
 module Data.Swagger (
   -- * Swagger specification
   Swagger(..),
-  SwaggerHost(..),
-  SwaggerScheme(..),
+  Host(..),
+  Scheme(..),
 
   -- * Info types
-  SwaggerInfo(..),
-  SwaggerContact(..),
-  SwaggerLicense(..),
+  Info(..),
+  Contact(..),
+  License(..),
 
   -- * Paths
-  SwaggerPaths(..),
-  SwaggerPathItem(..),
+  Paths(..),
+  PathItem(..),
 
   -- * Operations
-  SwaggerTag(..),
-  SwaggerOperation(..),
+  Tag(..),
+  Operation(..),
 
   -- * Types and formats
-  SwaggerParameterType(..),
-  SwaggerItemsType(..),
-  SwaggerSchemaType(..),
-  SwaggerFormat(..),
-  SwaggerCollectionFormat(..),
-  SwaggerItemsCollectionFormat(..),
+  ParameterType(..),
+  ItemsType(..),
+  SchemaType(..),
+  Format(..),
+  CollectionFormat(..),
+  ItemsCollectionFormat(..),
 
   -- * Parameters
-  SwaggerParameter(..),
-  SwaggerParameterSchema(..),
-  SwaggerParameterOtherSchema(..),
-  SwaggerParameterLocation(..),
-  SwaggerParamName(..),
-  SwaggerItems(..),
-  SwaggerHeader(..),
-  SwaggerExample(..),
+  Parameter(..),
+  ParameterSchema(..),
+  ParameterOtherSchema(..),
+  ParameterLocation(..),
+  ParamName(..),
+  Items(..),
+  Header(..),
+  Example(..),
 
   -- * Schema
-  SwaggerSchema(..),
-  SwaggerSchemaItems(..),
-  SwaggerSchemaCommon(..),
-  SwaggerXml(..),
+  Schema(..),
+  SchemaItems(..),
+  SchemaCommon(..),
+  Xml(..),
 
   -- * Responses
-  SwaggerResponses(..),
-  SwaggerResponse(..),
+  Responses(..),
+  Response(..),
 
   -- * Security
-  SwaggerSecurityScheme(..),
-  SwaggerSecuritySchemeType(..),
-  SwaggerSecurityRequirement(..),
+  SecurityScheme(..),
+  SecuritySchemeType(..),
+  SecurityRequirement(..),
 
   -- ** API key
-  SwaggerApiKeyParams(..),
-  SwaggerApiKeyLocation(..),
+  ApiKeyParams(..),
+  ApiKeyLocation(..),
 
   -- ** OAuth2
-  SwaggerOAuth2Params(..),
-  SwaggerOAuth2Flow(..),
+  OAuth2Params(..),
+  OAuth2Flow(..),
   AuthorizationURL(..),
   TokenURL(..),
 
   -- * External documentation
-  SwaggerExternalDocs(..),
+  ExternalDocs(..),
 
   -- * References
-  SwaggerReference(..),
-  SwaggerReferenced(..),
+  Reference(..),
+  Referenced(..),
 
   -- * Miscellaneous
-  SwaggerMimeList(..),
+  MimeList(..),
   URL(..),
 ) where
 

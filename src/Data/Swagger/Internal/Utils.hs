@@ -58,17 +58,17 @@ genericToJSONWithSub sub opts x =
     Object o ->
       let so = HashMap.lookupDefault (error "impossible") sub o
       in Object (HashMap.delete sub o) <+> so
-    _ -> error "impossible"
+    _ -> error "genericToJSONWithSub: subjson is not an object"
 
 genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
 genericParseJSONWithSub sub opts (Object o) = genericParseJSON opts json
   where
     json = Object (HashMap.insert sub (Object o) o)
-genericParseJSONWithSub _ _ _ = error "impossible"
+genericParseJSONWithSub _ _ _ = error "genericParseJSONWithSub: given json is not an object"
 
 (<+>) :: Value -> Value -> Value
 Object x <+> Object y = Object (x <> y)
-_ <+> _ = error "impossible"
+_ <+> _ = error "<+>: merging non-objects"
 
 withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
 withDefaults parser defs json@(Object _) = parser (json <+> object defs)

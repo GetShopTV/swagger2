@@ -35,117 +35,117 @@ import Data.Swagger.Internal.Utils
 data Swagger = Swagger
   { -- | Provides metadata about the API.
     -- The metadata can be used by the clients if needed.
-    _swaggerInfo :: SwaggerInfo
+    _info :: Info
 
     -- | The host (name or ip) serving the API. It MAY include a port.
     -- If the host is not included, the host serving the documentation is to be used (including the port).
-  , _swaggerHost :: Maybe SwaggerHost
+  , _host :: Maybe Host
 
     -- | The base path on which the API is served, which is relative to the host.
     -- If it is not included, the API is served directly under the host.
     -- The value MUST start with a leading slash (/).
-  , _swaggerBasePath :: Maybe FilePath
+  , _basePath :: Maybe FilePath
 
     -- | The transfer protocol of the API.
     -- If the schemes is not included, the default scheme to be used is the one used to access the Swagger definition itself.
-  , _swaggerSchemes :: Maybe [SwaggerScheme]
+  , _schemes :: Maybe [Scheme]
 
     -- | A list of MIME types the APIs can consume.
     -- This is global to all APIs but can be overridden on specific API calls.
-  , _swaggerConsumes :: SwaggerMimeList
+  , _consumes :: MimeList
 
     -- | A list of MIME types the APIs can produce.
     -- This is global to all APIs but can be overridden on specific API calls. 
-  , _swaggerProduces :: SwaggerMimeList
+  , _produces :: MimeList
 
     -- | The available paths and operations for the API.
-  , _swaggerPaths :: SwaggerPaths
+  , _paths :: Paths
 
     -- | An object to hold data types produced and consumed by operations.
-  , _swaggerDefinitions :: HashMap Text SwaggerSchema
+  , _definitions :: HashMap Text Schema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , _swaggerParameters :: HashMap Text SwaggerParameter
+  , _parameters :: HashMap Text Parameter
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , _swaggerResponses :: HashMap Text SwaggerResponse
+  , _responses :: HashMap Text Response
 
     -- | Security scheme definitions that can be used across the specification.
-  , _swaggerSecurityDefinitions :: HashMap Text SwaggerSecurityScheme
+  , _securityDefinitions :: HashMap Text SecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
     -- (that is, there is a logical OR between the security requirements).
     -- Individual operations can override this definition.
-  , _swaggerSecurity :: [SwaggerSecurityRequirement]
+  , _security :: [SecurityRequirement]
 
     -- | A list of tags used by the specification with additional metadata.
     -- The order of the tags can be used to reflect on their order by the parsing tools.
     -- Not all tags that are used by the Operation Object must be declared.
     -- The tags that are not declared may be organized randomly or based on the tools' logic.
     -- Each tag name in the list MUST be unique.
-  , _swaggerTags :: [SwaggerTag]
+  , _tags :: [Tag]
 
     -- | Additional external documentation.
-  , _swaggerExternalDocs :: Maybe SwaggerExternalDocs
+  , _externalDocs :: Maybe ExternalDocs
   } deriving (Eq, Show, Generic)
 
 -- | The object provides metadata about the API.
 -- The metadata can be used by the clients if needed,
 -- and can be presented in the Swagger-UI for convenience.
-data SwaggerInfo = SwaggerInfo
+data Info = Info
   { -- | The title of the application.
-    _swaggerInfoTitle :: Text
+    _infoTitle :: Text
 
     -- | A short description of the application.
     -- GFM syntax can be used for rich text representation.
-  , _swaggerInfoDescription :: Maybe Text
+  , _infoDescription :: Maybe Text
 
     -- | The Terms of Service for the API.
-  , _swaggerInfoTermsOfService :: Maybe Text
+  , _infoTermsOfService :: Maybe Text
 
     -- | The contact information for the exposed API.
-  , _swaggerInfoContact :: Maybe SwaggerContact
+  , _infoContact :: Maybe Contact
 
     -- | The license information for the exposed API.
-  , _swaggerInfoLicense :: Maybe SwaggerLicense
+  , _infoLicense :: Maybe License
 
     -- | Provides the version of the application API
     -- (not to be confused with the specification version).
-  , _swaggerInfoVersion :: Text
+  , _infoVersion :: Text
   } deriving (Eq, Show, Generic)
 
 -- | Contact information for the exposed API.
-data SwaggerContact = SwaggerContact
+data Contact = Contact
   { -- | The identifying name of the contact person/organization.
-    _swaggerContactName  :: Maybe Text
+    _contactName  :: Maybe Text
 
     -- | The URL pointing to the contact information.
-  , _swaggerContactUrl   :: Maybe URL
+  , _contactUrl   :: Maybe URL
 
     -- | The email address of the contact person/organization.
-  , _swaggerContactEmail :: Maybe Text
+  , _contactEmail :: Maybe Text
   } deriving (Eq, Show)
 
 -- | License information for the exposed API.
-data SwaggerLicense = SwaggerLicense
+data License = License
   { -- | The license name used for the API.
-    _swaggerLicenseName :: Text
+    _licenseName :: Text
 
     -- | A URL to the license used for the API.
-  , _swaggerLicenseUrl :: Maybe URL
+  , _licenseUrl :: Maybe URL
   } deriving (Eq, Show)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
-data SwaggerHost = SwaggerHost
-  { _swaggerHostName :: HostName         -- ^ Host name.
-  , _swaggerHostPort :: Maybe PortNumber -- ^ Optional port.
+data Host = Host
+  { _hostName :: HostName         -- ^ Host name.
+  , _hostPort :: Maybe PortNumber -- ^ Optional port.
   } deriving (Eq, Show)
 
 -- | The transfer protocol of the API.
-data SwaggerScheme
+data Scheme
   = Http
   | Https
   | Ws
@@ -153,305 +153,305 @@ data SwaggerScheme
   deriving (Eq, Show)
 
 -- | The available paths and operations for the API.
-data SwaggerPaths = SwaggerPaths
+data Paths = Paths
   { -- | Holds the relative paths to the individual endpoints.
-    -- The path is appended to the @'swaggerBasePath'@ in order to construct the full URL.
-    _swaggerPathsMap         :: HashMap FilePath SwaggerPathItem
+    -- The path is appended to the @'basePath'@ in order to construct the full URL.
+    _pathsMap         :: HashMap FilePath PathItem
   } deriving (Eq, Show, Generic)
 
 -- | Describes the operations available on a single path.
--- A @'SwaggerPathItem'@ may be empty, due to ACL constraints.
+-- A @'PathItem'@ may be empty, due to ACL constraints.
 -- The path itself is still exposed to the documentation viewer
 -- but they will not know which operations and parameters are available.
-data SwaggerPathItem = SwaggerPathItem
+data PathItem = PathItem
   { -- | A definition of a GET operation on this path.
-    _swaggerPathItemGet :: Maybe SwaggerOperation
+    _pathItemGet :: Maybe Operation
 
     -- | A definition of a PUT operation on this path.
-  , _swaggerPathItemPut :: Maybe SwaggerOperation
+  , _pathItemPut :: Maybe Operation
 
     -- | A definition of a POST operation on this path.
-  , _swaggerPathItemPost :: Maybe SwaggerOperation
+  , _pathItemPost :: Maybe Operation
 
     -- | A definition of a DELETE operation on this path.
-  , _swaggerPathItemDelete :: Maybe SwaggerOperation
+  , _pathItemDelete :: Maybe Operation
 
     -- | A definition of a OPTIONS operation on this path.
-  , _swaggerPathItemOptions :: Maybe SwaggerOperation
+  , _pathItemOptions :: Maybe Operation
 
     -- | A definition of a HEAD operation on this path.
-  , _swaggerPathItemHead :: Maybe SwaggerOperation
+  , _pathItemHead :: Maybe Operation
 
     -- | A definition of a PATCH operation on this path.
-  , _swaggerPathItemPatch :: Maybe SwaggerOperation
+  , _pathItemPatch :: Maybe Operation
 
     -- | A list of parameters that are applicable for all the operations described under this path.
     -- These parameters can be overridden at the operation level, but cannot be removed there.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , _swaggerPathItemParameters :: [SwaggerReferenced SwaggerParameter]
+  , _pathItemParameters :: [Referenced Parameter]
   } deriving (Eq, Show, Generic)
 
 -- | Describes a single API operation on a path.
-data SwaggerOperation = SwaggerOperation
+data Operation = Operation
   { -- | A list of tags for API documentation control.
     -- Tags can be used for logical grouping of operations by resources or any other qualifier.
-    _swaggerOperationTags :: [Text]
+    _operationTags :: [Text]
 
     -- | A short summary of what the operation does.
     -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
-  , _swaggerOperationSummary :: Maybe Text
+  , _operationSummary :: Maybe Text
 
     -- | A verbose explanation of the operation behavior.
     -- GFM syntax can be used for rich text representation.
-  , _swaggerOperationDescription :: Maybe Text
+  , _operationDescription :: Maybe Text
 
     -- | Additional external documentation for this operation.
-  , _swaggerOperationExternalDocs :: Maybe SwaggerExternalDocs
+  , _operationExternalDocs :: Maybe ExternalDocs
 
     -- | Unique string used to identify the operation.
     -- The id MUST be unique among all operations described in the API.
     -- Tools and libraries MAY use the it to uniquely identify an operation,
     -- therefore, it is recommended to follow common programming naming conventions.
-  , _swaggerOperationOperationId :: Maybe Text
+  , _operationOperationId :: Maybe Text
 
     -- | A list of MIME types the operation can consume.
-    -- This overrides the @'swaggerConsumes'@.
+    -- This overrides the @'consumes'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , _swaggerOperationConsumes :: Maybe SwaggerMimeList
+  , _operationConsumes :: Maybe MimeList
 
     -- | A list of MIME types the operation can produce.
-    -- This overrides the @'swaggerProduces'@.
+    -- This overrides the @'produces'@.
     -- @Just []@ MAY be used to clear the global definition.
-  , _swaggerOperationProduces :: Maybe SwaggerMimeList
+  , _operationProduces :: Maybe MimeList
 
     -- | A list of parameters that are applicable for this operation.
-    -- If a parameter is already defined at the @'SwaggerPathItem'@,
+    -- If a parameter is already defined at the @'PathItem'@,
     -- the new definition will override it, but can never remove it.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , _swaggerOperationParameters :: [SwaggerReferenced SwaggerParameter]
+  , _operationParameters :: [Referenced Parameter]
 
     -- | The list of possible responses as they are returned from executing this operation.
-  , _swaggerOperationResponses :: SwaggerResponses
+  , _operationResponses :: Responses
 
     -- | The transfer protocol for the operation.
-    -- The value overrides @'swaggerSchemes'@.
-  , _swaggerOperationSchemes :: Maybe [SwaggerScheme]
+    -- The value overrides @'schemes'@.
+  , _operationSchemes :: Maybe [Scheme]
 
     -- | Declares this operation to be deprecated.
     -- Usage of the declared operation should be refrained.
     -- Default value is @False@.
-  , _swaggerOperationDeprecated :: Maybe Bool
+  , _operationDeprecated :: Maybe Bool
 
     -- | A declaration of which security schemes are applied for this operation.
     -- The list of values describes alternative security schemes that can be used
     -- (that is, there is a logical OR between the security requirements).
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
-  , _swaggerOperationSecurity :: [SwaggerSecurityRequirement]
+  , _operationSecurity :: [SecurityRequirement]
   } deriving (Eq, Show, Generic)
 
-newtype SwaggerMimeList = SwaggerMimeList { getSwaggerMimeList :: [MediaType] }
+newtype MimeList = MimeList { getMimeList :: [MediaType] }
   deriving (Eq, Show, Monoid)
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
-data SwaggerParameter = SwaggerParameter
+data Parameter = Parameter
   { -- | The name of the parameter.
     -- Parameter names are case sensitive.
-    _swaggerParameterName :: Text
+    _parameterName :: Text
 
     -- | A brief description of the parameter.
     -- This could contain examples of use.
     -- GFM syntax can be used for rich text representation.
-  , _swaggerParameterDescription :: Maybe Text
+  , _parameterDescription :: Maybe Text
 
     -- | Determines whether this parameter is mandatory.
     -- If the parameter is in "path", this property is required and its value MUST be true.
     -- Otherwise, the property MAY be included and its default value is @False@.
-  , _swaggerParameterRequired :: Maybe Bool
+  , _parameterRequired :: Maybe Bool
 
     -- | Parameter schema.
-  , _swaggerParameterSchema :: SwaggerParameterSchema
+  , _parameterSchema :: ParameterSchema
   } deriving (Eq, Show, Generic)
 
-data SwaggerParameterSchema
-  = SwaggerParameterBody (SwaggerReferenced SwaggerSchema)
-  | SwaggerParameterOther SwaggerParameterOtherSchema
+data ParameterSchema
+  = ParameterBody (Referenced Schema)
+  | ParameterOther ParameterOtherSchema
   deriving (Eq, Show)
 
-data SwaggerParameterOtherSchema = SwaggerParameterOtherSchema
+data ParameterOtherSchema = ParameterOtherSchema
   { -- | The location of the parameter.
-    _swaggerParameterOtherSchemaIn :: SwaggerParameterLocation
+    _parameterOtherSchemaIn :: ParameterLocation
 
     -- | The type of the parameter.
     -- Since the parameter is not located at the request body,
     -- it is limited to simple types (that is, not an object).
-    -- If type is @'SwaggerParamFile'@, the @consumes@ MUST be either
+    -- If type is @'ParamFile'@, the @consumes@ MUST be either
     -- "multipart/form-data" or " application/x-www-form-urlencoded"
-    -- and the parameter MUST be in @'SwaggerParameterFormData'@.
-  , _swaggerParameterOtherSchemaType :: SwaggerParameterType
+    -- and the parameter MUST be in @'ParameterFormData'@.
+  , _parameterOtherSchemaType :: ParameterType
 
     -- | The extending format for the previously mentioned type.
-  , _swaggerParameterOtherSchemaFormat :: Maybe SwaggerFormat
+  , _parameterOtherSchemaFormat :: Maybe Format
 
     -- | Sets the ability to pass empty-valued parameters.
-    -- This is valid only for either @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@
+    -- This is valid only for either @'ParameterQuery'@ or @'ParameterFormData'@
     -- and allows you to send a parameter with a name only or an empty value.
     -- Default value is @False@.
-  , _swaggerParameterOtherSchemaAllowEmptyValue :: Maybe Bool
+  , _parameterOtherSchemaAllowEmptyValue :: Maybe Bool
 
-    -- | __Required if type is @'SwaggerParamArray'@__.
+    -- | __Required if type is @'ParamArray'@__.
     -- Describes the type of items in the array.
-  , _swaggerParameterOtherSchemaItems :: Maybe SwaggerItems
+  , _parameterOtherSchemaItems :: Maybe Items
 
-    -- | Determines the format of the array if @'SwaggerParamArray'@ is used.
+    -- | Determines the format of the array if @'ParamArray'@ is used.
     -- Default value is csv.
-  , _swaggerParameterOtherSchemaCollectionFormat :: Maybe SwaggerCollectionFormat
+  , _parameterOtherSchemaCollectionFormat :: Maybe CollectionFormat
 
-  , _swaggerParameterOtherSchemaCommon :: SwaggerSchemaCommon
+  , _parameterOtherSchemaCommon :: SchemaCommon
   } deriving (Eq, Show, Generic)
 
-data SwaggerParameterType
-  = SwaggerParamString
-  | SwaggerParamNumber
-  | SwaggerParamInteger
-  | SwaggerParamBoolean
-  | SwaggerParamArray
-  | SwaggerParamFile
+data ParameterType
+  = ParamString
+  | ParamNumber
+  | ParamInteger
+  | ParamBoolean
+  | ParamArray
+  | ParamFile
   deriving (Eq, Show)
 
-data SwaggerParameterLocation
+data ParameterLocation
   = -- | Parameters that are appended to the URL.
     -- For example, in @/items?id=###@, the query parameter is @id@.
-    SwaggerParameterQuery
+    ParameterQuery
     -- | Custom headers that are expected as part of the request.
-  | SwaggerParameterHeader
+  | ParameterHeader
     -- | Used together with Path Templating, where the parameter value is actually part of the operation's URL.
     -- This does not include the host or base path of the API.
     -- For example, in @/items/{itemId}@, the path parameter is @itemId@.
-  | SwaggerParameterPath
+  | ParameterPath
     -- | Used to describe the payload of an HTTP request when either @application/x-www-form-urlencoded@
     -- or @multipart/form-data@ are used as the content type of the request
     -- (in Swagger's definition, the @consumes@ property of an operation).
-    -- This is the only parameter type that can be used to send files, thus supporting the @'SwaggerParamFile'@ type.
+    -- This is the only parameter type that can be used to send files, thus supporting the @'ParamFile'@ type.
     -- Since form parameters are sent in the payload, they cannot be declared together with a body parameter for the same operation.
     -- Form parameters have a different format based on the content-type used
     -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
-  | SwaggerParameterFormData
+  | ParameterFormData
   deriving (Eq, Show)
 
-type SwaggerFormat = Text
+type Format = Text
 
 -- | Determines the format of the array.
-data SwaggerCollectionFormat
-  = SwaggerCollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | SwaggerCollectionSSV   -- ^ Space separated values: @foo bar@.
-  | SwaggerCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
-  | SwaggerCollectionPipes -- ^ Pipe separated values: @foo|bar@.
-  | SwaggerCollectionMulti -- ^ Corresponds to multiple parameter instances
+data CollectionFormat
+  = CollectionCSV   -- ^ Comma separated values: @foo,bar@.
+  | CollectionSSV   -- ^ Space separated values: @foo bar@.
+  | CollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
+  | CollectionPipes -- ^ Pipe separated values: @foo|bar@.
+  | CollectionMulti -- ^ Corresponds to multiple parameter instances
                            -- instead of multiple values for a single instance @foo=bar&foo=baz@.
-                           -- This is valid only for parameters in @'SwaggerParameterQuery'@ or @'SwaggerParameterFormData'@.
+                           -- This is valid only for parameters in @'ParameterQuery'@ or @'ParameterFormData'@.
   deriving (Eq, Show)
 
-data SwaggerItemsType
-  = SwaggerItemsString
-  | SwaggerItemsNumber
-  | SwaggerItemsInteger
-  | SwaggerItemsBoolean
-  | SwaggerItemsArray
+data ItemsType
+  = ItemsString
+  | ItemsNumber
+  | ItemsInteger
+  | ItemsBoolean
+  | ItemsArray
   deriving (Eq, Show)
 
-data SwaggerSchemaType
-  = SwaggerSchemaArray
-  | SwaggerSchemaBoolean
-  | SwaggerSchemaInteger
-  | SwaggerSchemaNumber
-  | SwaggerSchemaNull
-  | SwaggerSchemaObject
-  | SwaggerSchemaString
+data SchemaType
+  = SchemaArray
+  | SchemaBoolean
+  | SchemaInteger
+  | SchemaNumber
+  | SchemaNull
+  | SchemaObject
+  | SchemaString
   deriving (Eq, Show)
 
 -- | Determines the format of the nested array.
-data SwaggerItemsCollectionFormat
-  = SwaggerItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | SwaggerItemsCollectionSSV   -- ^ Space separated values: @foo bar@.
-  | SwaggerItemsCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
-  | SwaggerItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
+data ItemsCollectionFormat
+  = ItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
+  | ItemsCollectionSSV   -- ^ Space separated values: @foo bar@.
+  | ItemsCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
+  | ItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
   deriving (Eq, Show)
 
-type SwaggerParamName = Text
+type ParamName = Text
 
-data SwaggerSchema = SwaggerSchema
-  { _swaggerSchemaType :: SwaggerSchemaType
-  , _swaggerSchemaFormat :: Maybe SwaggerFormat
-  , _swaggerSchemaTitle :: Maybe Text
-  , _swaggerSchemaDescription :: Maybe Text
-  , _swaggerSchemaRequired :: [SwaggerParamName]
+data Schema = Schema
+  { _schemaType :: SchemaType
+  , _schemaFormat :: Maybe Format
+  , _schemaTitle :: Maybe Text
+  , _schemaDescription :: Maybe Text
+  , _schemaRequired :: [ParamName]
 
-  , _swaggerSchemaItems :: Maybe SwaggerSchemaItems
-  , _swaggerSchemaAllOf :: Maybe [SwaggerSchema]
-  , _swaggerSchemaProperties :: HashMap Text (SwaggerReferenced SwaggerSchema)
-  , _swaggerSchemaAdditionalProperties :: Maybe SwaggerSchema
+  , _schemaItems :: Maybe SchemaItems
+  , _schemaAllOf :: Maybe [Schema]
+  , _schemaProperties :: HashMap Text (Referenced Schema)
+  , _schemaAdditionalProperties :: Maybe Schema
 
-  , _swaggerSchemaDiscriminator :: Maybe Text
-  , _swaggerSchemaReadOnly :: Maybe Bool
-  , _swaggerSchemaXml :: Maybe SwaggerXml
-  , _swaggerSchemaExternalDocs :: Maybe SwaggerExternalDocs
-  , _swaggerSchemaExample :: Maybe Value
+  , _schemaDiscriminator :: Maybe Text
+  , _schemaReadOnly :: Maybe Bool
+  , _schemaXml :: Maybe Xml
+  , _schemaExternalDocs :: Maybe ExternalDocs
+  , _schemaExample :: Maybe Value
 
-  , _swaggerSchemaMaxProperties :: Maybe Integer
-  , _swaggerSchemaMinProperties :: Maybe Integer
+  , _schemaMaxProperties :: Maybe Integer
+  , _schemaMinProperties :: Maybe Integer
 
-  , _swaggerSchemaCommon :: SwaggerSchemaCommon
+  , _schemaSchemaCommon :: SchemaCommon
   } deriving (Eq, Show, Generic)
 
-data SwaggerSchemaItems
-  = SwaggerSchemaItemsObject (SwaggerReferenced SwaggerSchema)
-  | SwaggerSchemaItemsArray [SwaggerReferenced SwaggerSchema]
+data SchemaItems
+  = SchemaItemsObject (Referenced Schema)
+  | SchemaItemsArray [Referenced Schema]
   deriving (Eq, Show)
 
-data SwaggerSchemaCommon = SwaggerSchemaCommon
+data SchemaCommon = SchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
     -- (Note: "default" has no meaning for required parameters.)
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-    _swaggerSchemaDefault :: Maybe Value
+    _schemaCommonDefault :: Maybe Value
 
-  , _swaggerSchemaMaximum :: Maybe Integer
-  , _swaggerSchemaExclusiveMaximum :: Maybe Bool
-  , _swaggerSchemaMinimum :: Maybe Integer
-  , _swaggerSchemaExclusiveMinimum :: Maybe Bool
-  , _swaggerSchemaMaxLength :: Maybe Integer
-  , _swaggerSchemaMinLength :: Maybe Integer
-  , _swaggerSchemaPattern :: Maybe Text
-  , _swaggerSchemaMaxItems :: Maybe Integer
-  , _swaggerSchemaMinItems :: Maybe Integer
-  , _swaggerSchemaUniqueItems :: Maybe Bool
-  , _swaggerSchemaEnum :: Maybe [Value]
-  , _swaggerSchemaMultipleOf :: Maybe Integer
+  , _schemaCommonMaximum :: Maybe Integer
+  , _schemaCommonExclusiveMaximum :: Maybe Bool
+  , _schemaCommonMinimum :: Maybe Integer
+  , _schemaCommonExclusiveMinimum :: Maybe Bool
+  , _schemaCommonMaxLength :: Maybe Integer
+  , _schemaCommonMinLength :: Maybe Integer
+  , _schemaCommonPattern :: Maybe Text
+  , _schemaCommonMaxItems :: Maybe Integer
+  , _schemaCommonMinItems :: Maybe Integer
+  , _schemaCommonUniqueItems :: Maybe Bool
+  , _schemaCommonEnum :: Maybe [Value]
+  , _schemaCommonMultipleOf :: Maybe Integer
   } deriving (Eq, Show, Generic)
 
-data SwaggerXml = SwaggerXml
+data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
-    -- When defined within the @'SwaggerItems'@ (items), it will affect the name of the individual XML elements within the list.
+    -- When defined within the @'Items'@ (items), it will affect the name of the individual XML elements within the list.
     -- When defined alongside type being array (outside the items),
     -- it will affect the wrapping element and only if wrapped is true.
     -- If wrapped is false, it will be ignored.
-    _swaggerXmlName :: Maybe Text
+    _xmlName :: Maybe Text
 
     -- | The URL of the namespace definition.
     -- Value SHOULD be in the form of a URL.
-  , _swaggerXmlNamespace :: Maybe Text
+  , _xmlNamespace :: Maybe Text
 
     -- | The prefix to be used for the name.
-  , _swaggerXmlPrefix :: Maybe Text
+  , _xmlPrefix :: Maybe Text
 
     -- | Declares whether the property definition translates to an attribute instead of an element.
     -- Default value is @False@.
-  , _swaggerXmlAttribute :: Maybe Bool
+  , _xmlAttribute :: Maybe Bool
 
     -- | MAY be used only for an array definition.
     -- Signifies whether the array is wrapped
@@ -459,25 +459,25 @@ data SwaggerXml = SwaggerXml
     -- or unwrapped (@\<book/\>\<book/\>@).
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
-  , _swaggerXmlWrapped :: Maybe Bool
+  , _xmlWrapped :: Maybe Bool
   } deriving (Eq, Show, Generic)
 
-data SwaggerItems = SwaggerItems
+data Items = Items
   { -- | The internal type of the array.
-    _swaggerItemsType :: SwaggerItemsType
+    _itemsType :: ItemsType
 
     -- | The extending format for the previously mentioned type.
-  , _swaggerItemsFormat :: Maybe SwaggerFormat
+  , _itemsFormat :: Maybe Format
 
-    -- | __Required if type is @'SwaggerItemsArray'@.__
+    -- | __Required if type is @'ItemsArray'@.__
     -- Describes the type of items in the array.
-  , _swaggerItemsItems :: Maybe SwaggerItems
+  , _itemsItems :: Maybe Items
 
     -- | Determines the format of the array if type array is used.
-    -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , _swaggerItemsCollectionFormat :: Maybe SwaggerItemsCollectionFormat
+    -- Default value is @'ItemsCollectionCSV'@.
+  , _itemsCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _swaggerItemsCommon :: SwaggerSchemaCommon
+  , _itemsCommon :: SchemaCommon
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -485,76 +485,76 @@ data SwaggerItems = SwaggerItems
 -- It is not expected from the documentation to necessarily cover all possible HTTP response codes,
 -- since they may not be known in advance.
 -- However, it is expected from the documentation to cover a successful operation response and any known errors.
-data SwaggerResponses = SwaggerResponses
+data Responses = Responses
   { -- | The documentation of responses other than the ones declared for specific HTTP response codes.
     -- It can be used to cover undeclared responses.
-   _swaggerResponsesDefault :: Maybe (SwaggerReferenced SwaggerResponse)
+   _responsesDefault :: Maybe (Referenced Response)
 
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
-  , _swaggerResponsesResponses :: HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)
+  , _responsesResponses :: HashMap HttpStatusCode (Referenced Response)
   } deriving (Eq, Show, Generic)
 
 type HttpStatusCode = Int
 
 -- | Describes a single response from an API Operation.
-data SwaggerResponse = SwaggerResponse
+data Response = Response
   { -- | A short description of the response.
     -- GFM syntax can be used for rich text representation.
-    _swaggerResponseDescription :: Text
+    _responseDescription :: Text
 
     -- | A definition of the response structure.
     -- It can be a primitive, an array or an object.
     -- If this field does not exist, it means no content is returned as part of the response.
     -- As an extension to the Schema Object, its root type value may also be "file".
     -- This SHOULD be accompanied by a relevant produces mime-type.
-  , _swaggerResponseSchema :: Maybe (SwaggerReferenced SwaggerSchema)
+  , _responseSchema :: Maybe (Referenced Schema)
 
     -- | A list of headers that are sent with the response.
-  , _swaggerResponseHeaders :: HashMap HeaderName SwaggerHeader
+  , _responseHeaders :: HashMap HeaderName Header
 
     -- | An example of the response message.
-  , _swaggerResponseExamples :: Maybe SwaggerExample
+  , _responseExamples :: Maybe Example
   } deriving (Eq, Show, Generic)
 
 type HeaderName = Text
 
-data SwaggerHeader = SwaggerHeader
+data Header = Header
   { -- | A short description of the header.
-    _swaggerHeaderDescription :: Maybe Text
+    _headerDescription :: Maybe Text
 
     -- | The type of the object.
-  , _swaggerHeaderType :: SwaggerItemsType
+  , _headerType :: ItemsType
 
     -- | The extending format for the previously mentioned type. See Data Type Formats for further details.
-  , _swaggerHeaderFormat :: Maybe SwaggerFormat
+  , _headerFormat :: Maybe Format
 
-    -- | __Required if type is @'SwaggerItemsArray'@__.
+    -- | __Required if type is @'ItemsArray'@__.
     -- Describes the type of items in the array.
-  , _swaggerHeaderItems :: Maybe SwaggerItems
+  , _headerItems :: Maybe Items
 
     -- | Determines the format of the array if type array is used.
-    -- Default value is @'SwaggerItemsCollectionCSV'@.
-  , _swaggerHeaderCollectionFormat :: Maybe SwaggerItemsCollectionFormat
+    -- Default value is @'ItemsCollectionCSV'@.
+  , _headerCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _swaggerHeaderCommon :: SwaggerSchemaCommon
+  , _headerCommon :: SchemaCommon
   } deriving (Eq, Show, Generic)
 
-data SwaggerExample = SwaggerExample { getSwaggerExample :: Map MediaType Value }
+data Example = Example { getExample :: Map MediaType Value }
   deriving (Eq, Show)
 
 -- | The location of the API key.
-data SwaggerApiKeyLocation
-  = SwaggerApiKeyQuery
-  | SwaggerApiKeyHeader
+data ApiKeyLocation
+  = ApiKeyQuery
+  | ApiKeyHeader
   deriving (Eq, Show)
 
-data SwaggerApiKeyParams = SwaggerApiKeyParams
+data ApiKeyParams = ApiKeyParams
   { -- | The name of the header or query parameter to be used.
-    _swaggerApiKeyName :: Text
+    _apiKeyName :: Text
 
     -- | The location of the API key.
-  , _swaggerApiKeyIn :: SwaggerApiKeyLocation
+  , _apiKeyIn :: ApiKeyLocation
   } deriving (Eq, Show)
 
 -- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
@@ -563,74 +563,74 @@ type AuthorizationURL = Text
 -- | The token URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type TokenURL = Text
 
-data SwaggerOAuth2Flow
-  = SwaggerOAuth2Implicit AuthorizationURL
-  | SwaggerOAuth2Password TokenURL
-  | SwaggerOAuth2Application TokenURL
-  | SwaggerOAuth2AccessCode AuthorizationURL TokenURL
+data OAuth2Flow
+  = OAuth2Implicit AuthorizationURL
+  | OAuth2Password TokenURL
+  | OAuth2Application TokenURL
+  | OAuth2AccessCode AuthorizationURL TokenURL
   deriving (Eq, Show)
 
-data SwaggerOAuth2Params = SwaggerOAuth2Params
+data OAuth2Params = OAuth2Params
   { -- | The flow used by the OAuth2 security scheme.
-    _swaggerOAuth2Flow :: SwaggerOAuth2Flow
+    _oauth2Flow :: OAuth2Flow
 
     -- | The available scopes for the OAuth2 security scheme.
-  , _swaggerOAuth2Scopes :: HashMap Text Text
+  , _oauth2Scopes :: HashMap Text Text
   } deriving (Eq, Show, Generic)
 
-data SwaggerSecuritySchemeType
-  = SwaggerSecuritySchemeBasic
-  | SwaggerSecuritySchemeApiKey SwaggerApiKeyParams
-  | SwaggerSecuritySchemeOAuth2 SwaggerOAuth2Params
+data SecuritySchemeType
+  = SecuritySchemeBasic
+  | SecuritySchemeApiKey ApiKeyParams
+  | SecuritySchemeOAuth2 OAuth2Params
   deriving (Eq, Show)
 
-data SwaggerSecurityScheme = SwaggerSecurityScheme
+data SecurityScheme = SecurityScheme
   { -- | The type of the security scheme.
-    _swaggerSecuritySchemeType :: SwaggerSecuritySchemeType
+    _securitySchemeType :: SecuritySchemeType
 
     -- | A short description for security scheme.
-  , _swaggerSecuritySchemeDescription :: Maybe Text
+  , _securitySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
-newtype SwaggerSecurityRequirement = SwaggerSecurityRequirement
-  { getSwaggerSecurityRequirement :: HashMap Text [Text]
+newtype SecurityRequirement = SecurityRequirement
+  { getSecurityRequirement :: HashMap Text [Text]
   } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON)
 
--- | Allows adding meta data to a single tag that is used by @SwaggerOperation@.
--- It is not mandatory to have a @SwaggerTag@ per tag used there.
-data SwaggerTag = SwaggerTag
+-- | Allows adding meta data to a single tag that is used by @Operation@.
+-- It is not mandatory to have a @Tag@ per tag used there.
+data Tag = Tag
   { -- | The name of the tag.
-    _swaggerTagName :: Text
+    _tagName :: Text
 
     -- | A short description for the tag.
     -- GFM syntax can be used for rich text representation.
-  , _swaggerTagDescription :: Maybe Text
+  , _tagDescription :: Maybe Text
 
     -- | Additional external documentation for this tag.
-  , _swaggerTagExternalDocs :: Maybe SwaggerExternalDocs
+  , _tagExternalDocs :: Maybe ExternalDocs
   } deriving (Eq, Show)
 
 -- | Allows referencing an external resource for extended documentation.
-data SwaggerExternalDocs = SwaggerExternalDocs
+data ExternalDocs = ExternalDocs
   { -- | A short description of the target documentation.
     -- GFM syntax can be used for rich text representation.
-    _swaggerExternalDocsDescription :: Maybe Text
+    _externalDocsDescription :: Maybe Text
 
     -- | The URL for the target documentation.
-  , _swaggerExternalDocsUrl :: URL
+  , _externalDocsUrl :: URL
   } deriving (Eq, Show, Generic)
 
 -- | A simple object to allow referencing other definitions in the specification.
 -- It can be used to reference parameters and responses that are defined at the top level for reuse.
-newtype SwaggerReference = SwaggerReference { getSwaggerReference :: Text }
+newtype Reference = Reference { getReference :: Text }
   deriving (Eq, Show)
 
-data SwaggerReferenced a
-  = SwaggerRef SwaggerReference
-  | SwaggerInline a
+data Referenced a
+  = Ref Reference
+  | Inline a
   deriving (Eq, Show)
 
 newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
@@ -643,47 +643,47 @@ instance Monoid Swagger where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerInfo where
+instance Monoid Info where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerPaths where
+instance Monoid Paths where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerPathItem where
+instance Monoid PathItem where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerSchema where
+instance Monoid Schema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerSchemaCommon where
+instance Monoid SchemaCommon where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerParameter where
+instance Monoid Parameter where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerParameterOtherSchema where
+instance Monoid ParameterOtherSchema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerResponses where
+instance Monoid Responses where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerResponse where
+instance Monoid Response where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerExternalDocs where
+instance Monoid ExternalDocs where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SwaggerOperation where
+instance Monoid Operation where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -691,217 +691,217 @@ instance Monoid SwaggerOperation where
 -- SwaggerMonoid helper instances
 -- =======================================================================
 
-instance SwaggerMonoid SwaggerInfo
-instance SwaggerMonoid SwaggerPaths
-instance SwaggerMonoid SwaggerPathItem
-instance SwaggerMonoid SwaggerSchema
-instance SwaggerMonoid SwaggerSchemaCommon
-instance SwaggerMonoid SwaggerParameter
-instance SwaggerMonoid SwaggerParameterOtherSchema
-instance SwaggerMonoid SwaggerResponses
-instance SwaggerMonoid SwaggerResponse
-instance SwaggerMonoid SwaggerExternalDocs
-instance SwaggerMonoid SwaggerOperation
+instance SwaggerMonoid Info
+instance SwaggerMonoid Paths
+instance SwaggerMonoid PathItem
+instance SwaggerMonoid Schema
+instance SwaggerMonoid SchemaCommon
+instance SwaggerMonoid Parameter
+instance SwaggerMonoid ParameterOtherSchema
+instance SwaggerMonoid Responses
+instance SwaggerMonoid Response
+instance SwaggerMonoid ExternalDocs
+instance SwaggerMonoid Operation
 
-instance SwaggerMonoid SwaggerMimeList
+instance SwaggerMonoid MimeList
 deriving instance SwaggerMonoid URL
 
-instance SwaggerMonoid SwaggerSchemaType where
-  swaggerMempty = SwaggerSchemaNull
+instance SwaggerMonoid SchemaType where
+  swaggerMempty = SchemaNull
   swaggerMappend _ y = y
 
-instance SwaggerMonoid SwaggerParameterType where
-  swaggerMempty = SwaggerParamString
+instance SwaggerMonoid ParameterType where
+  swaggerMempty = ParamString
   swaggerMappend _ y = y
 
-instance SwaggerMonoid SwaggerParameterLocation where
-  swaggerMempty = SwaggerParameterQuery
+instance SwaggerMonoid ParameterLocation where
+  swaggerMempty = ParameterQuery
   swaggerMappend _ y = y
 
-instance SwaggerMonoid (HashMap Text SwaggerSchema) where
+instance SwaggerMonoid (HashMap Text Schema) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
-instance SwaggerMonoid (HashMap Text (SwaggerReferenced SwaggerSchema)) where
+instance SwaggerMonoid (HashMap Text (Referenced Schema)) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith swaggerMappend
 
-instance Monoid a => SwaggerMonoid (SwaggerReferenced a) where
-  swaggerMempty = SwaggerInline mempty
-  swaggerMappend (SwaggerInline x) (SwaggerInline y) = SwaggerInline (x <> y)
+instance Monoid a => SwaggerMonoid (Referenced a) where
+  swaggerMempty = Inline mempty
+  swaggerMappend (Inline x) (Inline y) = Inline (x <> y)
   swaggerMappend _ y = y
 
-instance SwaggerMonoid (HashMap Text SwaggerParameter) where
+instance SwaggerMonoid (HashMap Text Parameter) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
-instance SwaggerMonoid (HashMap Text SwaggerResponse) where
+instance SwaggerMonoid (HashMap Text Response) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid (HashMap Text SwaggerSecurityScheme) where
+instance SwaggerMonoid (HashMap Text SecurityScheme) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid (HashMap FilePath SwaggerPathItem) where
+instance SwaggerMonoid (HashMap FilePath PathItem) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
-instance SwaggerMonoid (HashMap HeaderName SwaggerHeader) where
+instance SwaggerMonoid (HashMap HeaderName Header) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid (HashMap HttpStatusCode (SwaggerReferenced SwaggerResponse)) where
+instance SwaggerMonoid (HashMap HttpStatusCode (Referenced Response)) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid SwaggerParameterSchema where
-  swaggerMempty = SwaggerParameterOther swaggerMempty
-  swaggerMappend (SwaggerParameterBody x) (SwaggerParameterBody y) = SwaggerParameterBody (swaggerMappend x y)
-  swaggerMappend (SwaggerParameterOther x) (SwaggerParameterOther y) = SwaggerParameterOther (swaggerMappend x y)
+instance SwaggerMonoid ParameterSchema where
+  swaggerMempty = ParameterOther swaggerMempty
+  swaggerMappend (ParameterBody x) (ParameterBody y) = ParameterBody (swaggerMappend x y)
+  swaggerMappend (ParameterOther x) (ParameterOther y) = ParameterOther (swaggerMappend x y)
   swaggerMappend _ y = y
 
 -- =======================================================================
 -- TH derived ToJSON and FromJSON instances
 -- =======================================================================
 
-deriveJSON (jsonPrefix "SwaggerParameter") ''SwaggerParameterLocation
-deriveJSON (jsonPrefix "SwaggerParam") ''SwaggerParameterType
-deriveJSON' ''SwaggerInfo
-deriveJSON' ''SwaggerContact
-deriveJSON' ''SwaggerLicense
-deriveJSON (jsonPrefix "SwaggerSchema") ''SwaggerSchemaType
-deriveJSON (jsonPrefix "SwaggerItems") ''SwaggerItemsType
-deriveJSON (jsonPrefix "SwaggerItemsCollection") ''SwaggerItemsCollectionFormat
-deriveJSON (jsonPrefix "SwaggerCollection") ''SwaggerCollectionFormat
-deriveJSON (jsonPrefix "SwaggerApiKey") ''SwaggerApiKeyLocation
-deriveJSON (jsonPrefix "swaggerApiKey") ''SwaggerApiKeyParams
-deriveJSON (jsonPrefix "swaggerSchema") ''SwaggerSchemaCommon
-deriveJSONDefault ''SwaggerScheme
-deriveJSON' ''SwaggerTag
-deriveJSON' ''SwaggerExternalDocs
+deriveJSON (jsonPrefix "Parameter") ''ParameterLocation
+deriveJSON (jsonPrefix "Param") ''ParameterType
+deriveJSON' ''Info
+deriveJSON' ''Contact
+deriveJSON' ''License
+deriveJSON (jsonPrefix "Schema") ''SchemaType
+deriveJSON (jsonPrefix "Items") ''ItemsType
+deriveJSON (jsonPrefix "ItemsCollection") ''ItemsCollectionFormat
+deriveJSON (jsonPrefix "Collection") ''CollectionFormat
+deriveJSON (jsonPrefix "ApiKey") ''ApiKeyLocation
+deriveJSON (jsonPrefix "apiKey") ''ApiKeyParams
+deriveJSON' ''SchemaCommon
+deriveJSONDefault ''Scheme
+deriveJSON' ''Tag
+deriveJSON' ''ExternalDocs
 
-deriveToJSON' ''SwaggerOperation
-deriveToJSON' ''SwaggerResponse
-deriveToJSON' ''SwaggerPathItem
-deriveToJSON' ''SwaggerXml
+deriveToJSON' ''Operation
+deriveToJSON' ''Response
+deriveToJSON' ''PathItem
+deriveToJSON' ''Xml
 
 -- =======================================================================
 -- Manual ToJSON instances
 -- =======================================================================
 
-instance ToJSON SwaggerOAuth2Flow where
-  toJSON (SwaggerOAuth2Implicit authUrl) = object
+instance ToJSON OAuth2Flow where
+  toJSON (OAuth2Implicit authUrl) = object
     [ "flow"             .= ("implicit" :: Text)
     , "authorizationUrl" .= authUrl ]
-  toJSON (SwaggerOAuth2Password tokenUrl) = object
+  toJSON (OAuth2Password tokenUrl) = object
     [ "flow"     .= ("password" :: Text)
     , "tokenUrl" .= tokenUrl ]
-  toJSON (SwaggerOAuth2Application tokenUrl) = object
+  toJSON (OAuth2Application tokenUrl) = object
     [ "flow"     .= ("application" :: Text)
     , "tokenUrl" .= tokenUrl ]
-  toJSON (SwaggerOAuth2AccessCode authUrl tokenUrl) = object
+  toJSON (OAuth2AccessCode authUrl tokenUrl) = object
     [ "flow"             .= ("accessCode" :: Text)
     , "authorizationUrl" .= authUrl
     , "tokenUrl"         .= tokenUrl ]
 
-instance ToJSON SwaggerOAuth2Params where
-  toJSON = genericToJSONWithSub "flow" (jsonPrefix "swaggerOAuth2")
+instance ToJSON OAuth2Params where
+  toJSON = genericToJSONWithSub "flow" (jsonPrefix "oauth2")
 
-instance ToJSON SwaggerSecuritySchemeType where
-  toJSON SwaggerSecuritySchemeBasic
+instance ToJSON SecuritySchemeType where
+  toJSON SecuritySchemeBasic
       = object [ "type" .= ("basic" :: Text) ]
-  toJSON (SwaggerSecuritySchemeApiKey params)
+  toJSON (SecuritySchemeApiKey params)
       = toJSON params
     <+> object [ "type" .= ("apiKey" :: Text) ]
-  toJSON (SwaggerSecuritySchemeOAuth2 params)
+  toJSON (SecuritySchemeOAuth2 params)
       = toJSON params
     <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
-  toJSON = addVersion . genericToJSON (jsonPrefix "swagger")
+  toJSON = addVersion . genericToJSON (jsonPrefix "")
     where
       addVersion (Object o) = Object (HashMap.insert "swagger" "2.0" o)
       addVersion _ = error "impossible"
 
-instance ToJSON SwaggerSecurityScheme where
-  toJSON = genericToJSONWithSub "type" (jsonPrefix "swaggerSecurityScheme")
+instance ToJSON SecurityScheme where
+  toJSON = genericToJSONWithSub "type" (jsonPrefix "securityScheme")
 
-instance ToJSON SwaggerSchema where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerSchema")
+instance ToJSON Schema where
+  toJSON = genericToJSONWithSub "schemaCommon" (jsonPrefix "schema")
 
-instance ToJSON SwaggerHeader where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerHeader")
+instance ToJSON Header where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "header")
 
-instance ToJSON SwaggerItems where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerItems")
+instance ToJSON Items where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "items")
 
-instance ToJSON SwaggerHost where
-  toJSON (SwaggerHost host mport) = toJSON $
+instance ToJSON Host where
+  toJSON (Host host mport) = toJSON $
     case mport of
       Nothing -> host
       Just port -> host ++ ":" ++ show port
 
-instance ToJSON SwaggerPaths where
-  toJSON (SwaggerPaths m) = toJSON m
+instance ToJSON Paths where
+  toJSON (Paths m) = toJSON m
 
-instance ToJSON SwaggerMimeList where
-  toJSON (SwaggerMimeList xs) = toJSON (map show xs)
+instance ToJSON MimeList where
+  toJSON (MimeList xs) = toJSON (map show xs)
 
-instance ToJSON SwaggerParameter where
-  toJSON = genericToJSONWithSub "schema" (jsonPrefix "swaggerParameter")
+instance ToJSON Parameter where
+  toJSON = genericToJSONWithSub "schema" (jsonPrefix "parameter")
 
-instance ToJSON SwaggerParameterSchema where
-  toJSON (SwaggerParameterBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
-  toJSON (SwaggerParameterOther s) = toJSON s
+instance ToJSON ParameterSchema where
+  toJSON (ParameterBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
+  toJSON (ParameterOther s) = toJSON s
 
-instance ToJSON SwaggerParameterOtherSchema where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
+instance ToJSON ParameterOtherSchema where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "parameterOtherSchema")
 
-instance ToJSON SwaggerSchemaItems where
-  toJSON (SwaggerSchemaItemsObject x) = toJSON x
-  toJSON (SwaggerSchemaItemsArray xs) = toJSON xs
+instance ToJSON SchemaItems where
+  toJSON (SchemaItemsObject x) = toJSON x
+  toJSON (SchemaItemsArray xs) = toJSON xs
 
-instance ToJSON SwaggerResponses where
-  toJSON (SwaggerResponses def rs) = toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
+instance ToJSON Responses where
+  toJSON (Responses def rs) = toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
 
-instance ToJSON SwaggerExample where
-  toJSON = toJSON . Map.mapKeys show . getSwaggerExample
+instance ToJSON Example where
+  toJSON = toJSON . Map.mapKeys show . getExample
 
-instance ToJSON SwaggerReference where
-  toJSON (SwaggerReference ref) = object [ "$ref" .= ref ]
+instance ToJSON Reference where
+  toJSON (Reference ref) = object [ "$ref" .= ref ]
 
-instance ToJSON a => ToJSON (SwaggerReferenced a) where
-  toJSON (SwaggerRef ref) = toJSON ref
-  toJSON (SwaggerInline x) = toJSON x
+instance ToJSON a => ToJSON (Referenced a) where
+  toJSON (Ref ref) = toJSON ref
+  toJSON (Inline x) = toJSON x
 
 -- =======================================================================
 -- Manual FromJSON instances
 -- =======================================================================
 
-instance FromJSON SwaggerOAuth2Flow where
+instance FromJSON OAuth2Flow where
   parseJSON (Object o) = do
     (flow :: Text) <- o .: "flow"
     case flow of
-      "implicit"    -> SwaggerOAuth2Implicit    <$> o .: "authorizationUrl"
-      "password"    -> SwaggerOAuth2Password    <$> o .: "tokenUrl"
-      "application" -> SwaggerOAuth2Application <$> o .: "tokenUrl"
-      "accessCode"  -> SwaggerOAuth2AccessCode
+      "implicit"    -> OAuth2Implicit    <$> o .: "authorizationUrl"
+      "password"    -> OAuth2Password    <$> o .: "tokenUrl"
+      "application" -> OAuth2Application <$> o .: "tokenUrl"
+      "accessCode"  -> OAuth2AccessCode
         <$> o .: "authorizationUrl"
         <*> o .: "tokenUrl"
       _ -> empty
   parseJSON _ = empty
 
-instance FromJSON SwaggerOAuth2Params where
-  parseJSON = genericParseJSONWithSub "flow" (jsonPrefix "swaggerOAuth2")
+instance FromJSON OAuth2Params where
+  parseJSON = genericParseJSONWithSub "flow" (jsonPrefix "oauth2")
 
-instance FromJSON SwaggerSecuritySchemeType where
+instance FromJSON SecuritySchemeType where
   parseJSON json@(Object o) = do
     (t :: Text) <- o .: "type"
     case t of
-      "basic"  -> pure SwaggerSecuritySchemeBasic
-      "apiKey" -> SwaggerSecuritySchemeApiKey <$> parseJSON json
-      "oauth2" -> SwaggerSecuritySchemeOAuth2 <$> parseJSON json
+      "basic"  -> pure SecuritySchemeBasic
+      "apiKey" -> SecuritySchemeApiKey <$> parseJSON json
+      "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON json
       _ -> empty
   parseJSON _ = empty
 
@@ -909,101 +909,101 @@ instance FromJSON Swagger where
   parseJSON json@(Object o) = do
     (version :: Text) <- o .: "swagger"
     when (version /= "2.0") empty
-    (genericParseJSON (jsonPrefix "swagger")
-      `withDefaults` [ "consumes" .= (mempty :: SwaggerMimeList)
-                     , "produces" .= (mempty :: SwaggerMimeList)
-                     , "security" .= ([] :: [SwaggerSecurityRequirement])
-                     , "tags" .= ([] :: [SwaggerTag])
-                     , "definitions" .= (mempty :: HashMap Text SwaggerSchema)
-                     , "parameters" .= (mempty :: HashMap Text SwaggerParameter)
-                     , "responses" .= (mempty :: HashMap Text SwaggerResponse)
-                     , "securityDefinitions" .= (mempty :: HashMap Text SwaggerSecurityScheme)
+    (genericParseJSON (jsonPrefix "")
+      `withDefaults` [ "consumes" .= (mempty :: MimeList)
+                     , "produces" .= (mempty :: MimeList)
+                     , "security" .= ([] :: [SecurityRequirement])
+                     , "tags" .= ([] :: [Tag])
+                     , "definitions" .= (mempty :: HashMap Text Schema)
+                     , "parameters" .= (mempty :: HashMap Text Parameter)
+                     , "responses" .= (mempty :: HashMap Text Response)
+                     , "securityDefinitions" .= (mempty :: HashMap Text SecurityScheme)
                      ] ) json
   parseJSON _ = empty
 
-instance FromJSON SwaggerSecurityScheme where
-  parseJSON = genericParseJSONWithSub "type" (jsonPrefix "swaggerSecurityScheme")
+instance FromJSON SecurityScheme where
+  parseJSON = genericParseJSONWithSub "type" (jsonPrefix "securityScheme")
 
-instance FromJSON SwaggerSchema where
-  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerSchema")
-    `withDefaults` [ "properties" .= (mempty :: HashMap Text SwaggerSchema)
-                   , "required"   .= ([] :: [SwaggerParamName]) ]
+instance FromJSON Schema where
+  parseJSON = genericParseJSONWithSub "schemaCommon" (jsonPrefix "schema")
+    `withDefaults` [ "properties" .= (mempty :: HashMap Text Schema)
+                   , "required"   .= ([] :: [ParamName]) ]
 
-instance FromJSON SwaggerHeader where
-  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerHeader")
+instance FromJSON Header where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "header")
 
-instance FromJSON SwaggerItems where
-  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerItems")
+instance FromJSON Items where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "items")
 
-instance FromJSON SwaggerHost where
+instance FromJSON Host where
   parseJSON (String s) =
     case fromInteger <$> readMaybe portStr of
       Nothing | not (null portStr) -> fail $ "Invalid port `" ++ portStr ++ "'"
-      mport -> pure $ SwaggerHost host mport
+      mport -> pure $ Host host mport
     where
       (hostText, portText) = Text.breakOn ":" s
       [host, portStr] = map Text.unpack [hostText, portText]
   parseJSON _ = empty
 
-instance FromJSON SwaggerPaths where
-  parseJSON json = SwaggerPaths <$> parseJSON json
+instance FromJSON Paths where
+  parseJSON json = Paths <$> parseJSON json
 
-instance FromJSON SwaggerMimeList where
-  parseJSON json = (SwaggerMimeList . map fromString) <$> parseJSON json
+instance FromJSON MimeList where
+  parseJSON json = (MimeList . map fromString) <$> parseJSON json
 
-instance FromJSON SwaggerParameter where
-  parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "swaggerParameter")
+instance FromJSON Parameter where
+  parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "parameter")
 
-instance FromJSON SwaggerParameterSchema where
+instance FromJSON ParameterSchema where
   parseJSON json@(Object o) = do
     (i :: Text) <- o .: "in"
     case i of
       "body" -> do
         schema <- o .: "schema"
-        SwaggerParameterBody <$> parseJSON schema
-      _ -> SwaggerParameterOther <$> parseJSON json
+        ParameterBody <$> parseJSON schema
+      _ -> ParameterOther <$> parseJSON json
   parseJSON _ = empty
 
-instance FromJSON SwaggerParameterOtherSchema where
-  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "swaggerParameterOtherSchema")
+instance FromJSON ParameterOtherSchema where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "parameterOtherSchema")
 
-instance FromJSON SwaggerSchemaItems where
-  parseJSON json@(Object _) = SwaggerSchemaItemsObject <$> parseJSON json
-  parseJSON json@(Array _) = SwaggerSchemaItemsArray <$> parseJSON json
+instance FromJSON SchemaItems where
+  parseJSON json@(Object _) = SchemaItemsObject <$> parseJSON json
+  parseJSON json@(Array _) = SchemaItemsArray <$> parseJSON json
   parseJSON _ = empty
 
-instance FromJSON SwaggerResponses where
-  parseJSON (Object o) = SwaggerResponses
+instance FromJSON Responses where
+  parseJSON (Object o) = Responses
     <$> o .:? "default"
     <*> (parseJSON (Object (HashMap.delete "default" o)) >>= hashMapReadKeys)
   parseJSON _ = empty
 
-instance FromJSON SwaggerExample where
+instance FromJSON Example where
   parseJSON json = do
     m <- parseJSON json
-    pure $ SwaggerExample (Map.mapKeys fromString m)
+    pure $ Example (Map.mapKeys fromString m)
 
-instance FromJSON SwaggerResponse where
-  parseJSON = genericParseJSON (jsonPrefix "swaggerResponse")
-    `withDefaults` [ "headers" .= (mempty :: HashMap HeaderName SwaggerHeader) ]
+instance FromJSON Response where
+  parseJSON = genericParseJSON (jsonPrefix "response")
+    `withDefaults` [ "headers" .= (mempty :: HashMap HeaderName Header) ]
 
-instance FromJSON SwaggerOperation where
-  parseJSON = genericParseJSON (jsonPrefix "swaggerOperation")
-    `withDefaults` [ "security"   .= ([] :: [SwaggerSecurityRequirement]) ]
+instance FromJSON Operation where
+  parseJSON = genericParseJSON (jsonPrefix "operation")
+    `withDefaults` [ "security"   .= ([] :: [SecurityRequirement]) ]
 
-instance FromJSON SwaggerPathItem where
-  parseJSON = genericParseJSON (jsonPrefix "swaggerPathItem")
-    `withDefaults` [ "parameters" .= ([] :: [SwaggerParameter]) ]
+instance FromJSON PathItem where
+  parseJSON = genericParseJSON (jsonPrefix "pathItem")
+    `withDefaults` [ "parameters" .= ([] :: [Parameter]) ]
 
-instance FromJSON SwaggerReference where
-  parseJSON (Object o) = SwaggerReference <$> o .: "$ref"
+instance FromJSON Reference where
+  parseJSON (Object o) = Reference <$> o .: "$ref"
   parseJSON _ = empty
 
-instance FromJSON a => FromJSON (SwaggerReferenced a) where
+instance FromJSON a => FromJSON (Referenced a) where
   parseJSON json
-      = SwaggerRef    <$> parseJSON json
-    <|> SwaggerInline <$> parseJSON json
+      = Ref    <$> parseJSON json
+    <|> Inline <$> parseJSON json
 
-instance FromJSON SwaggerXml where
-  parseJSON = genericParseJSON (jsonPrefix "swaggerXml")
+instance FromJSON Xml where
+  parseJSON = genericParseJSON (jsonPrefix "xml")
 

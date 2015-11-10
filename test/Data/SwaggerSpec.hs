@@ -68,18 +68,18 @@ main = hspec spec
 -- Info object
 -- =======================================================================
 
-infoExample :: SwaggerInfo
-infoExample = SwaggerInfo
-  { _swaggerInfoTitle = "Swagger Sample App"
-  , _swaggerInfoDescription = Just "This is a sample server Petstore server."
-  , _swaggerInfoTermsOfService = Just "http://swagger.io/terms/"
-  , _swaggerInfoContact = Just contactExample
-  , _swaggerInfoLicense = Just licenseExample
-  , _swaggerInfoVersion = "1.0.1" }
+infoExample :: Info
+infoExample = Info
+  { _infoTitle = "Swagger Sample App"
+  , _infoDescription = Just "This is a sample server Petstore server."
+  , _infoTermsOfService = Just "http://swagger.io/terms/"
+  , _infoContact = Just contactExample
+  , _infoLicense = Just licenseExample
+  , _infoVersion = "1.0.1" }
   where
-    license = SwaggerLicense
-      { _swaggerLicenseName = "Apache 2.0"
-      , _swaggerLicenseUrl = Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html") }
+    license = License
+      { _licenseName = "Apache 2.0"
+      , _licenseUrl = Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html") }
 
 infoExampleJSON :: Value
 infoExampleJSON = [aesonQQ|
@@ -104,11 +104,11 @@ infoExampleJSON = [aesonQQ|
 -- Contact object
 -- =======================================================================
 
-contactExample :: SwaggerContact
-contactExample = SwaggerContact
-  { _swaggerContactName = Just "API Support"
-  , _swaggerContactUrl = Just (URL "http://www.swagger.io/support")
-  , _swaggerContactEmail = Just "support@swagger.io" }
+contactExample :: Contact
+contactExample = Contact
+  { _contactName = Just "API Support"
+  , _contactUrl = Just (URL "http://www.swagger.io/support")
+  , _contactEmail = Just "support@swagger.io" }
 
 contactExampleJSON :: Value
 contactExampleJSON = [aesonQQ|
@@ -123,10 +123,10 @@ contactExampleJSON = [aesonQQ|
 -- License object
 -- =======================================================================
 
-licenseExample :: SwaggerLicense
-licenseExample = SwaggerLicense
-  { _swaggerLicenseName = "Apache 2.0"
-  , _swaggerLicenseUrl = Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html") }
+licenseExample :: License
+licenseExample = License
+  { _licenseName = "Apache 2.0"
+  , _licenseUrl = Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html") }
 
 licenseExampleJSON :: Value
 licenseExampleJSON = [aesonQQ|
@@ -141,47 +141,47 @@ licenseExampleJSON = [aesonQQ|
 -- Operation object
 -- =======================================================================
 
-operationExample :: SwaggerOperation
+operationExample :: Operation
 operationExample = mempty
-  { _swaggerOperationTags = ["pet"]
-  , _swaggerOperationSummary = Just "Updates a pet in the store with form data"
-  , _swaggerOperationDescription = Just ""
-  , _swaggerOperationOperationId = Just "updatePetWithForm"
-  , _swaggerOperationConsumes = Just (SwaggerMimeList ["application/x-www-form-urlencoded"])
-  , _swaggerOperationProduces = Just (SwaggerMimeList ["application/json", "application/xml"])
-  , _swaggerOperationParameters = params
-  , _swaggerOperationResponses = responses
-  , _swaggerOperationSecurity = security
+  { _operationTags = ["pet"]
+  , _operationSummary = Just "Updates a pet in the store with form data"
+  , _operationDescription = Just ""
+  , _operationOperationId = Just "updatePetWithForm"
+  , _operationConsumes = Just (MimeList ["application/x-www-form-urlencoded"])
+  , _operationProduces = Just (MimeList ["application/json", "application/xml"])
+  , _operationParameters = params
+  , _operationResponses = responses
+  , _operationSecurity = security
   }
   where
-    security = [SwaggerSecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
+    security = [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
 
     responses = mempty
-      { _swaggerResponsesResponses =
-          [ (200, SwaggerInline mempty { _swaggerResponseDescription = "Pet updated." })
-          , (405, SwaggerInline mempty { _swaggerResponseDescription = "Invalid input" }) ] }
+      { _responsesResponses =
+          [ (200, Inline mempty { _responseDescription = "Pet updated." })
+          , (405, Inline mempty { _responseDescription = "Invalid input" }) ] }
 
-    params = map SwaggerInline
-      [ SwaggerParameter
-          { _swaggerParameterName = "petId"
-          , _swaggerParameterDescription = Just "ID of pet that needs to be updated"
-          , _swaggerParameterRequired = Just True
-          , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterPath) }
-      , SwaggerParameter
-          { _swaggerParameterName = "name"
-          , _swaggerParameterDescription = Just "Updated name of the pet"
-          , _swaggerParameterRequired = Just False
-          , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterFormData) }
-      , SwaggerParameter
-          { _swaggerParameterName = "status"
-          , _swaggerParameterDescription = Just "Updated status of the pet"
-          , _swaggerParameterRequired = Just False
-          , _swaggerParameterSchema = SwaggerParameterOther (stringSchema SwaggerParameterFormData) }
+    params = map Inline
+      [ Parameter
+          { _parameterName = "petId"
+          , _parameterDescription = Just "ID of pet that needs to be updated"
+          , _parameterRequired = Just True
+          , _parameterSchema = ParameterOther (stringSchema ParameterPath) }
+      , Parameter
+          { _parameterName = "name"
+          , _parameterDescription = Just "Updated name of the pet"
+          , _parameterRequired = Just False
+          , _parameterSchema = ParameterOther (stringSchema ParameterFormData) }
+      , Parameter
+          { _parameterName = "status"
+          , _parameterDescription = Just "Updated status of the pet"
+          , _parameterRequired = Just False
+          , _parameterSchema = ParameterOther (stringSchema ParameterFormData) }
       ]
 
     stringSchema i = mempty
-      { _swaggerParameterOtherSchemaIn = i
-      , _swaggerParameterOtherSchemaType = SwaggerParamString
+      { _parameterOtherSchemaIn = i
+      , _parameterOtherSchemaType = ParamString
       }
 
 operationExampleJSON :: Value
@@ -246,10 +246,10 @@ operationExampleJSON = [aesonQQ|
 -- Schema object
 -- =======================================================================
 
-schemaPrimitiveExample :: SwaggerSchema
+schemaPrimitiveExample :: Schema
 schemaPrimitiveExample = mempty
-  { _swaggerSchemaType = SwaggerSchemaString
-  , _swaggerSchemaFormat = Just "email"
+  { _schemaType = SchemaString
+  , _schemaFormat = Just "email"
   }
 
 schemaPrimitiveExampleJSON :: Value
@@ -260,19 +260,19 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 }
 |]
 
-schemaSimpleModelExample :: SwaggerSchema
+schemaSimpleModelExample :: Schema
 schemaSimpleModelExample = mempty
-  { _swaggerSchemaType = SwaggerSchemaObject
-  , _swaggerSchemaRequired = [ "name" ]
-  , _swaggerSchemaProperties =
-      [ ("name", SwaggerInline mempty
-            { _swaggerSchemaType = SwaggerSchemaString } )
-      , ("address", SwaggerRef (SwaggerReference "#/definitions/Address"))
-      , ("age", SwaggerInline mempty
-            { _swaggerSchemaType = SwaggerSchemaInteger
-            , _swaggerSchemaFormat = Just "int32"
-            , _swaggerSchemaCommon = mempty
-                { _swaggerSchemaMinimum = Just 0 } } ) ] }
+  { _schemaType = SchemaObject
+  , _schemaRequired = [ "name" ]
+  , _schemaProperties =
+      [ ("name", Inline mempty
+            { _schemaType = SchemaString } )
+      , ("address", Ref (Reference "#/definitions/Address"))
+      , ("age", Inline mempty
+            { _schemaType = SchemaInteger
+            , _schemaFormat = Just "int32"
+            , _schemaSchemaCommon = mempty
+                { _schemaCommonMinimum = Just 0 } } ) ] }
 
 schemaSimpleModelExampleJSON :: Value
 schemaSimpleModelExampleJSON = [aesonQQ|
@@ -297,11 +297,11 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 }
 |]
 
-schemaModelDictExample :: SwaggerSchema
+schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
-  { _swaggerSchemaType = SwaggerSchemaObject
-  , _swaggerSchemaAdditionalProperties = Just mempty
-      { _swaggerSchemaType = SwaggerSchemaString } }
+  { _schemaType = SchemaObject
+  , _schemaAdditionalProperties = Just mempty
+      { _schemaType = SchemaString } }
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -313,17 +313,17 @@ schemaModelDictExampleJSON = [aesonQQ|
 }
 |]
 
-schemaWithExampleExample :: SwaggerSchema
+schemaWithExampleExample :: Schema
 schemaWithExampleExample = mempty
-  { _swaggerSchemaType = SwaggerSchemaObject
-  , _swaggerSchemaProperties =
-      [ ("id", SwaggerInline mempty
-            { _swaggerSchemaType   = SwaggerSchemaInteger
-            , _swaggerSchemaFormat = Just "int64" })
-      , ("name", SwaggerInline mempty
-            { _swaggerSchemaType = SwaggerSchemaString }) ]
-  , _swaggerSchemaRequired = [ "name" ]
-  , _swaggerSchemaExample = Just [aesonQQ|
+  { _schemaType = SchemaObject
+  , _schemaProperties =
+      [ ("id", Inline mempty
+            { _schemaType   = SchemaInteger
+            , _schemaFormat = Just "int64" })
+      , ("name", Inline mempty
+            { _schemaType = SchemaString }) ]
+  , _schemaRequired = [ "name" ]
+  , _schemaExample = Just [aesonQQ|
       {
         "name": "Puma",
         "id": 1
@@ -357,24 +357,24 @@ schemaWithExampleExampleJSON = [aesonQQ|
 -- Definitions object
 -- =======================================================================
 
-definitionsExample :: HashMap Text SwaggerSchema
+definitionsExample :: HashMap Text Schema
 definitionsExample =
   [ ("Category", mempty
-      { _swaggerSchemaType = SwaggerSchemaObject
-      , _swaggerSchemaProperties =
-          [ ("id", SwaggerInline mempty
-              { _swaggerSchemaType = SwaggerSchemaInteger
-              , _swaggerSchemaFormat = Just "int64" })
-          , ("name", SwaggerInline mempty
-              { _swaggerSchemaType = SwaggerSchemaString }) ] })
+      { _schemaType = SchemaObject
+      , _schemaProperties =
+          [ ("id", Inline mempty
+              { _schemaType = SchemaInteger
+              , _schemaFormat = Just "int64" })
+          , ("name", Inline mempty
+              { _schemaType = SchemaString }) ] })
   , ("Tag", mempty
-      { _swaggerSchemaType = SwaggerSchemaObject
-      , _swaggerSchemaProperties =
-          [ ("id", SwaggerInline mempty
-              { _swaggerSchemaType = SwaggerSchemaInteger
-              , _swaggerSchemaFormat = Just "int64" })
-          , ("name", SwaggerInline mempty
-              { _swaggerSchemaType = SwaggerSchemaString }) ] }) ]
+      { _schemaType = SchemaObject
+      , _schemaProperties =
+          [ ("id", Inline mempty
+              { _schemaType = SchemaInteger
+              , _schemaFormat = Just "int64" })
+          , ("name", Inline mempty
+              { _schemaType = SchemaString }) ] }) ]
 
 definitionsExampleJSON :: Value
 definitionsExampleJSON = [aesonQQ|
@@ -410,24 +410,24 @@ definitionsExampleJSON = [aesonQQ|
 -- Parameters Definition object
 -- =======================================================================
 
-parametersDefinitionExample :: HashMap Text SwaggerParameter
+parametersDefinitionExample :: HashMap Text Parameter
 parametersDefinitionExample =
   [ ("skipParam", mempty
-      { _swaggerParameterName = "skip"
-      , _swaggerParameterDescription = Just "number of items to skip"
-      , _swaggerParameterRequired = Just True
-      , _swaggerParameterSchema = SwaggerParameterOther mempty
-          { _swaggerParameterOtherSchemaIn = SwaggerParameterQuery
-          , _swaggerParameterOtherSchemaType = SwaggerParamInteger
-          , _swaggerParameterOtherSchemaFormat = Just "int32" } })
+      { _parameterName = "skip"
+      , _parameterDescription = Just "number of items to skip"
+      , _parameterRequired = Just True
+      , _parameterSchema = ParameterOther mempty
+          { _parameterOtherSchemaIn = ParameterQuery
+          , _parameterOtherSchemaType = ParamInteger
+          , _parameterOtherSchemaFormat = Just "int32" } })
   , ("limitParam", mempty
-      { _swaggerParameterName = "limit"
-      , _swaggerParameterDescription = Just "max records to return"
-      , _swaggerParameterRequired = Just True
-      , _swaggerParameterSchema = SwaggerParameterOther mempty
-          { _swaggerParameterOtherSchemaIn = SwaggerParameterQuery
-          , _swaggerParameterOtherSchemaType = SwaggerParamInteger
-          , _swaggerParameterOtherSchemaFormat = Just "int32" } }) ]
+      { _parameterName = "limit"
+      , _parameterDescription = Just "max records to return"
+      , _parameterRequired = Just True
+      , _parameterSchema = ParameterOther mempty
+          { _parameterOtherSchemaIn = ParameterQuery
+          , _parameterOtherSchemaType = ParamInteger
+          , _parameterOtherSchemaFormat = Just "int32" } }) ]
 
 parametersDefinitionExampleJSON :: Value
 parametersDefinitionExampleJSON = [aesonQQ|
@@ -455,10 +455,10 @@ parametersDefinitionExampleJSON = [aesonQQ|
 -- Responses Definition object
 -- =======================================================================
 
-responsesDefinitionExample :: HashMap Text SwaggerResponse
+responsesDefinitionExample :: HashMap Text Response
 responsesDefinitionExample =
-  [ ("NotFound", mempty { _swaggerResponseDescription = "Entity not found." })
-  , ("IllegalInput", mempty { _swaggerResponseDescription = "Illegal input for operation." }) ]
+  [ ("NotFound", mempty { _responseDescription = "Entity not found." })
+  , ("IllegalInput", mempty { _responseDescription = "Illegal input for operation." }) ]
 
 responsesDefinitionExampleJSON :: Value
 responsesDefinitionExampleJSON = [aesonQQ|
@@ -476,18 +476,18 @@ responsesDefinitionExampleJSON = [aesonQQ|
 -- Responses Definition object
 -- =======================================================================
 
-securityDefinitionsExample :: HashMap Text SwaggerSecurityScheme
+securityDefinitionsExample :: HashMap Text SecurityScheme
 securityDefinitionsExample =
-  [ ("api_key", SwaggerSecurityScheme
-      { _swaggerSecuritySchemeType = SwaggerSecuritySchemeApiKey (SwaggerApiKeyParams "api_key" SwaggerApiKeyHeader)
-      , _swaggerSecuritySchemeDescription = Nothing })
-  , ("petstore_auth", SwaggerSecurityScheme
-      { _swaggerSecuritySchemeType = SwaggerSecuritySchemeOAuth2 (SwaggerOAuth2Params
-          { _swaggerOAuth2Flow = SwaggerOAuth2Implicit "http://swagger.io/api/oauth/dialog"
-          , _swaggerOAuth2Scopes =
+  [ ("api_key", SecurityScheme
+      { _securitySchemeType = SecuritySchemeApiKey (ApiKeyParams "api_key" ApiKeyHeader)
+      , _securitySchemeDescription = Nothing })
+  , ("petstore_auth", SecurityScheme
+      { _securitySchemeType = SecuritySchemeOAuth2 (OAuth2Params
+          { _oauth2Flow = OAuth2Implicit "http://swagger.io/api/oauth/dialog"
+          , _oauth2Scopes =
               [ ("write:pets",  "modify pets in your account")
               , ("read:pets", "read your pets") ] } )
-      , _swaggerSecuritySchemeDescription = Nothing }) ]
+      , _securitySchemeDescription = Nothing }) ]
 
 securityDefinitionsExampleJSON :: Value
 securityDefinitionsExampleJSON = [aesonQQ|
@@ -515,47 +515,47 @@ securityDefinitionsExampleJSON = [aesonQQ|
 
 swaggerExample :: Swagger
 swaggerExample = mempty
-  { _swaggerBasePath = Just "/"
-  , _swaggerSchemes = Just [Http]
-  , _swaggerInfo = mempty
-      { _swaggerInfoVersion = "1.0"
-      , _swaggerInfoTitle = "Todo API"
-      , _swaggerInfoLicense = Just SwaggerLicense
-          { _swaggerLicenseName = "MIT"
-          , _swaggerLicenseUrl = Just (URL "http://mit.com") }
-      , _swaggerInfoDescription = Just "This is a an API that tests servant-swagger support for a Todo API" }
-  , _swaggerPaths = mempty
-      { _swaggerPathsMap =
+  { _basePath = Just "/"
+  , _schemes = Just [Http]
+  , _info = mempty
+      { _infoVersion = "1.0"
+      , _infoTitle = "Todo API"
+      , _infoLicense = Just License
+          { _licenseName = "MIT"
+          , _licenseUrl = Just (URL "http://mit.com") }
+      , _infoDescription = Just "This is a an API that tests servant-swagger support for a Todo API" }
+  , _paths = mempty
+      { _pathsMap =
           [ ("/todo/{id}", mempty
-              { _swaggerPathItemGet = Just mempty
-                  { _swaggerOperationResponses = mempty
-                      { _swaggerResponsesResponses =
-                          [ (200, SwaggerInline mempty
-                              { _swaggerResponseSchema = Just $ SwaggerInline mempty
-                                { _swaggerSchemaExample = Just [aesonQQ|
+              { _pathItemGet = Just mempty
+                  { _operationResponses = mempty
+                      { _responsesResponses =
+                          [ (200, Inline mempty
+                              { _responseSchema = Just $ Inline mempty
+                                { _schemaExample = Just [aesonQQ|
                                     {
                                       "created": 100,
                                       "description": "get milk"
                                     } |]
-                                , _swaggerSchemaType = SwaggerSchemaObject
-                                , _swaggerSchemaDescription = Just "This is some real Todo right here"
-                                , _swaggerSchemaProperties =
-                                    [ ("created", SwaggerInline mempty
-                                        { _swaggerSchemaType = SwaggerSchemaInteger
-                                        , _swaggerSchemaFormat = Just "int32" })
-                                    , ("description", SwaggerInline mempty
-                                        { _swaggerSchemaType = SwaggerSchemaString }) ] }
-                              , _swaggerResponseDescription = "OK" }) ] }
-                  , _swaggerOperationProduces = Just (SwaggerMimeList [ "application/json" ])
-                  , _swaggerOperationParameters =
-                      [ SwaggerInline mempty
-                          { _swaggerParameterRequired = Just True
-                          , _swaggerParameterName = "id"
-                          , _swaggerParameterDescription = Just "TodoId param"
-                          , _swaggerParameterSchema = SwaggerParameterOther mempty
-                              { _swaggerParameterOtherSchemaIn = SwaggerParameterPath
-                              , _swaggerParameterOtherSchemaType = SwaggerParamString } } ]
-                  , _swaggerOperationTags = [ "todo" ] } }) ] } }
+                                , _schemaType = SchemaObject
+                                , _schemaDescription = Just "This is some real Todo right here"
+                                , _schemaProperties =
+                                    [ ("created", Inline mempty
+                                        { _schemaType = SchemaInteger
+                                        , _schemaFormat = Just "int32" })
+                                    , ("description", Inline mempty
+                                        { _schemaType = SchemaString }) ] }
+                              , _responseDescription = "OK" }) ] }
+                  , _operationProduces = Just (MimeList [ "application/json" ])
+                  , _operationParameters =
+                      [ Inline mempty
+                          { _parameterRequired = Just True
+                          , _parameterName = "id"
+                          , _parameterDescription = Just "TodoId param"
+                          , _parameterSchema = ParameterOther mempty
+                              { _parameterOtherSchemaIn = ParameterPath
+                              , _parameterOtherSchemaType = ParamString } } ]
+                  , _operationTags = [ "todo" ] } }) ] } }
 
 swaggerExampleJSON :: Value
 swaggerExampleJSON = [aesonQQ|
