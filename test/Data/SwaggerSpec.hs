@@ -896,7 +896,6 @@ petstoreExampleJSON = [aesonQQ|
             "security":[  
                {  
                   "api_key":[  
-
                   ]
                }
             ]
@@ -1063,7 +1062,6 @@ petstoreExampleJSON = [aesonQQ|
                "application/json"
             ],
             "parameters":[  
-
             ],
             "responses":{  
                "200":{  
@@ -1080,7 +1078,6 @@ petstoreExampleJSON = [aesonQQ|
             "security":[  
                {  
                   "api_key":[  
-
                   ]
                }
             ]
@@ -1354,7 +1351,6 @@ petstoreExampleJSON = [aesonQQ|
                "application/json"
             ],
             "parameters":[  
-
             ],
             "responses":{  
                "default":{  
