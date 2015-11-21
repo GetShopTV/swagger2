@@ -15,30 +15,30 @@ import Data.Text (Text)
 -- =======================================================================
 
 makeLenses ''Swagger
-makeLenses ''SwaggerHost
-makeLenses ''SwaggerInfo
-makeLenses ''SwaggerContact
-makeLenses ''SwaggerLicense
-makeLenses ''SwaggerPaths
-makeLenses ''SwaggerPathItem
-makeLenses ''SwaggerTag
-makeLenses ''SwaggerOperation
-makeLenses ''SwaggerParameter
-makePrisms ''SwaggerParameterSchema
-makeLenses ''SwaggerParameterOtherSchema
-makeLenses ''SwaggerItems
-makeLenses ''SwaggerHeader
-makeLenses ''SwaggerSchema
-makePrisms ''SwaggerSchemaItems
-makeLenses ''SwaggerSchemaCommon
-makeLenses ''SwaggerXml
-makeLenses ''SwaggerResponses
-makeLenses ''SwaggerResponse
-makeLenses ''SwaggerSecurityScheme
-makePrisms ''SwaggerSecuritySchemeType
-makeLenses ''SwaggerApiKeyParams
-makeLenses ''SwaggerOAuth2Params
-makeLenses ''SwaggerExternalDocs
+makeLenses ''Host
+makeLenses ''Info
+makeLenses ''Contact
+makeLenses ''License
+makeLenses ''Paths
+makeLenses ''PathItem
+makeLenses ''Tag
+makeLenses ''Operation
+makeLenses ''Parameter
+makePrisms ''ParameterSchema
+makeLenses ''ParameterOtherSchema
+makeLenses ''Items
+makeLenses ''Header
+makeLenses ''Schema
+makePrisms ''SchemaItems
+makeLenses ''SchemaCommon
+makeLenses ''Xml
+makeLenses ''Responses
+makeLenses ''Response
+makeLenses ''SecurityScheme
+makePrisms ''SecuritySchemeType
+makeLenses ''ApiKeyParams
+makeLenses ''OAuth2Params
+makeLenses ''ExternalDocs
 
 -- =======================================================================
 -- Helper classy lenses
@@ -47,61 +47,61 @@ makeLenses ''SwaggerExternalDocs
 class HasDescription s d | s -> d where
   description :: Lens' s d
 
-instance HasDescription SwaggerResponse       Text where description = swaggerResponseDescription
-instance HasDescription SwaggerInfo           (Maybe Text) where description = swaggerInfoDescription
-instance HasDescription SwaggerTag            (Maybe Text) where description = swaggerTagDescription
-instance HasDescription SwaggerOperation      (Maybe Text) where description = swaggerOperationDescription
-instance HasDescription SwaggerParameter      (Maybe Text) where description = swaggerParameterDescription
-instance HasDescription SwaggerHeader         (Maybe Text) where description = swaggerHeaderDescription
-instance HasDescription SwaggerSchema         (Maybe Text) where description = swaggerSchemaDescription
-instance HasDescription SwaggerSecurityScheme (Maybe Text) where description = swaggerSecuritySchemeDescription
-instance HasDescription SwaggerExternalDocs   (Maybe Text) where description = swaggerExternalDocsDescription
+instance HasDescription Response       Text where description = responseDescription
+instance HasDescription Info           (Maybe Text) where description = infoDescription
+instance HasDescription Tag            (Maybe Text) where description = tagDescription
+instance HasDescription Operation      (Maybe Text) where description = operationDescription
+instance HasDescription Parameter      (Maybe Text) where description = parameterDescription
+instance HasDescription Header         (Maybe Text) where description = headerDescription
+instance HasDescription Schema         (Maybe Text) where description = schemaDescription
+instance HasDescription SecurityScheme (Maybe Text) where description = securitySchemeDescription
+instance HasDescription ExternalDocs   (Maybe Text) where description = externalDocsDescription
 
-class HasSwaggerSchemaCommon s where
-  schemaCommon :: Lens' s SwaggerSchemaCommon
+class HasSchemaCommon s where
+  schemaCommon :: Lens' s SchemaCommon
 
-instance HasSwaggerSchemaCommon SwaggerSchema where schemaCommon = swaggerSchemaCommon
-instance HasSwaggerSchemaCommon SwaggerParameterOtherSchema where schemaCommon = swaggerParameterOtherSchemaCommon
-instance HasSwaggerSchemaCommon SwaggerItems where schemaCommon = swaggerItemsCommon
-instance HasSwaggerSchemaCommon SwaggerHeader where schemaCommon = swaggerHeaderCommon
-instance HasSwaggerSchemaCommon SwaggerSchemaCommon where schemaCommon = id
+instance HasSchemaCommon Schema where schemaCommon = schemaCommon
+instance HasSchemaCommon ParameterOtherSchema where schemaCommon = parameterOtherSchemaCommon
+instance HasSchemaCommon Items where schemaCommon = itemsCommon
+instance HasSchemaCommon Header where schemaCommon = headerCommon
+instance HasSchemaCommon SchemaCommon where schemaCommon = id
 
-schemaDefault :: HasSwaggerSchemaCommon s => Lens' s (Maybe Value)
-schemaDefault = schemaCommon.swaggerSchemaDefault
+schemaDefault :: HasSchemaCommon s => Lens' s (Maybe Value)
+schemaDefault = schemaCommon.schemaCommonDefault
 
-schemaMaximum :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMaximum = schemaCommon.swaggerSchemaMaximum
+schemaMaximum :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMaximum = schemaCommon.schemaCommonMaximum
 
-schemaExclusiveMaximum :: HasSwaggerSchemaCommon s => Lens' s (Maybe Bool)
-schemaExclusiveMaximum = schemaCommon.swaggerSchemaExclusiveMaximum
+schemaExclusiveMaximum :: HasSchemaCommon s => Lens' s (Maybe Bool)
+schemaExclusiveMaximum = schemaCommon.schemaCommonExclusiveMaximum
 
-schemaMinimum :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMinimum = schemaCommon.swaggerSchemaMinimum
+schemaMinimum :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMinimum = schemaCommon.schemaCommonMinimum
 
-schemaExclusiveMinimum :: HasSwaggerSchemaCommon s => Lens' s (Maybe Bool)
-schemaExclusiveMinimum = schemaCommon.swaggerSchemaExclusiveMinimum
+schemaExclusiveMinimum :: HasSchemaCommon s => Lens' s (Maybe Bool)
+schemaExclusiveMinimum = schemaCommon.schemaCommonExclusiveMinimum
 
-schemaMaxLength :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMaxLength = schemaCommon.swaggerSchemaMaxLength
+schemaMaxLength :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMaxLength = schemaCommon.schemaCommonMaxLength
 
-schemaMinLength :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMinLength = schemaCommon.swaggerSchemaMinLength
+schemaMinLength :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMinLength = schemaCommon.schemaCommonMinLength
 
-schemaPattern :: HasSwaggerSchemaCommon s => Lens' s (Maybe Text)
-schemaPattern = schemaCommon.swaggerSchemaPattern
+schemaPattern :: HasSchemaCommon s => Lens' s (Maybe Text)
+schemaPattern = schemaCommon.schemaCommonPattern
 
-schemaMaxItems :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMaxItems = schemaCommon.swaggerSchemaMaxItems
+schemaMaxItems :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMaxItems = schemaCommon.schemaCommonMaxItems
 
-schemaMinItems :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMinItems = schemaCommon.swaggerSchemaMinItems
+schemaMinItems :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMinItems = schemaCommon.schemaCommonMinItems
 
-schemaUniqueItems :: HasSwaggerSchemaCommon s => Lens' s (Maybe Bool)
-schemaUniqueItems = schemaCommon.swaggerSchemaUniqueItems
+schemaUniqueItems :: HasSchemaCommon s => Lens' s (Maybe Bool)
+schemaUniqueItems = schemaCommon.schemaCommonUniqueItems
 
-schemaEnum :: HasSwaggerSchemaCommon s => Lens' s (Maybe [Value])
-schemaEnum = schemaCommon.swaggerSchemaEnum
+schemaEnum :: HasSchemaCommon s => Lens' s (Maybe [Value])
+schemaEnum = schemaCommon.schemaCommonEnum
 
-schemaMultipleOf :: HasSwaggerSchemaCommon s => Lens' s (Maybe Integer)
-schemaMultipleOf = schemaCommon.swaggerSchemaMultipleOf
+schemaMultipleOf :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMultipleOf = schemaCommon.schemaCommonMultipleOf
 
