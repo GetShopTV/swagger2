@@ -60,7 +60,7 @@ instance HasDescription ExternalDocs   (Maybe Text) where description = external
 class HasSchemaCommon s where
   schemaCommon :: Lens' s SchemaCommon
 
-instance HasSchemaCommon Schema where schemaCommon = schemaCommon
+instance HasSchemaCommon Schema where schemaCommon = schemaSchemaCommon
 instance HasSchemaCommon ParameterOtherSchema where schemaCommon = parameterOtherSchemaCommon
 instance HasSchemaCommon Items where schemaCommon = itemsCommon
 instance HasSchemaCommon Header where schemaCommon = headerCommon
