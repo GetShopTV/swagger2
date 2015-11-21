@@ -36,6 +36,7 @@ jsonPrefix prefix = defaultOptions
   { fieldLabelModifier      = modifier . drop 1
   , constructorTagModifier  = modifier
   , sumEncoding             = ObjectWithSingleField
+  , omitNothingFields       = True
   }
   where
     modifier = lowerFirstUppers . drop (length prefix)
