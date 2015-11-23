@@ -63,6 +63,13 @@ instance ToSchema Float where
 instance ToSchema a => ToSchema (Maybe a) where
   toSchema _ = toSchema (Proxy :: Proxy a)
 
+instance (ToSchema a, ToSchema b) => ToSchema (a, b)
+instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
+instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, d)
+instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e) => ToSchema (a, b, c, d, e)
+instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f) => ToSchema (a, b, c, d, e, f)
+instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
+
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
