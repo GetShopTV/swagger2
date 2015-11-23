@@ -12,7 +12,8 @@ import Data.Aeson
 import Data.Int
 import Data.Monoid
 import Data.Proxy
-import qualified Data.Text as Text
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Word
 import GHC.Generics
 
@@ -70,6 +71,12 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e) => ToSchem
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f) => ToSchema (a, b, c, d, e, f)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
 
+instance ToSchema T.Text where
+  toSchema _ = toSchema (Proxy :: Proxy String)
+
+instance ToSchema TL.Text where
+  toSchema _ = toSchema (Proxy :: Proxy String)
+
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
@@ -99,20 +106,20 @@ appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
   gtoSchema _ schema
-    | Text.null fieldName = schema
+    | T.null fieldName = schema
         & schemaType  .~ SchemaArray
         & schemaItems %~ appendItem (Inline fieldSchema)
     | otherwise = schema
         & schemaType .~ SchemaObject
         & schemaProperties . at fieldName ?~ Inline fieldSchema
     where
-      fieldName = Text.pack (selName (undefined :: S1 s f p))
+      fieldName = T.pack (selName (undefined :: S1 s f p))
       fieldSchema = toSchema (Proxy :: Proxy c)
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
   gtoSchema _ schema
-    | Text.null fieldName = schema
+    | T.null fieldName = schema
         & schemaType  .~ SchemaArray
         & schemaItems %~ appendItem (Inline fieldSchema)
     | otherwise = schema
@@ -120,7 +127,7 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
         & schemaProperties . at fieldName ?~ Inline fieldSchema
         & schemaRequired %~ (fieldName :)
     where
-      fieldName = Text.pack (selName (undefined :: S1 s f p))
+      fieldName = T.pack (selName (undefined :: S1 s f p))
       fieldSchema = gtoSchema (Proxy :: Proxy f) mempty
 
 instance ToSchema c => GToSchema (K1 i c) where
