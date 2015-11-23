@@ -99,6 +99,14 @@ instance ToSchema a => ToSchema (Set a) where
 
 instance ToSchema a => ToSchema (HashSet a) where toSchema _ = toSchema (Proxy :: Proxy (Set a))
 
+instance ToSchema All where toSchema _ = toSchema (Proxy :: Proxy Bool)
+instance ToSchema Any where toSchema _ = toSchema (Proxy :: Proxy Bool)
+instance ToSchema a => ToSchema (Sum a)     where toSchema _ = toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Product a) where toSchema _ = toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (First a)   where toSchema _ = toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Last a)    where toSchema _ = toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Dual a)    where toSchema _ = toSchema (Proxy :: Proxy a)
+
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
