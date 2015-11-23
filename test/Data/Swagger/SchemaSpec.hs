@@ -25,10 +25,15 @@ spec = do
     context "Person" $ checkToSchema (Proxy :: Proxy Person) personSchemaJSON
     context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
     context "Point (custom fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
+  describe "toSchemaBoundedEnum" $ do
+    context "Color" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
 
 main :: IO ()
 main = hspec spec
 
+-- ========================================================================
+-- Person (simple record with optional fields)
+-- ========================================================================
 data Person = Person
   { name  :: String
   , phone :: Integer
@@ -49,6 +54,9 @@ personSchemaJSON = [aesonQQ|
 }
 |]
 
+-- ========================================================================
+-- ISPair (non-record product data type)
+-- ========================================================================
 data ISPair = ISPair Integer String
   deriving (Generic, ToSchema)
 
@@ -64,6 +72,9 @@ ispairSchemaJSON = [aesonQQ|
 }
 |]
 
+-- ========================================================================
+-- Point (record data type with custom fieldLabelModifier)
+-- ========================================================================
 data Point = Point
   { pointX :: Double
   , pointY :: Double
@@ -83,6 +94,27 @@ pointSchemaJSON = [aesonQQ|
       "y": { "type": "number" }
     },
   "required": ["x", "y"]
+}
+|]
+
+
+-- ========================================================================
+-- Point (record data type with custom fieldLabelModifier)
+-- ========================================================================
+data Color
+  = Red
+  | Green
+  | Blue
+  deriving (Generic, Enum, Bounded, ToJSON)
+
+instance ToSchema Color where
+  toSchema = toSchemaBoundedEnum
+
+colorSchemaJSON :: Value
+colorSchemaJSON = [aesonQQ|
+{
+  "type": "string",
+  "enum": ["Red", "Green", "Blue"]
 }
 |]
 
