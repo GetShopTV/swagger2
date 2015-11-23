@@ -57,6 +57,9 @@ instance ToSchema Word64 where toSchema = toSchemaBoundedIntegral
 instance ToSchema Double where
   toSchema _ = mempty { _schemaType = SchemaNumber }
 
+instance ToSchema Float where
+  toSchema _ = mempty { _schemaType = SchemaNumber }
+
 instance ToSchema a => ToSchema (Maybe a) where
   toSchema _ = toSchema (Proxy :: Proxy a)
 
