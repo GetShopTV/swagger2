@@ -27,10 +27,10 @@ import Data.Swagger.Lens
 class ToSchema a where
   toSchema :: proxy a -> Schema
   default toSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Schema
-  toSchema = genericToSchema
+  toSchema = genericToSchema defaultSchemaOptions
 
 class GToSchema (f :: * -> *) where
-  gtoSchema :: proxy f -> Schema -> Schema
+  gtoSchema :: SchemaOptions -> proxy f -> Schema -> Schema
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   toSchema _ = mempty
@@ -107,6 +107,13 @@ instance ToSchema a => ToSchema (First a)   where toSchema _ = toSchema (Proxy :
 instance ToSchema a => ToSchema (Last a)    where toSchema _ = toSchema (Proxy :: Proxy a)
 instance ToSchema a => ToSchema (Dual a)    where toSchema _ = toSchema (Proxy :: Proxy a)
 
+data SchemaOptions = SchemaOptions
+  { fieldLabelModifier :: String -> String }
+
+defaultSchemaOptions :: SchemaOptions
+defaultSchemaOptions = SchemaOptions
+  { fieldLabelModifier = id }
+
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
@@ -118,15 +125,15 @@ toSchemaBoundedEnum _ = mempty
   & schemaType .~ SchemaString
   & schemaEnum ?~ map toJSON [minBound..maxBound :: a]
 
-genericToSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => proxy a -> Schema
-genericToSchema _ = gtoSchema (Proxy :: Proxy (Rep a)) mempty
+genericToSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
+genericToSchema opts _ = gtoSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
-  gtoSchema _ = gtoSchema (Proxy :: Proxy f) . gtoSchema (Proxy :: Proxy g)
+  gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
 -- | Single constructor data types.
 instance GToSchema f => GToSchema (D1 d (C1 c f)) where
-  gtoSchema _ = gtoSchema (Proxy :: Proxy f)
+  gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f)
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
 appendItem x Nothing = Just (SchemaItemsArray [x])
@@ -135,7 +142,7 @@ appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject
 
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchema _ schema
+  gtoSchema opts _ schema
     | T.null fieldName = schema
         & schemaType  .~ SchemaArray
         & schemaItems %~ appendItem (Inline fieldSchema)
@@ -143,12 +150,12 @@ instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (
         & schemaType .~ SchemaObject
         & schemaProperties . at fieldName ?~ Inline fieldSchema
     where
-      fieldName = T.pack (selName (undefined :: S1 s f p))
+      fieldName = T.pack (fieldLabelModifier opts (selName (undefined :: S1 s f p)))
       fieldSchema = toSchema (Proxy :: Proxy c)
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
-  gtoSchema _ schema
+  gtoSchema opts _ schema
     | T.null fieldName = schema
         & schemaType  .~ SchemaArray
         & schemaItems %~ appendItem (Inline fieldSchema)
@@ -157,9 +164,9 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
         & schemaProperties . at fieldName ?~ Inline fieldSchema
         & schemaRequired %~ (fieldName :)
     where
-      fieldName = T.pack (selName (undefined :: S1 s f p))
-      fieldSchema = gtoSchema (Proxy :: Proxy f) mempty
+      fieldName = T.pack (fieldLabelModifier opts (selName (undefined :: S1 s f p)))
+      fieldSchema = gtoSchema opts (Proxy :: Proxy f) mempty
 
 instance ToSchema c => GToSchema (K1 i c) where
-  gtoSchema _ _ = toSchema (Proxy :: Proxy c)
+  gtoSchema _ _ _ = toSchema (Proxy :: Proxy c)
 
