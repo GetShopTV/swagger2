@@ -9,9 +9,11 @@ module Data.Swagger.Schema.Internal where
 
 import Control.Lens
 import Data.Aeson
+import Data.Int
 import Data.Monoid
 import Data.Proxy
 import qualified Data.Text as Text
+import Data.Word
 import GHC.Generics
 
 import Data.Swagger.Internal
@@ -40,7 +42,17 @@ instance ToSchema Bool where
 instance ToSchema Integer where
   toSchema _ = mempty { _schemaType = SchemaInteger }
 
-instance ToSchema Int where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int    where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int8   where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int16  where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int32  where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int64  where toSchema = toSchemaBoundedIntegral
+
+instance ToSchema Word   where toSchema = toSchemaBoundedIntegral
+instance ToSchema Word8  where toSchema = toSchemaBoundedIntegral
+instance ToSchema Word16 where toSchema = toSchemaBoundedIntegral
+instance ToSchema Word32 where toSchema = toSchemaBoundedIntegral
+instance ToSchema Word64 where toSchema = toSchemaBoundedIntegral
 
 instance ToSchema Double where
   toSchema _ = mempty { _schemaType = SchemaNumber }
