@@ -108,11 +108,15 @@ instance ToSchema a => ToSchema (Last a)    where toSchema _ = toSchema (Proxy :
 instance ToSchema a => ToSchema (Dual a)    where toSchema _ = toSchema (Proxy :: Proxy a)
 
 data SchemaOptions = SchemaOptions
-  { fieldLabelModifier :: String -> String }
+  { fieldLabelModifier :: String -> String
+  , unwrapUnaryRecords :: Bool
+  }
 
 defaultSchemaOptions :: SchemaOptions
 defaultSchemaOptions = SchemaOptions
-  { fieldLabelModifier = id }
+  { fieldLabelModifier = id
+  , unwrapUnaryRecords = False
+  }
 
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
@@ -131,44 +135,52 @@ genericToSchema opts _ = gtoSchema opts (Proxy :: Proxy (Rep a)) mempty
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
--- | Single constructor data types.
-instance GToSchema f => GToSchema (D1 d (C1 c f)) where
+-- | Single constructor data type.
+instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (D1 d (C1 c f)) where
   gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f)
+
+-- | Single field single constructor data type.
+instance (Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f))) where
+  gtoSchema opts _ s
+    | unwrapUnaryRecords opts = gtoSchema opts (Proxy :: Proxy f) s
+    | otherwise = case schema ^. schemaItems of
+        Just (SchemaItemsArray [Inline fieldSchema]) -> fieldSchema
+        _ -> schema
+    where
+      schema = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
 appendItem x Nothing = Just (SchemaItemsArray [x])
 appendItem x (Just (SchemaItemsArray xs)) = Just (SchemaItemsArray (x:xs))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject"
 
+withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) => SchemaOptions -> proxy s f -> Bool -> Schema -> Schema
+withFieldSchema opts _ isRequiredField schema
+  | T.null fieldName = schema
+      & schemaType .~ SchemaArray
+      & schemaItems %~ appendItem (Inline fieldSchema)
+  | otherwise = schema
+      & schemaType .~ SchemaObject
+      & schemaProperties . at fieldName ?~ Inline fieldSchema
+      & if isRequiredField
+          then schemaRequired %~ (fieldName :)
+          else id
+  where
+    fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
+    fieldSchema = gtoSchema opts (Proxy :: Proxy f) mempty
+
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchema opts _ schema
-    | T.null fieldName = schema
-        & schemaType  .~ SchemaArray
-        & schemaItems %~ appendItem (Inline fieldSchema)
-    | otherwise = schema
-        & schemaType .~ SchemaObject
-        & schemaProperties . at fieldName ?~ Inline fieldSchema
-    where
-      fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
-      fieldSchema = toSchema (Proxy :: Proxy c)
+  gtoSchema opts _ = withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
-  gtoSchema opts _ schema
-    | T.null fieldName = schema
-        & schemaType  .~ SchemaArray
-        & schemaItems %~ appendItem (Inline fieldSchema)
-    | otherwise = schema
-        & schemaType .~ SchemaObject
-        & schemaProperties . at fieldName ?~ Inline fieldSchema
-        & schemaRequired %~ (fieldName :)
-    where
-      fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
-      fieldSchema = gtoSchema opts (Proxy :: Proxy f) mempty
+  gtoSchema opts _ = withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
 instance ToSchema c => GToSchema (K1 i c) where
   gtoSchema _ _ _ = toSchema (Proxy :: Proxy c)
+
+data Proxy2 a b = Proxy2
 
 data Proxy3 a b c = Proxy3
 
