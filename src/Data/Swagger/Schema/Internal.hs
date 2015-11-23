@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -149,7 +150,7 @@ instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (
         & schemaType .~ SchemaObject
         & schemaProperties . at fieldName ?~ Inline fieldSchema
     where
-      fieldName = T.pack (fieldLabelModifier opts (selName (undefined :: S1 s f p)))
+      fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
       fieldSchema = toSchema (Proxy :: Proxy c)
 
 -- | Record fields.
@@ -163,9 +164,11 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
         & schemaProperties . at fieldName ?~ Inline fieldSchema
         & schemaRequired %~ (fieldName :)
     where
-      fieldName = T.pack (fieldLabelModifier opts (selName (undefined :: S1 s f p)))
+      fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
       fieldSchema = gtoSchema opts (Proxy :: Proxy f) mempty
 
 instance ToSchema c => GToSchema (K1 i c) where
   gtoSchema _ _ _ = toSchema (Proxy :: Proxy c)
+
+data Proxy3 a b c = Proxy3
 
