@@ -20,12 +20,13 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Data.Swagger
-    Data.Swagger.Generic
     Data.Swagger.Lens
+    Data.Swagger.Schema
 
     -- internal modules
     Data.Swagger.Internal
     Data.Swagger.Internal.Utils
+    Data.Swagger.Schema.Internal
   build-depends:       base == 4.*
                      , aeson
                      , containers

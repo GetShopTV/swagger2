@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Data.Swagger.Generic where
+module Data.Swagger.Schema.Internal where
 
 import Control.Lens
 import Data.Aeson
@@ -14,7 +14,7 @@ import Data.Proxy
 import qualified Data.Text as Text
 import GHC.Generics
 
-import Data.Swagger
+import Data.Swagger.Internal
 import Data.Swagger.Lens
 
 class ToSchema a where
