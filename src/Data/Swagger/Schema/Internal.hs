@@ -78,27 +78,40 @@ genericToSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => proxy a -> 
 genericToSchema _ = gtoSchema (Proxy :: Proxy (Rep a)) mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
-  gtoSchema _ = gtoSchema (Proxy :: Proxy f) <> gtoSchema (Proxy :: Proxy g)
+  gtoSchema _ = gtoSchema (Proxy :: Proxy f) . gtoSchema (Proxy :: Proxy g)
 
 -- | Single constructor data types.
 instance GToSchema f => GToSchema (D1 d (C1 c f)) where
   gtoSchema _ = gtoSchema (Proxy :: Proxy f)
 
+appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
+appendItem x Nothing = Just (SchemaItemsArray [x])
+appendItem x (Just (SchemaItemsArray xs)) = Just (SchemaItemsArray (x:xs))
+appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject"
+
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchema _ schema = schema
-    & schemaType .~ SchemaObject
-    & schemaProperties . at fieldName ?~ Inline fieldSchema
+  gtoSchema _ schema
+    | Text.null fieldName = schema
+        & schemaType  .~ SchemaArray
+        & schemaItems %~ appendItem (Inline fieldSchema)
+    | otherwise = schema
+        & schemaType .~ SchemaObject
+        & schemaProperties . at fieldName ?~ Inline fieldSchema
     where
       fieldName = Text.pack (selName (undefined :: S1 s f p))
       fieldSchema = toSchema (Proxy :: Proxy c)
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
-  gtoSchema _ schema = schema
-    & schemaType .~ SchemaObject
-    & schemaProperties . at fieldName ?~ Inline fieldSchema
-    & schemaRequired %~ (fieldName :)
+  gtoSchema _ schema
+    | Text.null fieldName = schema
+        & schemaType  .~ SchemaArray
+        & schemaItems %~ appendItem (Inline fieldSchema)
+    | otherwise = schema
+        & schemaType .~ SchemaObject
+        & schemaProperties . at fieldName ?~ Inline fieldSchema
+        & schemaRequired %~ (fieldName :)
     where
       fieldName = Text.pack (selName (undefined :: S1 s f p))
       fieldSchema = gtoSchema (Proxy :: Proxy f) mempty
