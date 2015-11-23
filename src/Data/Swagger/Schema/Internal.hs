@@ -34,18 +34,17 @@ class GToSchema (f :: * -> *) where
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   toSchema _ = mempty
-    { _schemaType = SchemaArray
-    , _schemaItems = Just (SchemaItemsObject (Inline (toSchema (Proxy :: Proxy a))))
-    }
+    & schemaType  .~ SchemaArray
+    & schemaItems ?~ SchemaItemsObject (Inline (toSchema (Proxy :: Proxy a)))
 
 instance {-# OVERLAPPING #-} ToSchema String where
-  toSchema _ = mempty { _schemaType = SchemaString }
+  toSchema _ = mempty & schemaType .~ SchemaString
 
 instance ToSchema Bool where
-  toSchema _ = mempty { _schemaType = SchemaBoolean }
+  toSchema _ = mempty & schemaType .~ SchemaBoolean
 
 instance ToSchema Integer where
-  toSchema _ = mempty { _schemaType = SchemaInteger }
+  toSchema _ = mempty & schemaType .~ SchemaInteger
 
 instance ToSchema Int    where toSchema = toSchemaBoundedIntegral
 instance ToSchema Int8   where toSchema = toSchemaBoundedIntegral
@@ -60,10 +59,10 @@ instance ToSchema Word32 where toSchema = toSchemaBoundedIntegral
 instance ToSchema Word64 where toSchema = toSchemaBoundedIntegral
 
 instance ToSchema Double where
-  toSchema _ = mempty { _schemaType = SchemaNumber }
+  toSchema _ = mempty & schemaType .~ SchemaNumber
 
 instance ToSchema Float where
-  toSchema _ = mempty { _schemaType = SchemaNumber }
+  toSchema _ = mempty & schemaType .~ SchemaNumber
 
 instance ToSchema a => ToSchema (Maybe a) where
   toSchema _ = toSchema (Proxy :: Proxy a)
