@@ -9,9 +9,13 @@ module Data.Swagger.Schema.Internal where
 
 import Control.Lens
 import Data.Aeson
+import Data.HashMap.Strict (HashMap)
+import Data.HashSet (HashSet)
 import Data.Int
+import Data.Map (Map)
 import Data.Monoid
 import Data.Proxy
+import Data.Set (Set)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Word
@@ -76,6 +80,24 @@ instance ToSchema T.Text where
 
 instance ToSchema TL.Text where
   toSchema _ = toSchema (Proxy :: Proxy String)
+
+instance ToSchema a => ToSchema (Map String a) where
+  toSchema _ = mempty
+    & schemaType  .~ SchemaObject
+    & schemaAdditionalProperties ?~ toSchema (Proxy :: Proxy a)
+
+instance ToSchema a => ToSchema (Map T.Text  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map TL.Text a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+
+instance ToSchema a => ToSchema (HashMap String  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap T.Text  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap TL.Text a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+
+instance ToSchema a => ToSchema (Set a) where
+  toSchema _ = toSchema (Proxy :: Proxy [a])
+    & schemaUniqueItems ?~ True
+
+instance ToSchema a => ToSchema (HashSet a) where toSchema _ = toSchema (Proxy :: Proxy (Set a))
 
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
