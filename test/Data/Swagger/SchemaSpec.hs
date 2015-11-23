@@ -18,8 +18,9 @@ checkToSchema proxy js = toSchema proxy <~> js
 
 spec :: Spec
 spec = do
-  describe "Generic ToSchema" $
+  describe "Generic ToSchema" $ do
     context "Person" $ checkToSchema (Proxy :: Proxy Person) personSchemaJSON
+    context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
 
 main :: IO ()
 main = hspec spec
@@ -43,3 +44,19 @@ personSchemaJSON = [aesonQQ|
   "required": ["name", "phone"]
 }
 |]
+
+data ISPair = ISPair Integer String
+  deriving (Generic, ToSchema)
+
+ispairSchemaJSON :: Value
+ispairSchemaJSON = [aesonQQ|
+{
+  "type": "array",
+  "items":
+    [
+      { "type": "integer" },
+      { "type": "string"  }
+    ]
+}
+|]
+
