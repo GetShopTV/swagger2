@@ -45,6 +45,9 @@ instance ToSchema Int where toSchema = toSchemaBoundedIntegral
 instance ToSchema Double where
   toSchema _ = mempty { _schemaType = SchemaNumber }
 
+instance ToSchema a => ToSchema (Maybe a) where
+  toSchema _ = toSchema (Proxy :: Proxy a)
+
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
@@ -66,21 +69,24 @@ instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
 instance GToSchema f => GToSchema (D1 d (C1 c f)) where
   gtoSchema _ = gtoSchema (Proxy :: Proxy f)
 
+-- | Optional record fields.
+instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
+  gtoSchema _ schema = schema
+    & schemaType .~ SchemaObject
+    & schemaProperties . at fieldName ?~ Inline fieldSchema
+    where
+      fieldName = Text.pack (selName (undefined :: S1 s f p))
+      fieldSchema = toSchema (Proxy :: Proxy c)
+
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
   gtoSchema _ schema = schema
+    & schemaType .~ SchemaObject
     & schemaProperties . at fieldName ?~ Inline fieldSchema
     & schemaRequired %~ (fieldName :)
     where
       fieldName = Text.pack (selName (undefined :: S1 s f p))
       fieldSchema = gtoSchema (Proxy :: Proxy f) mempty
-
--- | Optional record fields.
-instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchema _ = schemaProperties . at fieldName ?~ Inline fieldSchema
-    where
-      fieldName = Text.pack (selName (undefined :: S1 s f p))
-      fieldSchema = toSchema (Proxy :: Proxy c)
 
 instance ToSchema c => GToSchema (K1 i c) where
   gtoSchema _ _ = toSchema (Proxy :: Proxy c)
