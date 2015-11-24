@@ -36,6 +36,7 @@ spec = do
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
     context "Players (inlining schema)" $ checkToSchema (Proxy :: Proxy Players) playersSchemaJSON
+    context "MyRoseTree (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
     context "Schema name" $ do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
@@ -185,6 +186,39 @@ playerSchemaJSON = [aesonQQ|
         }
     },
   "required": ["position"]
+}
+|]
+
+-- ========================================================================
+-- MyRoseTree (custom datatypeNameModifier)
+-- ========================================================================
+
+data MyRoseTree = MyRoseTree
+  { root  :: String
+  , trees :: [MyRoseTree]
+  } deriving (Generic)
+
+instance ToSchema MyRoseTree where
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+    { datatypeNameModifier = drop (length "My") }
+
+myRoseTreeSchemaJSON :: Value
+myRoseTreeSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "root": { "type": "string" },
+      "trees":
+        {
+          "type": "array",
+          "items":
+            {
+              "$ref": "#/definitions/RoseTree"
+            }
+        }
+    },
+  "required": ["root", "trees"]
 }
 |]
 
