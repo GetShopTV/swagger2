@@ -31,6 +31,8 @@ spec = do
     context "Person" $ checkToSchema (Proxy :: Proxy Person) personSchemaJSON
     context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
     context "Point (fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
+    context "Color (bounded enum)" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
+    context "Paint (record with bounded enum field)" $ checkToSchema (Proxy :: Proxy Paint) paintSchemaJSON
     context "Unary records" $ do
       context "Email (unwrapUnaryRecords)"  $ checkToSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
@@ -115,7 +117,7 @@ pointSchemaJSON = [aesonQQ|
 
 
 -- ========================================================================
--- Point (record data type with custom fieldLabelModifier)
+-- Color (bounded enum)
 -- ========================================================================
 data Color
   = Red
@@ -124,13 +126,35 @@ data Color
   deriving (Generic, Enum, Bounded, ToJSON)
 
 instance ToSchema Color where
-  toNamedSchema = genericToNamedSchemaBoundedEnum
+  toNamedSchema = genericToNamedSchemaBoundedEnum defaultSchemaOptions
 
 colorSchemaJSON :: Value
 colorSchemaJSON = [aesonQQ|
 {
   "type": "string",
   "enum": ["Red", "Green", "Blue"]
+}
+|]
+
+-- ========================================================================
+-- Paint (record with bounded enum property)
+-- ========================================================================
+
+newtype Paint = Paint { color :: Color }
+  deriving (Generic, ToSchema)
+
+paintSchemaJSON :: Value
+paintSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "color":
+        {
+          "$ref": "#/definitions/Color"
+        }
+    },
+  "required": ["color"]
 }
 |]
 
