@@ -135,6 +135,7 @@ instance ToSchema a => ToSchema (Dual a)    where toNamedSchema _ = unnamed $ to
 data SchemaOptions = SchemaOptions
   { fieldLabelModifier :: String -> String
   , datatypeNameModifier :: String -> String
+  , useReferences :: Bool
   , unwrapUnaryRecords :: Bool
   }
 
@@ -142,6 +143,7 @@ defaultSchemaOptions :: SchemaOptions
 defaultSchemaOptions = SchemaOptions
   { fieldLabelModifier = id
   , datatypeNameModifier = id
+  , useReferences = True
   , unwrapUnaryRecords = False
   }
 
@@ -196,7 +198,8 @@ instance (Datatype d, Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f)
 
 gtoSchemaRef :: GToSchema f => SchemaOptions -> proxy f -> Referenced Schema
 gtoSchemaRef opts proxy = case gtoNamedSchema opts proxy mempty of
-  (Just name, _)  -> Ref (Reference ("#/definitions/" <> T.pack name))
+  (Just name, _)
+    | useReferences opts -> Ref (Reference ("#/definitions/" <> T.pack name))
   (_, schema)     -> Inline schema
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
