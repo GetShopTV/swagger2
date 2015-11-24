@@ -6,6 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Data.Swagger.Schema.Internal where
@@ -158,8 +159,11 @@ toSchemaBoundedEnum _ = mempty
   & schemaType .~ SchemaString
   & schemaEnum ?~ map toJSON [minBound..maxBound :: a]
 
-genericToNamedSchemaBoundedEnum :: (ToJSON a, Bounded a, Enum a, Generic a) => proxy a -> NamedSchema
-genericToNamedSchemaBoundedEnum = unnamed . toSchemaBoundedEnum
+genericToNamedSchemaBoundedEnum :: forall a d f proxy.
+  ( ToJSON a, Bounded a, Enum a
+  , Generic a, Rep a ~ D1 d f, Datatype d)
+  => SchemaOptions -> proxy a -> NamedSchema
+genericToNamedSchemaBoundedEnum opts proxy = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedEnum proxy)
 
 genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
 genericToSchema opts = snd . genericToNamedSchema opts
