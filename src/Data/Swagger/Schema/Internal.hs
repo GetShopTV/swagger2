@@ -151,8 +151,8 @@ defaultSchemaOptions = SchemaOptions
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
-  & schemaMinimum ?~ toInteger (minBound :: a)
-  & schemaMaximum ?~ toInteger (maxBound :: a)
+  & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
+  & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
 toSchemaBoundedEnum :: forall a proxy. (ToJSON a, Bounded a, Enum a) => proxy a -> Schema
 toSchemaBoundedEnum _ = mempty

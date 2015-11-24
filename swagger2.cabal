@@ -37,6 +37,7 @@ library
                      , text
                      , unordered-containers
                      , lens
+                     , scientific
   default-language:    Haskell2010
 
 test-suite spec

@@ -7,6 +7,7 @@ module Data.Swagger.Lens where
 import Control.Lens
 import Control.Lens.TH
 import Data.Aeson (Value)
+import Data.Scientific (Scientific)
 import Data.Swagger.Internal
 import Data.Text (Text)
 
@@ -69,13 +70,13 @@ instance HasSchemaCommon SchemaCommon where schemaCommon = id
 schemaDefault :: HasSchemaCommon s => Lens' s (Maybe Value)
 schemaDefault = schemaCommon.schemaCommonDefault
 
-schemaMaximum :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMaximum :: HasSchemaCommon s => Lens' s (Maybe Scientific)
 schemaMaximum = schemaCommon.schemaCommonMaximum
 
 schemaExclusiveMaximum :: HasSchemaCommon s => Lens' s (Maybe Bool)
 schemaExclusiveMaximum = schemaCommon.schemaCommonExclusiveMaximum
 
-schemaMinimum :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMinimum :: HasSchemaCommon s => Lens' s (Maybe Scientific)
 schemaMinimum = schemaCommon.schemaCommonMinimum
 
 schemaExclusiveMinimum :: HasSchemaCommon s => Lens' s (Maybe Bool)
@@ -102,6 +103,6 @@ schemaUniqueItems = schemaCommon.schemaCommonUniqueItems
 schemaEnum :: HasSchemaCommon s => Lens' s (Maybe [Value])
 schemaEnum = schemaCommon.schemaCommonEnum
 
-schemaMultipleOf :: HasSchemaCommon s => Lens' s (Maybe Integer)
+schemaMultipleOf :: HasSchemaCommon s => Lens' s (Maybe Scientific)
 schemaMultipleOf = schemaCommon.schemaCommonMultipleOf
 

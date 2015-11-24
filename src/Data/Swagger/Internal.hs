@@ -19,6 +19,7 @@ import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Monoid
+import           Data.Scientific          (Scientific)
 import           Data.String              (fromString)
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
@@ -420,9 +421,9 @@ data SchemaCommon = SchemaCommon
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _schemaCommonDefault :: Maybe Value
 
-  , _schemaCommonMaximum :: Maybe Integer
+  , _schemaCommonMaximum :: Maybe Scientific
   , _schemaCommonExclusiveMaximum :: Maybe Bool
-  , _schemaCommonMinimum :: Maybe Integer
+  , _schemaCommonMinimum :: Maybe Scientific
   , _schemaCommonExclusiveMinimum :: Maybe Bool
   , _schemaCommonMaxLength :: Maybe Integer
   , _schemaCommonMinLength :: Maybe Integer
@@ -431,7 +432,7 @@ data SchemaCommon = SchemaCommon
   , _schemaCommonMinItems :: Maybe Integer
   , _schemaCommonUniqueItems :: Maybe Bool
   , _schemaCommonEnum :: Maybe [Value]
-  , _schemaCommonMultipleOf :: Maybe Integer
+  , _schemaCommonMultipleOf :: Maybe Scientific
   } deriving (Eq, Show, Generic)
 
 data Xml = Xml
