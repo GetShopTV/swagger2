@@ -19,6 +19,11 @@ import Test.Hspec
 checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkToSchema proxy js = toSchema proxy <~> js
 
+checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
+checkSchemaName name proxy =
+  it ("schema name is " ++ show name) $
+    schemaName proxy `shouldBe` name
+
 spec :: Spec
 spec = do
   describe "Generic ToSchema" $ do
@@ -29,6 +34,10 @@ spec = do
       context "Email (unwrapUnaryRecords)"  $ checkToSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
+    context "Schema name" $ do
+      context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
+      context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
+      context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
   describe "toSchemaBoundedEnum" $ do
     context "Color" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
 
@@ -85,7 +94,7 @@ data Point = Point
   } deriving (Generic)
 
 instance ToSchema Point where
-  toSchema = genericToSchema defaultSchemaOptions
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
     { fieldLabelModifier = map toLower . drop (length "point") }
 
 pointSchemaJSON :: Value
@@ -112,7 +121,7 @@ data Color
   deriving (Generic, Enum, Bounded, ToJSON)
 
 instance ToSchema Color where
-  toSchema = toSchemaBoundedEnum
+  toNamedSchema = genericToNamedSchemaBoundedEnum
 
 colorSchemaJSON :: Value
 colorSchemaJSON = [aesonQQ|
@@ -130,7 +139,7 @@ newtype Email = Email { getEmail :: String }
   deriving (Generic)
 
 instance ToSchema Email where
-  toSchema = genericToSchema defaultSchemaOptions
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 emailSchemaJSON :: Value
@@ -170,13 +179,7 @@ playerSchemaJSON = [aesonQQ|
     {
       "position":
         {
-          "type": "object",
-          "properties":
-            {
-              "x": { "type": "number" },
-              "y": { "type": "number" }
-            },
-          "required": [ "x", "y" ]
+          "$ref": "#/definitions/Point"
         }
     },
   "required": ["position"]
