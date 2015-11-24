@@ -2,14 +2,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Data.Swagger.Schema.Internal where
 
 import Control.Lens
 import Data.Aeson
+import Data.Char
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Int
@@ -36,10 +39,18 @@ named name schema = (Just name, schema)
 class ToSchema a where
   toNamedSchema :: proxy a -> NamedSchema
   default toNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> NamedSchema
-  toNamedSchema = unnamed . genericToSchema defaultSchemaOptions
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+
+schemaName :: ToSchema a => proxy a -> Maybe String
+schemaName = fst . toNamedSchema
 
 toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
+
+toSchemaRef :: ToSchema a => proxy a -> Referenced Schema
+toSchemaRef proxy = case toNamedSchema proxy of
+  (Just name, _)  -> Ref (Reference ("#/definitions/" <> T.pack name))
+  (_, schema)     -> Inline schema
 
 class GToSchema (f :: * -> *) where
   gtoNamedSchema :: SchemaOptions -> proxy f -> Schema -> NamedSchema
@@ -50,7 +61,7 @@ gtoSchema opts proxy = snd . gtoNamedSchema opts proxy
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   toNamedSchema _ = unnamed $ mempty
     & schemaType  .~ SchemaArray
-    & schemaItems ?~ SchemaItemsObject (Inline (toSchema (Proxy :: Proxy a)))
+    & schemaItems ?~ SchemaItemsObject (toSchemaRef (Proxy :: Proxy a))
 
 instance {-# OVERLAPPING #-} ToSchema String where
   toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaString
@@ -154,26 +165,39 @@ genericToSchema opts = snd . genericToNamedSchema opts
 genericToNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchema opts _ = gtoNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
+gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe String
+gdatatypeSchemaName opts _ = case name of
+  (c:_) | isAlpha c && isUpper c -> Just name
+  _ -> Nothing
+  where
+    name = datatypeNameModifier opts (datatypeName (Proxy3 :: Proxy3 d f a))
+
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
 -- | Single constructor data type.
 instance {-# OVERLAPPABLE #-} (Datatype d, GToSchema f) => GToSchema (D1 d (C1 c f)) where
-  gtoNamedSchema opts _ = named schemaName . gtoSchema opts (Proxy :: Proxy f)
+  gtoNamedSchema opts _ s = (schemaName, gtoSchema opts (Proxy :: Proxy f) s)
     where
-      schemaName = datatypeNameModifier opts $ datatypeName (Proxy3 :: Proxy3 d f p)
+      schemaName = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
 -- | Single field single constructor data type.
 instance (Datatype d, Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f))) where
   gtoNamedSchema opts _ s
-    | unwrapUnaryRecords opts = named schemaName $ gtoSchema opts (Proxy :: Proxy f) s
-    | otherwise = named schemaName $
+    | unwrapUnaryRecords opts = (schemaName, gtoSchema opts (Proxy :: Proxy f) s)
+    | otherwise = (schemaName,) $
         case schema ^. schemaItems of
-          Just (SchemaItemsArray [Inline fieldSchema]) -> fieldSchema
+          Just (SchemaItemsArray [_]) -> fieldSchema
           _ -> schema
     where
-      schema = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
-      schemaName = datatypeNameModifier opts $ datatypeName (Proxy3 :: Proxy3 d f p)
+      schemaName  = gdatatypeSchemaName opts (Proxy :: Proxy d)
+      schema      = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
+      fieldSchema = gtoSchema opts (Proxy :: Proxy f) s
+
+gtoSchemaRef :: GToSchema f => SchemaOptions -> proxy f -> Referenced Schema
+gtoSchemaRef opts proxy = case gtoNamedSchema opts proxy mempty of
+  (Just name, _)  -> Ref (Reference ("#/definitions/" <> T.pack name))
+  (_, schema)     -> Inline schema
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
 appendItem x Nothing = Just (SchemaItemsArray [x])
@@ -184,16 +208,16 @@ withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) => SchemaOptions 
 withFieldSchema opts _ isRequiredField schema
   | T.null fieldName = schema
       & schemaType .~ SchemaArray
-      & schemaItems %~ appendItem (Inline fieldSchema)
+      & schemaItems %~ appendItem fieldSchemaRef
   | otherwise = schema
       & schemaType .~ SchemaObject
-      & schemaProperties . at fieldName ?~ Inline fieldSchema
+      & schemaProperties . at fieldName ?~ fieldSchemaRef
       & if isRequiredField
           then schemaRequired %~ (fieldName :)
           else id
   where
     fieldName = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
-    fieldSchema = gtoSchema opts (Proxy :: Proxy f) mempty
+    fieldSchemaRef = gtoSchemaRef opts (Proxy :: Proxy f)
 
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
@@ -204,7 +228,7 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
   gtoNamedSchema opts _ = unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
 instance ToSchema c => GToSchema (K1 i c) where
-  gtoNamedSchema _ _ _ = unnamed $ toSchema (Proxy :: Proxy c)
+  gtoNamedSchema _ _ _ = toNamedSchema (Proxy :: Proxy c)
 
 data Proxy2 a b = Proxy2
 

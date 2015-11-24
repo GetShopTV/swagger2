@@ -1,6 +1,8 @@
 module Data.Swagger.Schema (
-  toSchema,
   ToSchema(..),
+  toSchema,
+  toSchemaRef,
+  schemaName,
 
   SchemaOptions(..),
   defaultSchemaOptions,
