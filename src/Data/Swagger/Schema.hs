@@ -11,6 +11,7 @@ module Data.Swagger.Schema (
   genericToSchema,
   genericToNamedSchema,
   genericToNamedSchemaBoundedEnum,
+  genericToNamedSchemaBoundedIntegral,
 
   toSchemaBoundedIntegral,
   toSchemaBoundedEnum,

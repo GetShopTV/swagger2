@@ -159,11 +159,19 @@ toSchemaBoundedEnum _ = mempty
   & schemaType .~ SchemaString
   & schemaEnum ?~ map toJSON [minBound..maxBound :: a]
 
+genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
+  ( Bounded a, Integral a
+  , Generic a, Rep a ~ D1 d f, Datatype d)
+  => SchemaOptions -> proxy a -> NamedSchema
+genericToNamedSchemaBoundedIntegral opts proxy
+  = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
+
 genericToNamedSchemaBoundedEnum :: forall a d f proxy.
   ( ToJSON a, Bounded a, Enum a
   , Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
-genericToNamedSchemaBoundedEnum opts proxy = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedEnum proxy)
+genericToNamedSchemaBoundedEnum opts proxy
+  = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedEnum proxy)
 
 genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
 genericToSchema opts = snd . genericToNamedSchema opts
