@@ -1,10 +1,16 @@
 module Data.Swagger.Schema (
+  toSchema,
   ToSchema(..),
-  toSchemaBoundedIntegral,
-  toSchemaBoundedEnum,
+
   SchemaOptions(..),
   defaultSchemaOptions,
+
   genericToSchema,
+  genericToNamedSchema,
+  genericToNamedSchemaBoundedEnum,
+
+  toSchemaBoundedIntegral,
+  toSchemaBoundedEnum,
 ) where
 
 import Data.Swagger.Schema.Internal

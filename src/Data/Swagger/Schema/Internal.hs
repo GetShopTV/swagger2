@@ -25,48 +25,62 @@ import GHC.Generics
 import Data.Swagger.Internal
 import Data.Swagger.Lens
 
+type NamedSchema = (Maybe String, Schema)
+
+unnamed :: Schema -> NamedSchema
+unnamed schema = (Nothing, schema)
+
+named :: String -> Schema -> NamedSchema
+named name schema = (Just name, schema)
+
 class ToSchema a where
-  toSchema :: proxy a -> Schema
-  default toSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Schema
-  toSchema = genericToSchema defaultSchemaOptions
+  toNamedSchema :: proxy a -> NamedSchema
+  default toNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> NamedSchema
+  toNamedSchema = unnamed . genericToSchema defaultSchemaOptions
+
+toSchema :: ToSchema a => proxy a -> Schema
+toSchema = snd . toNamedSchema
 
 class GToSchema (f :: * -> *) where
-  gtoSchema :: SchemaOptions -> proxy f -> Schema -> Schema
+  gtoNamedSchema :: SchemaOptions -> proxy f -> Schema -> NamedSchema
+
+gtoSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema -> Schema
+gtoSchema opts proxy = snd . gtoNamedSchema opts proxy
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
-  toSchema _ = mempty
+  toNamedSchema _ = unnamed $ mempty
     & schemaType  .~ SchemaArray
     & schemaItems ?~ SchemaItemsObject (Inline (toSchema (Proxy :: Proxy a)))
 
 instance {-# OVERLAPPING #-} ToSchema String where
-  toSchema _ = mempty & schemaType .~ SchemaString
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaString
 
 instance ToSchema Bool where
-  toSchema _ = mempty & schemaType .~ SchemaBoolean
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaBoolean
 
 instance ToSchema Integer where
-  toSchema _ = mempty & schemaType .~ SchemaInteger
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaInteger
 
-instance ToSchema Int    where toSchema = toSchemaBoundedIntegral
-instance ToSchema Int8   where toSchema = toSchemaBoundedIntegral
-instance ToSchema Int16  where toSchema = toSchemaBoundedIntegral
-instance ToSchema Int32  where toSchema = toSchemaBoundedIntegral
-instance ToSchema Int64  where toSchema = toSchemaBoundedIntegral
+instance ToSchema Int    where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Int8   where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Int16  where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Int32  where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Int64  where toNamedSchema = unnamed . toSchemaBoundedIntegral
 
-instance ToSchema Word   where toSchema = toSchemaBoundedIntegral
-instance ToSchema Word8  where toSchema = toSchemaBoundedIntegral
-instance ToSchema Word16 where toSchema = toSchemaBoundedIntegral
-instance ToSchema Word32 where toSchema = toSchemaBoundedIntegral
-instance ToSchema Word64 where toSchema = toSchemaBoundedIntegral
+instance ToSchema Word   where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Word8  where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Word16 where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Word32 where toNamedSchema = unnamed . toSchemaBoundedIntegral
+instance ToSchema Word64 where toNamedSchema = unnamed . toSchemaBoundedIntegral
 
 instance ToSchema Double where
-  toSchema _ = mempty & schemaType .~ SchemaNumber
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
 
 instance ToSchema Float where
-  toSchema _ = mempty & schemaType .~ SchemaNumber
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
 
 instance ToSchema a => ToSchema (Maybe a) where
-  toSchema _ = toSchema (Proxy :: Proxy a)
+  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
@@ -76,45 +90,47 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
 
 instance ToSchema T.Text where
-  toSchema _ = toSchema (Proxy :: Proxy String)
+  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
 
 instance ToSchema TL.Text where
-  toSchema _ = toSchema (Proxy :: Proxy String)
+  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
 
 instance ToSchema a => ToSchema (Map String a) where
-  toSchema _ = mempty
+  toNamedSchema _ = unnamed $ mempty
     & schemaType  .~ SchemaObject
     & schemaAdditionalProperties ?~ toSchema (Proxy :: Proxy a)
 
-instance ToSchema a => ToSchema (Map T.Text  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (Map TL.Text a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map T.Text  a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map TL.Text a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
 
-instance ToSchema a => ToSchema (HashMap String  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap T.Text  a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap TL.Text a) where toSchema _ = toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap String  a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap T.Text  a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap TL.Text a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
 
 instance ToSchema a => ToSchema (Set a) where
-  toSchema _ = toSchema (Proxy :: Proxy [a])
+  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy [a])
     & schemaUniqueItems ?~ True
 
-instance ToSchema a => ToSchema (HashSet a) where toSchema _ = toSchema (Proxy :: Proxy (Set a))
+instance ToSchema a => ToSchema (HashSet a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Set a))
 
-instance ToSchema All where toSchema _ = toSchema (Proxy :: Proxy Bool)
-instance ToSchema Any where toSchema _ = toSchema (Proxy :: Proxy Bool)
-instance ToSchema a => ToSchema (Sum a)     where toSchema _ = toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Product a) where toSchema _ = toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (First a)   where toSchema _ = toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Last a)    where toSchema _ = toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Dual a)    where toSchema _ = toSchema (Proxy :: Proxy a)
+instance ToSchema All where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy Bool)
+instance ToSchema Any where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy Bool)
+instance ToSchema a => ToSchema (Sum a)     where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Product a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (First a)   where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Last a)    where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Dual a)    where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 
 data SchemaOptions = SchemaOptions
   { fieldLabelModifier :: String -> String
+  , datatypeNameModifier :: String -> String
   , unwrapUnaryRecords :: Bool
   }
 
 defaultSchemaOptions :: SchemaOptions
 defaultSchemaOptions = SchemaOptions
   { fieldLabelModifier = id
+  , datatypeNameModifier = id
   , unwrapUnaryRecords = False
   }
 
@@ -129,25 +145,35 @@ toSchemaBoundedEnum _ = mempty
   & schemaType .~ SchemaString
   & schemaEnum ?~ map toJSON [minBound..maxBound :: a]
 
-genericToSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
-genericToSchema opts _ = gtoSchema opts (Proxy :: Proxy (Rep a)) mempty
+genericToNamedSchemaBoundedEnum :: (ToJSON a, Bounded a, Enum a, Generic a) => proxy a -> NamedSchema
+genericToNamedSchemaBoundedEnum = unnamed . toSchemaBoundedEnum
+
+genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
+genericToSchema opts = snd . genericToNamedSchema opts
+
+genericToNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> NamedSchema
+genericToNamedSchema opts _ = gtoNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
-  gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
+  gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
 -- | Single constructor data type.
-instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (D1 d (C1 c f)) where
-  gtoSchema opts _ = gtoSchema opts (Proxy :: Proxy f)
+instance {-# OVERLAPPABLE #-} (Datatype d, GToSchema f) => GToSchema (D1 d (C1 c f)) where
+  gtoNamedSchema opts _ = named schemaName . gtoSchema opts (Proxy :: Proxy f)
+    where
+      schemaName = datatypeNameModifier opts $ datatypeName (Proxy3 :: Proxy3 d f p)
 
 -- | Single field single constructor data type.
-instance (Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f))) where
-  gtoSchema opts _ s
-    | unwrapUnaryRecords opts = gtoSchema opts (Proxy :: Proxy f) s
-    | otherwise = case schema ^. schemaItems of
-        Just (SchemaItemsArray [Inline fieldSchema]) -> fieldSchema
-        _ -> schema
+instance (Datatype d, Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f))) where
+  gtoNamedSchema opts _ s
+    | unwrapUnaryRecords opts = named schemaName $ gtoSchema opts (Proxy :: Proxy f) s
+    | otherwise = named schemaName $
+        case schema ^. schemaItems of
+          Just (SchemaItemsArray [Inline fieldSchema]) -> fieldSchema
+          _ -> schema
     where
       schema = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
+      schemaName = datatypeNameModifier opts $ datatypeName (Proxy3 :: Proxy3 d f p)
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
 appendItem x Nothing = Just (SchemaItemsArray [x])
@@ -171,14 +197,14 @@ withFieldSchema opts _ isRequiredField schema
 
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchema opts _ = withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
+  gtoNamedSchema opts _ = unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
-  gtoSchema opts _ = withFieldSchema opts (Proxy2 :: Proxy2 s f) True
+  gtoNamedSchema opts _ = unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
 instance ToSchema c => GToSchema (K1 i c) where
-  gtoSchema _ _ _ = toSchema (Proxy :: Proxy c)
+  gtoNamedSchema _ _ _ = unnamed $ toSchema (Proxy :: Proxy c)
 
 data Proxy2 a b = Proxy2
 
