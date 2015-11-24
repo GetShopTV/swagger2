@@ -52,6 +52,7 @@ test-suite spec
                   , text
                   , aeson
                   , aeson-qq
+                  , containers
                   , unordered-containers
                   , vector
   other-modules:

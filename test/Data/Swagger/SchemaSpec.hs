@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
 import Data.Proxy
+import Data.Set (Set)
 import GHC.Generics
 
 import Data.Swagger
@@ -33,6 +34,7 @@ spec = do
     context "Point (fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
     context "Color (bounded enum)" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
     context "Paint (record with bounded enum field)" $ checkToSchema (Proxy :: Proxy Paint) paintSchemaJSON
+    context "UserGroup (set newtype)" $ checkToSchema (Proxy :: Proxy UserGroup) userGroupSchemaJSON
     context "Unary records" $ do
       context "Email (unwrapUnaryRecords)"  $ checkToSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
@@ -181,12 +183,28 @@ emailSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype UserId = UserId Integer
-  deriving (Generic, ToSchema)
+  deriving (Eq, Ord, Generic, ToSchema)
 
 userIdSchemaJSON :: Value
 userIdSchemaJSON = [aesonQQ|
 {
   "type": "integer"
+}
+|]
+
+-- ========================================================================
+-- UserGroup (set newtype)
+-- ========================================================================
+
+newtype UserGroup = UserGroup (Set UserId)
+  deriving (Generic, ToSchema)
+
+userGroupSchemaJSON :: Value
+userGroupSchemaJSON = [aesonQQ|
+{
+  "type": "array",
+  "items": { "$ref": "#/definitions/UserId" },
+  "uniqueItems": true
 }
 |]
 
