@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Data.Swagger.SchemaSpec where
@@ -34,6 +35,7 @@ spec = do
       context "Email (unwrapUnaryRecords)"  $ checkToSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
+    context "Players (inlining schema)" $ checkToSchema (Proxy :: Proxy Players) playersSchemaJSON
     context "Schema name" $ do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
@@ -185,3 +187,35 @@ playerSchemaJSON = [aesonQQ|
   "required": ["position"]
 }
 |]
+
+-- ========================================================================
+-- Inlined (newtype for inlining schemas)
+-- ========================================================================
+
+newtype Inlined a = Inlined { getInlined :: a }
+
+instance ToSchema a => ToSchema (Inlined a) where
+  toNamedSchema _ = (Nothing, toSchema (Proxy :: Proxy a))
+
+newtype Players = Players [Inlined Player]
+  deriving (Generic, ToSchema)
+
+playersSchemaJSON :: Value
+playersSchemaJSON = [aesonQQ|
+{
+  "type": "array",
+  "items":
+    {
+      "type": "object",
+      "properties":
+        {
+          "position":
+            {
+              "$ref": "#/definitions/Point"
+            }
+        },
+      "required": ["position"]
+    }
+}
+|]
+
