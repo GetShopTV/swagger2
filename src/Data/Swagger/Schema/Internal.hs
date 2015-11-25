@@ -289,7 +289,7 @@ instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
 -- | Single field constructor.
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
   gtoNamedSchema opts _ s
-    | unwrapUnaryRecords opts = unnamed (snd fieldSchema)
+    | unwrapUnaryRecords opts = fieldSchema
     | otherwise =
         case schema ^. schemaItems of
           Just (SchemaItemsArray [_]) -> fieldSchema
