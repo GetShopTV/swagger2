@@ -138,6 +138,7 @@ data SchemaOptions = SchemaOptions
   { fieldLabelModifier :: String -> String
   , constructorTagModifier :: String -> String
   , datatypeNameModifier :: String -> String
+  , allNullaryToStringTag :: Bool
   , useReferences :: Bool
   , unwrapUnaryRecords :: Bool
   }
@@ -147,6 +148,7 @@ defaultSchemaOptions = SchemaOptions
   { fieldLabelModifier = id
   , constructorTagModifier = id
   , datatypeNameModifier = id
+  , allNullaryToStringTag = True
   , useReferences = True
   , unwrapUnaryRecords = False
   }
@@ -247,7 +249,7 @@ instance ToSchema c => GToSchema (K1 i c) where
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
   gtoNamedSchema opts _ s
-    | allNullary = unnamed (toStringTag sumSchema)
+    | allNullaryToStringTag opts && allNullary = unnamed (toStringTag sumSchema)
     | otherwise = unnamed sumSchema
     where
       (All allNullary, sumSchema) = gsumToSchema opts (Proxy :: Proxy (f :+: g)) s
