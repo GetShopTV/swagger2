@@ -45,6 +45,7 @@ spec = do
     context "Sum types" $ do
       context "Status (sum of unary constructors)" $ checkToSchema (Proxy :: Proxy Status) statusSchemaJSON
       context "Character (ref and record sum)" $ checkToSchema (Proxy :: Proxy Character) characterSchemaJSON
+      context "Light (sum with unwrapUnaryRecords)" $ checkToSchema (Proxy :: Proxy Light) lightSchemaJSON
     context "Schema name" $ do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
@@ -367,3 +368,33 @@ characterSchemaJSON = [aesonQQ|
   "minProperties": 1
 }
 |]
+
+-- ========================================================================
+-- Light (sum type with unwrapUnaryRecords)
+-- ========================================================================
+
+data Light
+  = LightFreq Double
+  | LightColor Color
+  | LightWaveLength { waveLength :: Double }
+  deriving (Generic)
+
+instance ToSchema Light where
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+    { unwrapUnaryRecords = True }
+
+lightSchemaJSON :: Value
+lightSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "LightFreq": { "type": "number" },
+      "LightColor": { "$ref": "#/definitions/Color" },
+      "LightWaveLength": { "type": "number" }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
+}
+|]
+
