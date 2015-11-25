@@ -132,6 +132,12 @@ instance ToSchema Word16 where toNamedSchema = unnamed . toSchemaBoundedIntegral
 instance ToSchema Word32 where toNamedSchema = unnamed . toSchemaBoundedIntegral
 instance ToSchema Word64 where toNamedSchema = unnamed . toSchemaBoundedIntegral
 
+instance ToSchema Char where
+  toNamedSchema _ = unnamed $ mempty
+    & schemaType .~ SchemaString
+    & schemaMaxLength ?~ 1
+    & schemaMinLength ?~ 1
+
 instance ToSchema Double where
   toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
 
@@ -140,6 +146,8 @@ instance ToSchema Float where
 
 instance ToSchema a => ToSchema (Maybe a) where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
+
+instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
 instance ToSchema ()
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
