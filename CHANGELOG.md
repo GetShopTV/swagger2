@@ -1,3 +1,14 @@
+Unreleased changes
+---
+* Remove `Swagger`/`swagger` prefixes;
+* Add `ToSchema` type class with default generic implementation;
+* Add configurable generic `ToSchema` helpers;
+* Add `doctest` test suite;
+* Fixes:
+    * Fix `HasSchemaCommon` instance for `Schema`;
+    * Change `minimum`, `maximum` and `multipleOf` properties to be any number,
+      not necessarily an integer.
+
 0.3
 ---
 * Fixes:
