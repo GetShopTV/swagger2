@@ -304,7 +304,11 @@ playersSchemaJSON = [aesonQQ|
 data Status
   = StatusOk String
   | StatusError String
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+
+instance ToSchema Status where
+  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+    { constructorTagModifier = map toLower . drop (length "Status") }
 
 statusSchemaJSON :: Value
 statusSchemaJSON = [aesonQQ|
@@ -312,8 +316,8 @@ statusSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "StatusOk": { "type": "string" },
-      "StatusError": { "type": "string" }
+      "ok":    { "type": "string" },
+      "error": { "type": "string" }
     },
   "maxProperties": 1,
   "minProperties": 1

@@ -135,6 +135,7 @@ instance ToSchema a => ToSchema (Dual a)    where toNamedSchema _ = unnamed $ to
 
 data SchemaOptions = SchemaOptions
   { fieldLabelModifier :: String -> String
+  , constructorTagModifier :: String -> String
   , datatypeNameModifier :: String -> String
   , useReferences :: Bool
   , unwrapUnaryRecords :: Bool
@@ -143,6 +144,7 @@ data SchemaOptions = SchemaOptions
 defaultSchemaOptions :: SchemaOptions
 defaultSchemaOptions = SchemaOptions
   { fieldLabelModifier = id
+  , constructorTagModifier = id
   , datatypeNameModifier = id
   , useReferences = True
   , unwrapUnaryRecords = False
@@ -262,7 +264,7 @@ gsumConToSchema tagSchemaRef opts _ schema = schema
   & schemaMaxProperties ?~ 1
   & schemaMinProperties ?~ 1
   where
-    tag = T.pack (conName (Proxy3 :: Proxy3 c f p))
+    tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
   gsumToSchema opts = gsumConToSchema tagSchemaRef opts
