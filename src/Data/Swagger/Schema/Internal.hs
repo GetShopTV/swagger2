@@ -189,22 +189,23 @@ gdatatypeSchemaName opts _ = case name of
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
--- | Single constructor data type.
-instance {-# OVERLAPPABLE #-} (Datatype d, GToSchema f) => GToSchema (D1 d (C1 c f)) where
+instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
   gtoNamedSchema opts _ s = (schemaName, gtoSchema opts (Proxy :: Proxy f) s)
     where
       schemaName = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
--- | Single field single constructor data type.
-instance (Datatype d, Selector s, GToSchema f) => GToSchema (D1 d (C1 c (S1 s f))) where
+instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
+  gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f)
+
+-- | Single field constructor.
+instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
   gtoNamedSchema opts _ s
-    | unwrapUnaryRecords opts = (schemaName, gtoSchema opts (Proxy :: Proxy f) s)
-    | otherwise = (schemaName,) $
+    | unwrapUnaryRecords opts = unnamed fieldSchema
+    | otherwise = unnamed $
         case schema ^. schemaItems of
           Just (SchemaItemsArray [_]) -> fieldSchema
           _ -> schema
     where
-      schemaName  = gdatatypeSchemaName opts (Proxy :: Proxy d)
       schema      = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
       fieldSchema = gtoSchema opts (Proxy :: Proxy f) s
 
@@ -244,6 +245,34 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
 
 instance ToSchema c => GToSchema (K1 i c) where
   gtoNamedSchema _ _ _ = toNamedSchema (Proxy :: Proxy c)
+
+instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
+  gtoNamedSchema opts _ = unnamed . gsumToSchema opts (Proxy :: Proxy (f :+: g))
+
+class GSumToSchema f where
+  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> Schema
+
+instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
+  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) . gsumToSchema opts (Proxy :: Proxy g)
+
+gsumConToSchema :: forall c f proxy. Constructor c => Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema
+gsumConToSchema tagSchemaRef opts _ schema = schema
+  & schemaType .~ SchemaObject
+  & schemaProperties . at tag ?~ tagSchemaRef
+  & schemaMaxProperties ?~ 1
+  & schemaMinProperties ?~ 1
+  where
+    tag = T.pack (conName (Proxy3 :: Proxy3 c f p))
+
+instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
+  gsumToSchema opts = gsumConToSchema tagSchemaRef opts
+    where
+      tagSchemaRef = gtoSchemaRef opts (Proxy :: Proxy (C1 c f))
+
+instance (Constructor c, Selector s, GToSchema f) => GSumToSchema (C1 c (S1 s f)) where
+  gsumToSchema opts = gsumConToSchema tagSchemaRef opts
+    where
+      tagSchemaRef = gtoSchemaRef opts (Proxy :: Proxy (C1 c (S1 s f)))
 
 data Proxy2 a b = Proxy2
 
