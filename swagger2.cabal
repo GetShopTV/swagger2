@@ -35,6 +35,7 @@ library
                      , network
                      , template-haskell
                      , text
+                     , time
                      , unordered-containers
                      , lens
                      , scientific

@@ -26,6 +26,7 @@ import Data.Scientific (Scientific)
 import Data.Set (Set)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import Data.Time
 import Data.Word
 import GHC.Generics
 
@@ -162,6 +163,42 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, 
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e) => ToSchema (a, b, c, d, e)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f) => ToSchema (a, b, c, d, e, f)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
+
+timeNamedSchema :: String -> String -> NamedSchema
+timeNamedSchema name format = (Just name, mempty
+  & schemaType .~ SchemaString
+  & schemaFormat ?~ T.pack format
+  & schemaMinLength ?~ toInteger (length format))
+
+-- |
+-- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
+-- Just "yyyy-mm-dd"
+instance ToSchema Day where
+  toNamedSchema _ = timeNamedSchema "Day" "yyyy-mm-dd"
+
+-- |
+-- >>> toSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
+-- Just "yyyy-mm-ddThh:MM:ss"
+instance ToSchema LocalTime where
+  toNamedSchema _ = timeNamedSchema "LocalTime" "yyyy-mm-ddThh:MM:ss"
+
+-- |
+-- >>> toSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
+-- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
+instance ToSchema ZonedTime where
+  toNamedSchema _ = (Just "ZonedTime", mempty
+    & schemaType .~ SchemaString
+    & schemaFormat ?~ "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
+    & schemaMinLength ?~ toInteger (length ("yyyy-mm-ddThh:MM:ssZ" :: String)))
+
+instance ToSchema NominalDiffTime where
+  toNamedSchema _ = toNamedSchema (Proxy :: Proxy Integer)
+
+-- |
+-- >>> toSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
+-- Just "yyyy-mm-ddThh:MM:ssZ"
+instance ToSchema UTCTime where
+  toNamedSchema _ = timeNamedSchema "UTCTime" "yyyy-mm-ddThh:MM:ssZ"
 
 instance ToSchema T.Text where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
