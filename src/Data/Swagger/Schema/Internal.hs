@@ -201,14 +201,14 @@ instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
 -- | Single field constructor.
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
   gtoNamedSchema opts _ s
-    | unwrapUnaryRecords opts = unnamed fieldSchema
-    | otherwise = unnamed $
+    | unwrapUnaryRecords opts = unnamed (snd fieldSchema)
+    | otherwise =
         case schema ^. schemaItems of
           Just (SchemaItemsArray [_]) -> fieldSchema
-          _ -> schema
+          _ -> unnamed schema
     where
       schema      = gtoSchema opts (Proxy :: Proxy (S1 s f)) s
-      fieldSchema = gtoSchema opts (Proxy :: Proxy f) s
+      fieldSchema = gtoNamedSchema opts (Proxy :: Proxy f) s
 
 gtoSchemaRef :: GToSchema f => SchemaOptions -> proxy f -> Referenced Schema
 gtoSchemaRef opts proxy = case gtoNamedSchema opts proxy mempty of
