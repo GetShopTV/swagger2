@@ -157,24 +157,12 @@ toSchemaBoundedIntegral _ = mempty
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
   & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
-toSchemaBoundedEnum :: forall a proxy. (ToJSON a, Bounded a, Enum a) => proxy a -> Schema
-toSchemaBoundedEnum _ = mempty
-  & schemaType .~ SchemaString
-  & schemaEnum ?~ map toJSON [minBound..maxBound :: a]
-
 genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
   ( Bounded a, Integral a
   , Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchemaBoundedIntegral opts proxy
   = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
-
-genericToNamedSchemaBoundedEnum :: forall a d f proxy.
-  ( ToJSON a, Bounded a, Enum a
-  , Generic a, Rep a ~ D1 d f, Datatype d)
-  => SchemaOptions -> proxy a -> NamedSchema
-genericToNamedSchemaBoundedEnum opts proxy
-  = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedEnum proxy)
 
 genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
 genericToSchema opts = snd . genericToNamedSchema opts
@@ -258,30 +246,51 @@ instance ToSchema c => GToSchema (K1 i c) where
   gtoNamedSchema _ _ _ = toNamedSchema (Proxy :: Proxy c)
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
-  gtoNamedSchema opts _ = unnamed . gsumToSchema opts (Proxy :: Proxy (f :+: g))
+  gtoNamedSchema opts _ s
+    | allNullary = unnamed (toStringTag sumSchema)
+    | otherwise = unnamed sumSchema
+    where
+      (All allNullary, sumSchema) = gsumToSchema opts (Proxy :: Proxy (f :+: g)) s
+
+      toStringTag schema = mempty
+        & schemaType .~ SchemaString
+        & schemaEnum ?~ map toJSON (schema ^.. schemaProperties.ifolded.asIndex)
+
+type AllNullary = All
 
 class GSumToSchema f where
-  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> Schema
+  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> (AllNullary, Schema)
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
-  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) . gsumToSchema opts (Proxy :: Proxy g)
+  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <.> gsumToSchema opts (Proxy :: Proxy g)
+    where
+      (f <.> g) s = (a <> b, s'')
+        where
+          (a, s')  = f s
+          (b, s'') = g s'
 
-gsumConToSchema :: forall c f proxy. Constructor c => Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema
-gsumConToSchema tagSchemaRef opts _ schema = schema
+gsumConToSchema :: forall c f proxy. Constructor c =>
+  Bool -> Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> (AllNullary, Schema)
+gsumConToSchema isNullary tagSchemaRef opts _ schema = (All isNullary, schema
   & schemaType .~ SchemaObject
   & schemaProperties . at tag ?~ tagSchemaRef
   & schemaMaxProperties ?~ 1
-  & schemaMinProperties ?~ 1
+  & schemaMinProperties ?~ 1)
   where
     tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
-  gsumToSchema opts = gsumConToSchema tagSchemaRef opts
+  gsumToSchema opts = gsumConToSchema False tagSchemaRef opts
     where
       tagSchemaRef = gtoSchemaRef opts (Proxy :: Proxy (C1 c f))
 
+instance Constructor c => GSumToSchema (C1 c U1) where
+  gsumToSchema opts = gsumConToSchema True tagSchemaRef opts
+    where
+      tagSchemaRef = gtoSchemaRef opts (Proxy :: Proxy (C1 c U1))
+
 instance (Constructor c, Selector s, GToSchema f) => GSumToSchema (C1 c (S1 s f)) where
-  gsumToSchema opts = gsumConToSchema tagSchemaRef opts
+  gsumToSchema opts = gsumConToSchema False tagSchemaRef opts
     where
       tagSchemaRef = gtoSchemaRef opts (Proxy :: Proxy (C1 c (S1 s f)))
 

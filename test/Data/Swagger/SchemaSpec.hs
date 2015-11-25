@@ -48,8 +48,6 @@ spec = do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
       context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
-  describe "toSchemaBoundedEnum" $ do
-    context "Color" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
 
 main :: IO ()
 main = hspec spec
@@ -122,16 +120,13 @@ pointSchemaJSON = [aesonQQ|
 
 
 -- ========================================================================
--- Color (bounded enum)
+-- Color (enum)
 -- ========================================================================
 data Color
   = Red
   | Green
   | Blue
-  deriving (Generic, Enum, Bounded, ToJSON)
-
-instance ToSchema Color where
-  toNamedSchema = genericToNamedSchemaBoundedEnum defaultSchemaOptions
+  deriving (Generic, ToSchema)
 
 colorSchemaJSON :: Value
 colorSchemaJSON = [aesonQQ|

@@ -10,11 +10,9 @@ module Data.Swagger.Schema (
 
   genericToSchema,
   genericToNamedSchema,
-  genericToNamedSchemaBoundedEnum,
   genericToNamedSchemaBoundedIntegral,
 
   toSchemaBoundedIntegral,
-  toSchemaBoundedEnum,
 ) where
 
 import Data.Swagger.Schema.Internal
