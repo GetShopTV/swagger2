@@ -29,6 +29,8 @@ import GHC.Generics
 import Data.Swagger.Internal
 import Data.Swagger.Lens
 
+-- | A @'Schema'@ with an optional name.
+-- This name can be used in references.
 type NamedSchema = (Maybe String, Schema)
 
 unnamed :: Schema -> NamedSchema
@@ -37,17 +39,62 @@ unnamed schema = (Nothing, schema)
 named :: String -> Schema -> NamedSchema
 named name schema = (Just name, schema)
 
+-- | Convert a type into @'Schema'@.
+--
+-- An example type and instance:
+--
+-- @
+-- {-\# LANGUAGE OverloadedStrings \#-}   -- allows to write 'T.Text' literals
+-- {-\# LANGUAGE OverloadedLists \#-}     -- allows to write 'Map' as list
+--
+-- import Control.Lens
+--
+-- data Coord = Coord { x :: Double, y :: Double }
+--
+-- instance ToSchema Coord where
+--   toNamedSchema = (Just \"Coord\", mempty
+--      & schemaType .~ SchemaObject
+--      & schemaProperties .~
+--          [ ("x", toSchemaRef (Proxy :: Proxy Double))
+--          , ("y", toSchemaRef (Proxy :: Proxy Double))
+--          ]
+--      & schemaRequired .~ [ "x", "y" ]
+-- @
+--
+-- Instead of manually writing your @'ToSchema'@ instance you can
+-- use a default generic implementation of @'toNamedSchema'@.
+--
+-- To do that, simply add @deriving 'Generic'@ clause to your datatype
+-- and declare a @'ToSchema'@ instance for your datatype without
+-- giving definition for @'toNamedSchema'@.
+--
+-- For instance, the previous example can be simplified into this:
+--
+-- @
+-- {-\# LANGUAGE DeriveGeneric \#-}
+--
+-- import GHC.Generics (Generic)
+--
+-- data Coord = Coord { x :: Double, y :: Double } deriving Generic
+--
+-- instance ToSchema Coord
+-- @
 class ToSchema a where
+  -- | Convert a type into an optionally named schema.
   toNamedSchema :: proxy a -> NamedSchema
   default toNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> NamedSchema
   toNamedSchema = genericToNamedSchema defaultSchemaOptions
 
+-- | Get type's schema name according to its @'ToSchema'@ instance.
 schemaName :: ToSchema a => proxy a -> Maybe String
 schemaName = fst . toNamedSchema
 
+-- | Convert a type into a schema.
 toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
 
+-- | Convert a type into a referenced schema if possible.
+-- Only named schemas can be references, nameless schemas are inlined.
 toSchemaRef :: ToSchema a => proxy a -> Referenced Schema
 toSchemaRef proxy = case toNamedSchema proxy of
   (Just name, _)  -> Ref (Reference ("#/definitions/" <> T.pack name))
@@ -134,15 +181,49 @@ instance ToSchema a => ToSchema (First a)   where toNamedSchema _ = unnamed $ to
 instance ToSchema a => ToSchema (Last a)    where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 instance ToSchema a => ToSchema (Dual a)    where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 
+-- | Options that specify how to encode your type to Swagger schema.
 data SchemaOptions = SchemaOptions
-  { fieldLabelModifier :: String -> String
+  { -- | Function applied to field labels. Handy for removing common record prefixes for example.
+    fieldLabelModifier :: String -> String
+    -- | Function applied to constructor tags which could be handy for lower-casing them for example.
   , constructorTagModifier :: String -> String
+    -- | Function applied to datatype name.
   , datatypeNameModifier :: String -> String
+    -- | If @'True'@ the constructors of a datatype, with all nullary constructors,
+    -- will be encoded to a string enumeration schema with the constructor tags as possible values.
   , allNullaryToStringTag :: Bool
+    -- | If @'True'@ direct subschemas will be referenced if possible (rather than inlined).
+    -- Note that this option does not influence nested schemas, e.g. for these types
+    --
+    -- @
+    -- data Object = Object String deriving Generic
+    -- instance ToSchema Object
+    --
+    -- newtype Objects = Objects [Object] deriving Generic
+    -- instance ToSchema Objects where
+    --    toNamedSchema = genericToNamedSchema defaultSchemaOptions
+    --      { useReferences = False }
+    -- @
+    --
+    -- Schema for @Objects@ __will not__ inline @Object@ schema because
+    -- it is nested in a @[]@ schema.
   , useReferences :: Bool
+    -- | Hide the field name when a record constructor has only one field, like a newtype.
   , unwrapUnaryRecords :: Bool
   }
 
+-- | Default encoding @'SchemaOptions'@.
+--
+-- @
+-- 'SchemaOptions'
+-- { 'fieldLabelModifier'     = id
+-- , 'constructorTagModifier' = id
+-- , 'datatypeNameModifier'   = id
+-- , 'allNullaryToStringTag'  = True
+-- , 'useReferences'          = True
+-- , 'unwrapUnaryRecords'     = False
+-- }
+-- @
 defaultSchemaOptions :: SchemaOptions
 defaultSchemaOptions = SchemaOptions
   { fieldLabelModifier = id
@@ -153,12 +234,14 @@ defaultSchemaOptions = SchemaOptions
   , unwrapUnaryRecords = False
   }
 
+-- | Default schema for @'Bounded'@, @'Integral'@ types.
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SchemaInteger
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
   & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
+-- | Default generic named schema for @'Bounded'@, @'Integral'@ types.
 genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
   ( Bounded a, Integral a
   , Generic a, Rep a ~ D1 d f, Datatype d)
@@ -166,9 +249,14 @@ genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
 genericToNamedSchemaBoundedIntegral opts proxy
   = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
 
+-- | A configurable generic @'Schema'@ creator.
 genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
 genericToSchema opts = snd . genericToNamedSchema opts
 
+-- | A configurable generic @'NamedSchema'@ creator.
+-- This function applied to @'defaultSchemaOptions'@
+-- is used as the default for @'toNamedSchema'@
+-- when the type is an instance of @'Generic'@.
 genericToNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchema opts _ = gtoNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
