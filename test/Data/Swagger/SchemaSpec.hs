@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-module Data.Swagger.SchemaSpec where
+module Data.Swagger.SchemaSpec (main, spec) where
 
 import Data.Aeson
 import Data.Aeson.QQ
@@ -44,6 +44,7 @@ spec = do
     context "MyRoseTree (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
     context "Sum types" $ do
       context "Status (sum of unary constructors)" $ checkToSchema (Proxy :: Proxy Status) statusSchemaJSON
+      context "Character (ref and record sum)" $ checkToSchema (Proxy :: Proxy Character) characterSchemaJSON
     context "Schema name" $ do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
@@ -334,3 +335,35 @@ unitSchemaJSON = [aesonQQ|
 }
 |]
 
+
+-- ========================================================================
+-- Character (sum type with ref and record in alternative)
+-- ========================================================================
+
+data Character
+  = PC Player
+  | NPC { npcName :: String, npcPosition :: Point }
+  deriving (Generic, ToSchema)
+
+characterSchemaJSON :: Value
+characterSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "PC": { "$ref": "#/definitions/Player" },
+      "NPC":
+        {
+          "type": "object",
+          "properties":
+            {
+              "npcName": { "type": "string" },
+              "npcPosition": { "$ref": "#/definitions/Point" }
+            },
+          "required": ["npcName", "npcPosition"]
+        }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
+}
+|]
