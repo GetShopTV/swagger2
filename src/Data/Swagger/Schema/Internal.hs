@@ -94,6 +94,7 @@ instance ToSchema Float where
 instance ToSchema a => ToSchema (Maybe a) where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 
+instance ToSchema ()
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, d)
@@ -187,6 +188,14 @@ gdatatypeSchemaName opts _ = case name of
   _ -> Nothing
   where
     name = datatypeNameModifier opts (datatypeName (Proxy3 :: Proxy3 d f a))
+
+nullarySchema :: Schema
+nullarySchema = mempty
+  & schemaType .~ SchemaArray
+  & schemaEnum ?~ [ toJSON () ]
+
+instance GToSchema U1 where
+  gtoNamedSchema _ _ _ = unnamed nullarySchema
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)

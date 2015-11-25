@@ -29,6 +29,7 @@ checkSchemaName name proxy =
 spec :: Spec
 spec = do
   describe "Generic ToSchema" $ do
+    context "Unit" $ checkToSchema (Proxy :: Proxy Unit) unitSchemaJSON
     context "Person" $ checkToSchema (Proxy :: Proxy Person) personSchemaJSON
     context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
     context "Point (fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
@@ -321,6 +322,20 @@ statusSchemaJSON = [aesonQQ|
     },
   "maxProperties": 1,
   "minProperties": 1
+}
+|]
+
+-- ========================================================================
+-- Unit type
+-- ========================================================================
+
+data Unit = Unit deriving (Generic, ToSchema)
+
+unitSchemaJSON :: Value
+unitSchemaJSON = [aesonQQ|
+{
+  "type": "array",
+  "enum": [[]]
 }
 |]
 
