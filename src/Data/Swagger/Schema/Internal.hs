@@ -17,9 +17,12 @@ import Data.Char
 import Data.HashMap.Strict (HashMap)
 import Data.HashSet (HashSet)
 import Data.Int
+import Data.IntSet (IntSet)
+import Data.IntMap (IntMap)
 import Data.Map (Map)
 import Data.Monoid
 import Data.Proxy
+import Data.Scientific (Scientific)
 import Data.Set (Set)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -138,6 +141,9 @@ instance ToSchema Char where
     & schemaMaxLength ?~ 1
     & schemaMinLength ?~ 1
 
+instance ToSchema Scientific where
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
+
 instance ToSchema Double where
   toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
 
@@ -162,6 +168,12 @@ instance ToSchema T.Text where
 
 instance ToSchema TL.Text where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
+
+instance ToSchema IntSet where toNamedSchema _ = toNamedSchema (Proxy :: Proxy (Set Int))
+
+-- | NOTE: This schema does not account for the uniqueness of keys.
+instance ToSchema a => ToSchema (IntMap a) where
+  toNamedSchema _ = toNamedSchema (Proxy :: Proxy [(Int, a)])
 
 instance ToSchema a => ToSchema (Map String a) where
   toNamedSchema _ = unnamed $ mempty
