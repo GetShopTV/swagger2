@@ -41,6 +41,8 @@ spec = do
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
     context "Players (inlining schema)" $ checkToSchema (Proxy :: Proxy Players) playersSchemaJSON
     context "MyRoseTree (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
+    context "Sum types" $ do
+      context "Status (sum of unary constructors)" $ checkToSchema (Proxy :: Proxy Status) statusSchemaJSON
     context "Schema name" $ do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
@@ -292,6 +294,29 @@ playersSchemaJSON = [aesonQQ|
         },
       "required": ["position"]
     }
+}
+|]
+
+-- ========================================================================
+-- Status (sum type with unary constructors)
+-- ========================================================================
+
+data Status
+  = StatusOk String
+  | StatusError String
+  deriving (Generic, ToSchema)
+
+statusSchemaJSON :: Value
+statusSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "StatusOk": { "type": "string" },
+      "StatusError": { "type": "string" }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
 }
 |]
 
