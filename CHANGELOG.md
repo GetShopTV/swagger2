@@ -1,4 +1,4 @@
-Unreleased changes
+0.4
 ---
 * Remove `Swagger`/`swagger` prefixes;
 * Add `ToSchema` type class with default generic implementation;
@@ -7,7 +7,8 @@ Unreleased changes
 * Fixes:
     * Fix `HasSchemaCommon` instance for `Schema`;
     * Change `minimum`, `maximum` and `multipleOf` properties to be any number,
-      not necessarily an integer.
+      not necessarily an integer;
+    * Fix all warnings
 
 0.3
 ---
