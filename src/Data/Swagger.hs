@@ -30,7 +30,7 @@ module Data.Swagger (
   ParameterType(..),
   ItemsType(..),
   SchemaType(..),
-  Format(..),
+  Format,
   CollectionFormat(..),
   ItemsCollectionFormat(..),
 
@@ -39,7 +39,7 @@ module Data.Swagger (
   ParameterSchema(..),
   ParameterOtherSchema(..),
   ParameterLocation(..),
-  ParamName(..),
+  ParamName,
   Items(..),
   Header(..),
   Example(..),
@@ -66,8 +66,8 @@ module Data.Swagger (
   -- ** OAuth2
   OAuth2Params(..),
   OAuth2Flow(..),
-  AuthorizationURL(..),
-  TokenURL(..),
+  AuthorizationURL,
+  TokenURL,
 
   -- * External documentation
   ExternalDocs(..),

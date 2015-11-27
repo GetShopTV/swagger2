@@ -336,9 +336,9 @@ instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f) . gtoSchema opts (Proxy :: Proxy g)
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
-  gtoNamedSchema opts _ s = (schemaName, gtoSchema opts (Proxy :: Proxy f) s)
+  gtoNamedSchema opts _ s = (name, gtoSchema opts (Proxy :: Proxy f) s)
     where
-      schemaName = gdatatypeSchemaName opts (Proxy :: Proxy d)
+      name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
 instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
   gtoNamedSchema opts _ = unnamed . gtoSchema opts (Proxy :: Proxy f)
@@ -409,9 +409,9 @@ class GSumToSchema f where
   gsumToSchema :: SchemaOptions -> proxy f -> Schema -> (AllNullary, Schema)
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
-  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <.> gsumToSchema opts (Proxy :: Proxy g)
+  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) `after` gsumToSchema opts (Proxy :: Proxy g)
     where
-      (f <.> g) s = (a <> b, s'')
+      (f `after` g) s = (a <> b, s'')
         where
           (a, s')  = f s
           (b, s'') = g s'

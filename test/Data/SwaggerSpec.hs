@@ -6,12 +6,7 @@ module Data.SwaggerSpec where
 
 import Data.Aeson
 import Data.Aeson.QQ
-import qualified Data.Foldable as F
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
-import Data.Maybe
-import Data.Monoid
-import qualified Data.Vector as Vector
 import Data.Text (Text)
 
 import Data.Swagger
@@ -54,10 +49,6 @@ infoExample = Info
   , _infoContact = Just contactExample
   , _infoLicense = Just licenseExample
   , _infoVersion = "1.0.1" }
-  where
-    license = License
-      { _licenseName = "Apache 2.0"
-      , _licenseUrl = Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html") }
 
 infoExampleJSON :: Value
 infoExampleJSON = [aesonQQ|

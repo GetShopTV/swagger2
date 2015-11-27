@@ -1,16 +1,9 @@
 module SpecCommon where
 
 import Data.Aeson
-import Data.Aeson.QQ
 import qualified Data.Foldable as F
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.Maybe
-import Data.Monoid
 import qualified Data.Vector as Vector
-import Data.Text (Text)
-
-import Data.Swagger
 
 import Test.Hspec
 
@@ -23,17 +16,17 @@ isSubJSON (Array xs) (Array ys) = Vector.length xs == Vector.length ys && F.and 
 isSubJSON x y = x == y
 
 (<~>) :: (Eq a, Show a, ToJSON a, FromJSON a) => a -> Value -> Spec
-x <~> json = do
+x <~> js = do
   it "encodes correctly (probably with extra properties)" $ do
-    toJSON x `shouldSatisfy` (json `isSubJSON`)
+    toJSON x `shouldSatisfy` (js `isSubJSON`)
   it "decodes correctly" $ do
-    fromJSON json `shouldBe` Success x
+    fromJSON js `shouldBe` Success x
 
 (<=>) :: (Eq a, Show a, ToJSON a, FromJSON a) => a -> Value -> Spec
-x <=> json = do
+x <=> js = do
   it "encodes correctly" $ do
-    toJSON x `shouldBe` json
+    toJSON x `shouldBe` js
   it "decodes correctly" $ do
-    fromJSON json `shouldBe` Success x
+    fromJSON js `shouldBe` Success x
 
 

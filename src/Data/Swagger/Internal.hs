@@ -13,7 +13,6 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.TH            (deriveJSON)
-import           Data.Foldable            (Foldable)
 import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
@@ -23,8 +22,6 @@ import           Data.Scientific          (Scientific)
 import           Data.String              (fromString)
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
-import           Data.Traversable         (Traversable)
-import           Data.Hashable            (Hashable)
 import           GHC.Generics             (Generic)
 import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
@@ -897,17 +894,17 @@ instance FromJSON OAuth2Params where
   parseJSON = genericParseJSONWithSub "flow" (jsonPrefix "oauth2")
 
 instance FromJSON SecuritySchemeType where
-  parseJSON json@(Object o) = do
+  parseJSON js@(Object o) = do
     (t :: Text) <- o .: "type"
     case t of
       "basic"  -> pure SecuritySchemeBasic
-      "apiKey" -> SecuritySchemeApiKey <$> parseJSON json
-      "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON json
+      "apiKey" -> SecuritySchemeApiKey <$> parseJSON js
+      "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON js
       _ -> empty
   parseJSON _ = empty
 
 instance FromJSON Swagger where
-  parseJSON json@(Object o) = do
+  parseJSON js@(Object o) = do
     (version :: Text) <- o .: "swagger"
     when (version /= "2.0") empty
     (genericParseJSON (jsonPrefix "")
@@ -919,7 +916,7 @@ instance FromJSON Swagger where
                      , "parameters" .= (mempty :: HashMap Text Parameter)
                      , "responses" .= (mempty :: HashMap Text Response)
                      , "securityDefinitions" .= (mempty :: HashMap Text SecurityScheme)
-                     ] ) json
+                     ] ) js
   parseJSON _ = empty
 
 instance FromJSON SecurityScheme where
@@ -947,30 +944,30 @@ instance FromJSON Host where
   parseJSON _ = empty
 
 instance FromJSON Paths where
-  parseJSON json = Paths <$> parseJSON json
+  parseJSON js = Paths <$> parseJSON js
 
 instance FromJSON MimeList where
-  parseJSON json = (MimeList . map fromString) <$> parseJSON json
+  parseJSON js = (MimeList . map fromString) <$> parseJSON js
 
 instance FromJSON Parameter where
   parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "parameter")
 
 instance FromJSON ParameterSchema where
-  parseJSON json@(Object o) = do
+  parseJSON js@(Object o) = do
     (i :: Text) <- o .: "in"
     case i of
       "body" -> do
         schema <- o .: "schema"
         ParameterBody <$> parseJSON schema
-      _ -> ParameterOther <$> parseJSON json
+      _ -> ParameterOther <$> parseJSON js
   parseJSON _ = empty
 
 instance FromJSON ParameterOtherSchema where
   parseJSON = genericParseJSONWithSub "common" (jsonPrefix "parameterOtherSchema")
 
 instance FromJSON SchemaItems where
-  parseJSON json@(Object _) = SchemaItemsObject <$> parseJSON json
-  parseJSON json@(Array _) = SchemaItemsArray <$> parseJSON json
+  parseJSON js@(Object _) = SchemaItemsObject <$> parseJSON js
+  parseJSON js@(Array _) = SchemaItemsArray <$> parseJSON js
   parseJSON _ = empty
 
 instance FromJSON Responses where
@@ -980,8 +977,8 @@ instance FromJSON Responses where
   parseJSON _ = empty
 
 instance FromJSON Example where
-  parseJSON json = do
-    m <- parseJSON json
+  parseJSON js = do
+    m <- parseJSON js
     pure $ Example (Map.mapKeys fromString m)
 
 instance FromJSON Response where
@@ -1001,9 +998,9 @@ instance FromJSON Reference where
   parseJSON _ = empty
 
 instance FromJSON a => FromJSON (Referenced a) where
-  parseJSON json
-      = Ref    <$> parseJSON json
-    <|> Inline <$> parseJSON json
+  parseJSON js
+      = Ref    <$> parseJSON js
+    <|> Inline <$> parseJSON js
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")

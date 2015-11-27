@@ -15,7 +15,6 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Monoid
 import Data.Text (Text)
-import Data.Traversable
 import GHC.Generics
 import Language.Haskell.TH
 import Text.Read (readMaybe)
@@ -62,9 +61,9 @@ genericToJSONWithSub sub opts x =
     _ -> error "genericToJSONWithSub: subjson is not an object"
 
 genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
-genericParseJSONWithSub sub opts (Object o) = genericParseJSON opts json
+genericParseJSONWithSub sub opts (Object o) = genericParseJSON opts js
   where
-    json = Object (HashMap.insert sub (Object o) o)
+    js = Object (HashMap.insert sub (Object o) o)
 genericParseJSONWithSub _ _ _ = error "genericParseJSONWithSub: given json is not an object"
 
 (<+>) :: Value -> Value -> Value
@@ -72,7 +71,7 @@ Object x <+> Object y = Object (x <> y)
 _ <+> _ = error "<+>: merging non-objects"
 
 withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
-withDefaults parser defs json@(Object _) = parser (json <+> object defs)
+withDefaults parser defs js@(Object _) = parser (js <+> object defs)
 withDefaults _ _ _ = empty
 
 genericMempty :: (Generic a, GMonoid (Rep a)) => a

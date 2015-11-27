@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-module Data.Swagger.SchemaSpec (main, spec) where
+module Data.Swagger.SchemaSpec where
 
 import Data.Aeson
 import Data.Aeson.QQ
@@ -13,7 +13,6 @@ import Data.Set (Set)
 import GHC.Generics
 
 import Data.Swagger
-import Data.Swagger.Schema
 
 import SpecCommon
 import Test.Hspec
@@ -22,9 +21,9 @@ checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkToSchema proxy js = toSchema proxy <~> js
 
 checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
-checkSchemaName name proxy =
-  it ("schema name is " ++ show name) $
-    schemaName proxy `shouldBe` name
+checkSchemaName sname proxy =
+  it ("schema name is " ++ show sname) $
+    schemaName proxy `shouldBe` sname
 
 spec :: Spec
 spec = do

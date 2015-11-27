@@ -5,7 +5,6 @@
 module Data.Swagger.Lens where
 
 import Control.Lens
-import Control.Lens.TH
 import Data.Aeson (Value)
 import Data.Scientific (Scientific)
 import Data.Swagger.Internal
