@@ -45,4 +45,4 @@ install:
   - stack --no-terminal --skip-ghc-check test --only-snapshot
 
 script:
-  - stack --no-terminal --skip-ghc-check test
+  - stack --no-terminal --skip-ghc-check test --pedantic
