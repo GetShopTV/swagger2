@@ -21,10 +21,12 @@ library
   exposed-modules:
     Data.Swagger
     Data.Swagger.Lens
+    Data.Swagger.Schema
 
     -- internal modules
     Data.Swagger.Internal
     Data.Swagger.Internal.Utils
+    Data.Swagger.Schema.Internal
   build-depends:       base == 4.*
                      , aeson
                      , containers
@@ -33,8 +35,10 @@ library
                      , network
                      , template-haskell
                      , text
+                     , time
                      , unordered-containers
                      , lens
+                     , scientific
   default-language:    Haskell2010
 
 test-suite spec
@@ -49,11 +53,21 @@ test-suite spec
                   , text
                   , aeson
                   , aeson-qq
+                  , containers
                   , unordered-containers
                   , vector
   other-modules:
+    SpecCommon
     Data.SwaggerSpec
+    Data.Swagger.SchemaSpec
   default-language: Haskell2010
+
+test-suite doctest
+  build-depends:    base, doctest, Glob
+  default-language: Haskell2010
+  hs-source-dirs:   test
+  main-is:          DocTest.hs
+  type:             exitcode-stdio-1.0
 
 source-repository head
   type:     git

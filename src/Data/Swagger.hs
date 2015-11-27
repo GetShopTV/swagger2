@@ -6,6 +6,8 @@
 -- and Swagger-Codegen to generate clients in various languages.
 -- Additional utilities can also take advantage of the resulting files, such as testing tools.
 module Data.Swagger (
+  module Data.Swagger.Schema,
+
   -- * Swagger specification
   Swagger(..),
   Host(..),
@@ -78,6 +80,8 @@ module Data.Swagger (
   MimeList(..),
   URL(..),
 ) where
+
+import Data.Swagger.Schema
 
 import Data.Swagger.Internal
 
