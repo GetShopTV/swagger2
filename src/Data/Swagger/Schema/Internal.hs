@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -15,7 +16,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Char
 import Data.HashMap.Strict (HashMap)
-import Data.HashSet (HashSet)
+import "unordered-containers" Data.HashSet (HashSet)
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
