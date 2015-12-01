@@ -1,3 +1,10 @@
+0.4.1
+---
+* Fixes:
+    * Use `PackageImports` for `Data.HashSet` to avoid test failure on stackage (see [#15](https://github.com/GetShopTV/swagger2/issues/15));
+    * Add an upper version bound for `aeson` due to `aeson-0.10.0.0` bug (see [bos/aeson#293](https://github.com/bos/aeson/issues/293));
+    * Switch to Cabal-based multi GHC Travis config.
+
 0.4
 ---
 * Remove `Swagger`/`swagger` prefixes;
