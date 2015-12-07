@@ -25,7 +25,7 @@ spec = do
     context "Model with Map/Dictionary Properties" $ schemaModelDictExample <~> schemaModelDictExampleJSON
     context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
   describe "Definitions Object" $ definitionsExample <~> definitionsExampleJSON
-  describe "Parameters Definition Object" $ parametersDefinitionExample <~> parametersDefinitionExampleJSON
+  describe "Parameters Definition Object" $ paramsDefinitionExample <~> paramsDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <~> responsesDefinitionExampleJSON
   describe "Security Definitions Object" $ securityDefinitionsExample <~> securityDefinitionsExampleJSON
   describe "Swagger Object" $ do
@@ -131,26 +131,26 @@ operationExample = mempty
           , (405, Inline mempty { _responseDescription = "Invalid input" }) ] }
 
     params = map Inline
-      [ Parameter
-          { _parameterName = "petId"
-          , _parameterDescription = Just "ID of pet that needs to be updated"
-          , _parameterRequired = Just True
-          , _parameterSchema = ParameterOther (stringSchema ParameterPath) }
-      , Parameter
-          { _parameterName = "name"
-          , _parameterDescription = Just "Updated name of the pet"
-          , _parameterRequired = Just False
-          , _parameterSchema = ParameterOther (stringSchema ParameterFormData) }
-      , Parameter
-          { _parameterName = "status"
-          , _parameterDescription = Just "Updated status of the pet"
-          , _parameterRequired = Just False
-          , _parameterSchema = ParameterOther (stringSchema ParameterFormData) }
+      [ Param
+          { _paramName = "petId"
+          , _paramDescription = Just "ID of pet that needs to be updated"
+          , _paramRequired = Just True
+          , _paramSchema = ParamOther (stringSchema ParamPath) }
+      , Param
+          { _paramName = "name"
+          , _paramDescription = Just "Updated name of the pet"
+          , _paramRequired = Just False
+          , _paramSchema = ParamOther (stringSchema ParamFormData) }
+      , Param
+          { _paramName = "status"
+          , _paramDescription = Just "Updated status of the pet"
+          , _paramRequired = Just False
+          , _paramSchema = ParamOther (stringSchema ParamFormData) }
       ]
 
     stringSchema i = mempty
-      { _parameterOtherSchemaIn = i
-      , _parameterOtherSchemaType = ParamString
+      { _paramOtherSchemaIn = i
+      , _paramOtherSchemaType = ParamString
       }
 
 operationExampleJSON :: Value
@@ -379,27 +379,27 @@ definitionsExampleJSON = [aesonQQ|
 -- Parameters Definition object
 -- =======================================================================
 
-parametersDefinitionExample :: HashMap Text Parameter
-parametersDefinitionExample =
+paramsDefinitionExample :: HashMap Text Param
+paramsDefinitionExample =
   [ ("skipParam", mempty
-      { _parameterName = "skip"
-      , _parameterDescription = Just "number of items to skip"
-      , _parameterRequired = Just True
-      , _parameterSchema = ParameterOther mempty
-          { _parameterOtherSchemaIn = ParameterQuery
-          , _parameterOtherSchemaType = ParamInteger
-          , _parameterOtherSchemaFormat = Just "int32" } })
+      { _paramName = "skip"
+      , _paramDescription = Just "number of items to skip"
+      , _paramRequired = Just True
+      , _paramSchema = ParamOther mempty
+          { _paramOtherSchemaIn = ParamQuery
+          , _paramOtherSchemaType = ParamInteger
+          , _paramOtherSchemaFormat = Just "int32" } })
   , ("limitParam", mempty
-      { _parameterName = "limit"
-      , _parameterDescription = Just "max records to return"
-      , _parameterRequired = Just True
-      , _parameterSchema = ParameterOther mempty
-          { _parameterOtherSchemaIn = ParameterQuery
-          , _parameterOtherSchemaType = ParamInteger
-          , _parameterOtherSchemaFormat = Just "int32" } }) ]
+      { _paramName = "limit"
+      , _paramDescription = Just "max records to return"
+      , _paramRequired = Just True
+      , _paramSchema = ParamOther mempty
+          { _paramOtherSchemaIn = ParamQuery
+          , _paramOtherSchemaType = ParamInteger
+          , _paramOtherSchemaFormat = Just "int32" } }) ]
 
-parametersDefinitionExampleJSON :: Value
-parametersDefinitionExampleJSON = [aesonQQ|
+paramsDefinitionExampleJSON :: Value
+paramsDefinitionExampleJSON = [aesonQQ|
 {
   "skipParam": {
     "name": "skip",
@@ -518,12 +518,12 @@ swaggerExample = mempty
                   , _operationProduces = Just (MimeList [ "application/json" ])
                   , _operationParameters =
                       [ Inline mempty
-                          { _parameterRequired = Just True
-                          , _parameterName = "id"
-                          , _parameterDescription = Just "TodoId param"
-                          , _parameterSchema = ParameterOther mempty
-                              { _parameterOtherSchemaIn = ParameterPath
-                              , _parameterOtherSchemaType = ParamString } } ]
+                          { _paramRequired = Just True
+                          , _paramName = "id"
+                          , _paramDescription = Just "TodoId param"
+                          , _paramSchema = ParamOther mempty
+                              { _paramOtherSchemaIn = ParamPath
+                              , _paramOtherSchemaType = ParamString } } ]
                   , _operationTags = [ "todo" ] } }) ] } }
 
 swaggerExampleJSON :: Value

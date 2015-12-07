@@ -23,9 +23,9 @@ makeLenses ''Paths
 makeLenses ''PathItem
 makeLenses ''Tag
 makeLenses ''Operation
-makeLenses ''Parameter
-makePrisms ''ParameterSchema
-makeLenses ''ParameterOtherSchema
+makeLenses ''Param
+makePrisms ''ParamSchema
+makeLenses ''ParamOtherSchema
 makeLenses ''Items
 makeLenses ''Header
 makeLenses ''Schema
@@ -51,7 +51,7 @@ instance HasDescription Response       Text where description = responseDescript
 instance HasDescription Info           (Maybe Text) where description = infoDescription
 instance HasDescription Tag            (Maybe Text) where description = tagDescription
 instance HasDescription Operation      (Maybe Text) where description = operationDescription
-instance HasDescription Parameter      (Maybe Text) where description = parameterDescription
+instance HasDescription Param          (Maybe Text) where description = paramDescription
 instance HasDescription Header         (Maybe Text) where description = headerDescription
 instance HasDescription Schema         (Maybe Text) where description = schemaDescription
 instance HasDescription SecurityScheme (Maybe Text) where description = securitySchemeDescription
@@ -61,7 +61,7 @@ class HasSchemaCommon s where
   schemaCommon :: Lens' s SchemaCommon
 
 instance HasSchemaCommon Schema where schemaCommon = schemaSchemaCommon
-instance HasSchemaCommon ParameterOtherSchema where schemaCommon = parameterOtherSchemaCommon
+instance HasSchemaCommon ParamOtherSchema where schemaCommon = paramOtherSchemaCommon
 instance HasSchemaCommon Items where schemaCommon = itemsCommon
 instance HasSchemaCommon Header where schemaCommon = headerCommon
 instance HasSchemaCommon SchemaCommon where schemaCommon = id

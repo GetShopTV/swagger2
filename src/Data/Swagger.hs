@@ -27,7 +27,7 @@ module Data.Swagger (
   Operation(..),
 
   -- * Types and formats
-  ParameterType(..),
+  ParamType(..),
   ItemsType(..),
   SchemaType(..),
   Format,
@@ -35,10 +35,10 @@ module Data.Swagger (
   ItemsCollectionFormat(..),
 
   -- * Parameters
-  Parameter(..),
-  ParameterSchema(..),
-  ParameterOtherSchema(..),
-  ParameterLocation(..),
+  Param(..),
+  ParamSchema(..),
+  ParamOtherSchema(..),
+  ParamLocation(..),
   ParamName,
   Items(..),
   Header(..),

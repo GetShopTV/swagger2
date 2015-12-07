@@ -64,7 +64,7 @@ data Swagger = Swagger
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , _parameters :: HashMap Text Parameter
+  , _parameters :: HashMap Text Param
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
@@ -187,7 +187,7 @@ data PathItem = PathItem
     -- These parameters can be overridden at the operation level, but cannot be removed there.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , _pathItemParameters :: [Referenced Parameter]
+  , _pathItemParameters :: [Referenced Param]
   } deriving (Eq, Show, Generic)
 
 -- | Describes a single API operation on a path.
@@ -228,7 +228,7 @@ data Operation = Operation
     -- the new definition will override it, but can never remove it.
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
-  , _operationParameters :: [Referenced Parameter]
+  , _operationParameters :: [Referenced Param]
 
     -- | The list of possible responses as they are returned from executing this operation.
   , _operationResponses :: Responses
@@ -255,63 +255,63 @@ newtype MimeList = MimeList { getMimeList :: [MediaType] }
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
-data Parameter = Parameter
+data Param = Param
   { -- | The name of the parameter.
     -- Parameter names are case sensitive.
-    _parameterName :: Text
+    _paramName :: Text
 
     -- | A brief description of the parameter.
     -- This could contain examples of use.
     -- GFM syntax can be used for rich text representation.
-  , _parameterDescription :: Maybe Text
+  , _paramDescription :: Maybe Text
 
     -- | Determines whether this parameter is mandatory.
     -- If the parameter is in "path", this property is required and its value MUST be true.
     -- Otherwise, the property MAY be included and its default value is @False@.
-  , _parameterRequired :: Maybe Bool
+  , _paramRequired :: Maybe Bool
 
     -- | Parameter schema.
-  , _parameterSchema :: ParameterSchema
+  , _paramSchema :: ParamSchema
   } deriving (Eq, Show, Generic)
 
-data ParameterSchema
-  = ParameterBody (Referenced Schema)
-  | ParameterOther ParameterOtherSchema
+data ParamSchema
+  = ParamBody (Referenced Schema)
+  | ParamOther ParamOtherSchema
   deriving (Eq, Show)
 
-data ParameterOtherSchema = ParameterOtherSchema
+data ParamOtherSchema = ParamOtherSchema
   { -- | The location of the parameter.
-    _parameterOtherSchemaIn :: ParameterLocation
+    _paramOtherSchemaIn :: ParamLocation
 
     -- | The type of the parameter.
     -- Since the parameter is not located at the request body,
     -- it is limited to simple types (that is, not an object).
     -- If type is @'ParamFile'@, the @consumes@ MUST be either
     -- "multipart/form-data" or " application/x-www-form-urlencoded"
-    -- and the parameter MUST be in @'ParameterFormData'@.
-  , _parameterOtherSchemaType :: ParameterType
+    -- and the parameter MUST be in @'ParamFormData'@.
+  , _paramOtherSchemaType :: ParamType
 
     -- | The extending format for the previously mentioned type.
-  , _parameterOtherSchemaFormat :: Maybe Format
+  , _paramOtherSchemaFormat :: Maybe Format
 
     -- | Sets the ability to pass empty-valued parameters.
-    -- This is valid only for either @'ParameterQuery'@ or @'ParameterFormData'@
+    -- This is valid only for either @'ParamQuery'@ or @'ParamFormData'@
     -- and allows you to send a parameter with a name only or an empty value.
     -- Default value is @False@.
-  , _parameterOtherSchemaAllowEmptyValue :: Maybe Bool
+  , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
     -- | __Required if type is @'ParamArray'@__.
     -- Describes the type of items in the array.
-  , _parameterOtherSchemaItems :: Maybe Items
+  , _paramOtherSchemaItems :: Maybe Items
 
     -- | Determines the format of the array if @'ParamArray'@ is used.
     -- Default value is csv.
-  , _parameterOtherSchemaCollectionFormat :: Maybe CollectionFormat
+  , _paramOtherSchemaCollectionFormat :: Maybe CollectionFormat
 
-  , _parameterOtherSchemaCommon :: SchemaCommon
+  , _paramOtherSchemaCommon :: SchemaCommon
   } deriving (Eq, Show, Generic)
 
-data ParameterType
+data ParamType
   = ParamString
   | ParamNumber
   | ParamInteger
@@ -320,16 +320,16 @@ data ParameterType
   | ParamFile
   deriving (Eq, Show)
 
-data ParameterLocation
+data ParamLocation
   = -- | Parameters that are appended to the URL.
     -- For example, in @/items?id=###@, the query parameter is @id@.
-    ParameterQuery
+    ParamQuery
     -- | Custom headers that are expected as part of the request.
-  | ParameterHeader
+  | ParamHeader
     -- | Used together with Path Templating, where the parameter value is actually part of the operation's URL.
     -- This does not include the host or base path of the API.
     -- For example, in @/items/{itemId}@, the path parameter is @itemId@.
-  | ParameterPath
+  | ParamPath
     -- | Used to describe the payload of an HTTP request when either @application/x-www-form-urlencoded@
     -- or @multipart/form-data@ are used as the content type of the request
     -- (in Swagger's definition, the @consumes@ property of an operation).
@@ -337,7 +337,7 @@ data ParameterLocation
     -- Since form parameters are sent in the payload, they cannot be declared together with a body parameter for the same operation.
     -- Form parameters have a different format based on the content-type used
     -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
-  | ParameterFormData
+  | ParamFormData
   deriving (Eq, Show)
 
 type Format = Text
@@ -349,8 +349,8 @@ data CollectionFormat
   | CollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
   | CollectionPipes -- ^ Pipe separated values: @foo|bar@.
   | CollectionMulti -- ^ Corresponds to multiple parameter instances
-                           -- instead of multiple values for a single instance @foo=bar&foo=baz@.
-                           -- This is valid only for parameters in @'ParameterQuery'@ or @'ParameterFormData'@.
+                    -- instead of multiple values for a single instance @foo=bar&foo=baz@.
+                    -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
   deriving (Eq, Show)
 
 data ItemsType
@@ -661,11 +661,11 @@ instance Monoid SchemaCommon where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid Parameter where
+instance Monoid Param where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid ParameterOtherSchema where
+instance Monoid ParamOtherSchema where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -694,8 +694,8 @@ instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
 instance SwaggerMonoid SchemaCommon
-instance SwaggerMonoid Parameter
-instance SwaggerMonoid ParameterOtherSchema
+instance SwaggerMonoid Param
+instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses
 instance SwaggerMonoid Response
 instance SwaggerMonoid ExternalDocs
@@ -708,12 +708,12 @@ instance SwaggerMonoid SchemaType where
   swaggerMempty = SchemaNull
   swaggerMappend _ y = y
 
-instance SwaggerMonoid ParameterType where
+instance SwaggerMonoid ParamType where
   swaggerMempty = ParamString
   swaggerMappend _ y = y
 
-instance SwaggerMonoid ParameterLocation where
-  swaggerMempty = ParameterQuery
+instance SwaggerMonoid ParamLocation where
+  swaggerMempty = ParamQuery
   swaggerMappend _ y = y
 
 instance SwaggerMonoid (HashMap Text Schema) where
@@ -729,7 +729,7 @@ instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMappend (Inline x) (Inline y) = Inline (x <> y)
   swaggerMappend _ y = y
 
-instance SwaggerMonoid (HashMap Text Parameter) where
+instance SwaggerMonoid (HashMap Text Param) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
@@ -753,18 +753,18 @@ instance SwaggerMonoid (HashMap HttpStatusCode (Referenced Response)) where
   swaggerMempty = HashMap.empty
   swaggerMappend = flip HashMap.union
 
-instance SwaggerMonoid ParameterSchema where
-  swaggerMempty = ParameterOther swaggerMempty
-  swaggerMappend (ParameterBody x) (ParameterBody y) = ParameterBody (swaggerMappend x y)
-  swaggerMappend (ParameterOther x) (ParameterOther y) = ParameterOther (swaggerMappend x y)
+instance SwaggerMonoid ParamSchema where
+  swaggerMempty = ParamOther swaggerMempty
+  swaggerMappend (ParamBody x) (ParamBody y) = ParamBody (swaggerMappend x y)
+  swaggerMappend (ParamOther x) (ParamOther y) = ParamOther (swaggerMappend x y)
   swaggerMappend _ y = y
 
 -- =======================================================================
 -- TH derived ToJSON and FromJSON instances
 -- =======================================================================
 
-deriveJSON (jsonPrefix "Parameter") ''ParameterLocation
-deriveJSON (jsonPrefix "Param") ''ParameterType
+deriveJSON (jsonPrefix "Param") ''ParamLocation
+deriveJSON (jsonPrefix "Param") ''ParamType
 deriveJSON' ''Info
 deriveJSON' ''Contact
 deriveJSON' ''License
@@ -846,15 +846,15 @@ instance ToJSON Paths where
 instance ToJSON MimeList where
   toJSON (MimeList xs) = toJSON (map show xs)
 
-instance ToJSON Parameter where
-  toJSON = genericToJSONWithSub "schema" (jsonPrefix "parameter")
+instance ToJSON Param where
+  toJSON = genericToJSONWithSub "schema" (jsonPrefix "param")
 
-instance ToJSON ParameterSchema where
-  toJSON (ParameterBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
-  toJSON (ParameterOther s) = toJSON s
+instance ToJSON ParamSchema where
+  toJSON (ParamBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
+  toJSON (ParamOther s) = toJSON s
 
-instance ToJSON ParameterOtherSchema where
-  toJSON = genericToJSONWithSub "common" (jsonPrefix "parameterOtherSchema")
+instance ToJSON ParamOtherSchema where
+  toJSON = genericToJSONWithSub "common" (jsonPrefix "paramOtherSchema")
 
 instance ToJSON SchemaItems where
   toJSON (SchemaItemsObject x) = toJSON x
@@ -913,7 +913,7 @@ instance FromJSON Swagger where
                      , "security" .= ([] :: [SecurityRequirement])
                      , "tags" .= ([] :: [Tag])
                      , "definitions" .= (mempty :: HashMap Text Schema)
-                     , "parameters" .= (mempty :: HashMap Text Parameter)
+                     , "parameters" .= (mempty :: HashMap Text Param)
                      , "responses" .= (mempty :: HashMap Text Response)
                      , "securityDefinitions" .= (mempty :: HashMap Text SecurityScheme)
                      ] ) js
@@ -949,21 +949,21 @@ instance FromJSON Paths where
 instance FromJSON MimeList where
   parseJSON js = (MimeList . map fromString) <$> parseJSON js
 
-instance FromJSON Parameter where
-  parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "parameter")
+instance FromJSON Param where
+  parseJSON = genericParseJSONWithSub "schema" (jsonPrefix "param")
 
-instance FromJSON ParameterSchema where
+instance FromJSON ParamSchema where
   parseJSON js@(Object o) = do
     (i :: Text) <- o .: "in"
     case i of
       "body" -> do
         schema <- o .: "schema"
-        ParameterBody <$> parseJSON schema
-      _ -> ParameterOther <$> parseJSON js
+        ParamBody <$> parseJSON schema
+      _ -> ParamOther <$> parseJSON js
   parseJSON _ = empty
 
-instance FromJSON ParameterOtherSchema where
-  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "parameterOtherSchema")
+instance FromJSON ParamOtherSchema where
+  parseJSON = genericParseJSONWithSub "common" (jsonPrefix "paramOtherSchema")
 
 instance FromJSON SchemaItems where
   parseJSON js@(Object _) = SchemaItemsObject <$> parseJSON js
@@ -991,7 +991,7 @@ instance FromJSON Operation where
 
 instance FromJSON PathItem where
   parseJSON = genericParseJSON (jsonPrefix "pathItem")
-    `withDefaults` [ "parameters" .= ([] :: [Parameter]) ]
+    `withDefaults` [ "parameters" .= ([] :: [Param]) ]
 
 instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
