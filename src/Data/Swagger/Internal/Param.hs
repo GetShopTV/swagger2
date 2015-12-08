@@ -95,25 +95,25 @@ timeParamSchema format loc = mempty
   & schemaMinLength         ?~ toInteger (length format)
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy Day) ^. paramOtherSchemaFormat
+-- >>> toParamSchema (Proxy :: Proxy Day) ParamQuery ^. paramOtherSchemaFormat
 -- Just "yyyy-mm-dd"
 instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "yyyy-mm-dd"
 
 -- |
--- >>> toSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy LocalTime) ParamQuery ^. paramOtherSchemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToParamSchema LocalTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss"
 
 -- |
--- >>> toSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
--- Just "yyyy-mm-ddTHH:MM:ss+HHMM"
+-- >>> toParamSchema (Proxy :: Proxy ZonedTime) ParamQuery ^. paramOtherSchemaFormat
+-- Just "yyyy-mm-ddThh:MM:ss+hhMM"
 instance ToParamSchema ZonedTime where
-  toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss+HHMM"
+  toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss+hhMM"
 
 -- |
--- >>> toSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy UTCTime) ParamQuery ^. paramOtherSchemaFormat
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToParamSchema UTCTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ssZ"
