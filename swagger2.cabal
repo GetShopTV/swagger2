@@ -57,6 +57,7 @@ test-suite spec
                   , containers
                   , unordered-containers
                   , vector
+                  , lens
   other-modules:
     SpecCommon
     Data.SwaggerSpec

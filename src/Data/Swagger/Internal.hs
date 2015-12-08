@@ -283,17 +283,6 @@ data ParamOtherSchema = ParamOtherSchema
   { -- | The location of the parameter.
     _paramOtherSchemaIn :: ParamLocation
 
-    -- | The type of the parameter.
-    -- Since the parameter is not located at the request body,
-    -- it is limited to simple types (that is, not an object).
-    -- If type is @'ParamFile'@, the @consumes@ MUST be either
-    -- "multipart/form-data" or " application/x-www-form-urlencoded"
-    -- and the parameter MUST be in @'ParamFormData'@.
-  , _paramOtherSchemaType :: ParamType
-
-    -- | The extending format for the previously mentioned type.
-  , _paramOtherSchemaFormat :: Maybe Format
-
     -- | Sets the ability to pass empty-valued parameters.
     -- This is valid only for either @'ParamQuery'@ or @'ParamFormData'@
     -- and allows you to send a parameter with a name only or an empty value.
@@ -308,7 +297,7 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe CollectionFormat
 
-  , _paramOtherSchemaCommon :: SchemaCommon
+  , _paramOtherSchemaCommon :: SchemaCommon ParamType
   } deriving (Eq, Show, Generic)
 
 data ParamType
@@ -382,9 +371,7 @@ data ItemsCollectionFormat
 type ParamName = Text
 
 data Schema = Schema
-  { _schemaType :: SchemaType
-  , _schemaFormat :: Maybe Format
-  , _schemaTitle :: Maybe Text
+  { _schemaTitle :: Maybe Text
   , _schemaDescription :: Maybe Text
   , _schemaRequired :: [ParamName]
 
@@ -402,7 +389,7 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaSchemaCommon :: SchemaCommon
+  , _schemaSchemaCommon :: SchemaCommon SchemaType
   } deriving (Eq, Show, Generic)
 
 data SchemaItems
@@ -410,7 +397,7 @@ data SchemaItems
   | SchemaItemsArray [Referenced Schema]
   deriving (Eq, Show)
 
-data SchemaCommon = SchemaCommon
+data SchemaCommon typeDomain = SchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
@@ -418,6 +405,8 @@ data SchemaCommon = SchemaCommon
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _schemaCommonDefault :: Maybe Value
 
+  , _schemaCommonType :: typeDomain
+  , _schemaCommonFormat :: Maybe Format
   , _schemaCommonMaximum :: Maybe Scientific
   , _schemaCommonExclusiveMaximum :: Maybe Bool
   , _schemaCommonMinimum :: Maybe Scientific
@@ -461,21 +450,15 @@ data Xml = Xml
   } deriving (Eq, Show, Generic)
 
 data Items = Items
-  { -- | The internal type of the array.
-    _itemsType :: ItemsType
-
-    -- | The extending format for the previously mentioned type.
-  , _itemsFormat :: Maybe Format
-
-    -- | __Required if type is @'ItemsArray'@.__
+  { -- | __Required if type is @'ItemsArray'@.__
     -- Describes the type of items in the array.
-  , _itemsItems :: Maybe Items
+    _itemsItems :: Maybe Items
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'ItemsCollectionCSV'@.
   , _itemsCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _itemsCommon :: SchemaCommon
+  , _itemsCommon :: SchemaCommon ItemsType
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -521,12 +504,6 @@ data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe Text
 
-    -- | The type of the object.
-  , _headerType :: ItemsType
-
-    -- | The extending format for the previously mentioned type. See Data Type Formats for further details.
-  , _headerFormat :: Maybe Format
-
     -- | __Required if type is @'ItemsArray'@__.
     -- Describes the type of items in the array.
   , _headerItems :: Maybe Items
@@ -535,7 +512,7 @@ data Header = Header
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _headerCommon :: SchemaCommon
+  , _headerCommon :: SchemaCommon ItemsType
   } deriving (Eq, Show, Generic)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -657,7 +634,7 @@ instance Monoid Schema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid SchemaCommon where
+instance SwaggerMonoid t => Monoid (SchemaCommon t) where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -693,7 +670,7 @@ instance SwaggerMonoid Info
 instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
-instance SwaggerMonoid SchemaCommon
+instance SwaggerMonoid t => SwaggerMonoid (SchemaCommon t)
 instance SwaggerMonoid Param
 instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses

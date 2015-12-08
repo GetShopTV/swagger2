@@ -4,12 +4,15 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Data.SwaggerSpec where
 
+import Control.Lens
+
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 
 import Data.Swagger
+import Data.Swagger.Lens
 import SpecCommon
 import Test.Hspec
 
@@ -148,10 +151,10 @@ operationExample = mempty
           , _paramSchema = ParamOther (stringSchema ParamFormData) }
       ]
 
+    stringSchema :: ParamLocation -> ParamOtherSchema
     stringSchema i = mempty
-      { _paramOtherSchemaIn = i
-      , _paramOtherSchemaType = ParamString
-      }
+      & paramOtherSchemaIn .~ i
+      & schemaType .~ ParamString
 
 operationExampleJSON :: Value
 operationExampleJSON = [aesonQQ|
@@ -217,9 +220,8 @@ operationExampleJSON = [aesonQQ|
 
 schemaPrimitiveExample :: Schema
 schemaPrimitiveExample = mempty
-  { _schemaType = SchemaString
-  , _schemaFormat = Just "email"
-  }
+  & schemaType    .~ SchemaString
+  & schemaFormat  ?~ "email"
 
 schemaPrimitiveExampleJSON :: Value
 schemaPrimitiveExampleJSON = [aesonQQ|
@@ -231,17 +233,15 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 
 schemaSimpleModelExample :: Schema
 schemaSimpleModelExample = mempty
-  { _schemaType = SchemaObject
-  , _schemaRequired = [ "name" ]
-  , _schemaProperties =
-      [ ("name", Inline mempty
-            { _schemaType = SchemaString } )
+  & schemaType .~ SchemaObject
+  & schemaRequired .~ [ "name" ]
+  & schemaProperties .~
+      [ ("name", Inline (mempty & schemaType .~ SchemaString))
       , ("address", Ref (Reference "#/definitions/Address"))
-      , ("age", Inline mempty
-            { _schemaType = SchemaInteger
-            , _schemaFormat = Just "int32"
-            , _schemaSchemaCommon = mempty
-                { _schemaCommonMinimum = Just 0 } } ) ] }
+      , ("age", Inline $ mempty
+            & schemaMinimum ?~ 0
+            & schemaType    .~ SchemaInteger
+            & schemaFormat  ?~ "int32" ) ]
 
 schemaSimpleModelExampleJSON :: Value
 schemaSimpleModelExampleJSON = [aesonQQ|
@@ -268,9 +268,8 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
-  { _schemaType = SchemaObject
-  , _schemaAdditionalProperties = Just mempty
-      { _schemaType = SchemaString } }
+  & schemaType .~ SchemaObject
+  & schemaAdditionalProperties ?~ (mempty & schemaType .~ SchemaString)
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -283,14 +282,12 @@ schemaModelDictExampleJSON = [aesonQQ|
 |]
 
 schemaWithExampleExample :: Schema
-schemaWithExampleExample = mempty
-  { _schemaType = SchemaObject
-  , _schemaProperties =
-      [ ("id", Inline mempty
-            { _schemaType   = SchemaInteger
-            , _schemaFormat = Just "int64" })
-      , ("name", Inline mempty
-            { _schemaType = SchemaString }) ]
+schemaWithExampleExample = (mempty & schemaType .~ SchemaObject)
+  { _schemaProperties =
+      [ ("id", Inline $ mempty
+            & schemaType .~ SchemaInteger
+            & schemaFormat ?~ "int64" )
+      , ("name", Inline (mempty & schemaType .~ SchemaString)) ]
   , _schemaRequired = [ "name" ]
   , _schemaExample = Just [aesonQQ|
       {
@@ -329,21 +326,19 @@ schemaWithExampleExampleJSON = [aesonQQ|
 definitionsExample :: HashMap Text Schema
 definitionsExample =
   [ ("Category", mempty
-      { _schemaType = SchemaObject
-      , _schemaProperties =
-          [ ("id", Inline mempty
-              { _schemaType = SchemaInteger
-              , _schemaFormat = Just "int64" })
-          , ("name", Inline mempty
-              { _schemaType = SchemaString }) ] })
+      & schemaType .~ SchemaObject
+      & schemaProperties .~
+          [ ("id", Inline $ mempty
+              & schemaType   .~ SchemaInteger
+              & schemaFormat ?~ "int64")
+          , ("name", Inline (mempty & schemaType .~ SchemaString)) ] )
   , ("Tag", mempty
-      { _schemaType = SchemaObject
-      , _schemaProperties =
-          [ ("id", Inline mempty
-              { _schemaType = SchemaInteger
-              , _schemaFormat = Just "int64" })
-          , ("name", Inline mempty
-              { _schemaType = SchemaString }) ] }) ]
+      & schemaType .~ SchemaObject
+      & schemaProperties .~
+          [ ("id", Inline $ mempty
+              & schemaType   .~ SchemaInteger
+              & schemaFormat ?~ "int64")
+          , ("name", Inline (mempty & schemaType .~ SchemaString)) ] ) ]
 
 definitionsExampleJSON :: Value
 definitionsExampleJSON = [aesonQQ|
@@ -385,18 +380,18 @@ paramsDefinitionExample =
       { _paramName = "skip"
       , _paramDescription = Just "number of items to skip"
       , _paramRequired = Just True
-      , _paramSchema = ParamOther mempty
-          { _paramOtherSchemaIn = ParamQuery
-          , _paramOtherSchemaType = ParamInteger
-          , _paramOtherSchemaFormat = Just "int32" } })
+      , _paramSchema = ParamOther $ mempty
+          & paramOtherSchemaIn .~ ParamQuery
+          & schemaType .~ ParamInteger
+          & schemaFormat ?~ "int32" })
   , ("limitParam", mempty
       { _paramName = "limit"
       , _paramDescription = Just "max records to return"
       , _paramRequired = Just True
-      , _paramSchema = ParamOther mempty
-          { _paramOtherSchemaIn = ParamQuery
-          , _paramOtherSchemaType = ParamInteger
-          , _paramOtherSchemaFormat = Just "int32" } }) ]
+      , _paramSchema = ParamOther $ mempty
+          & paramOtherSchemaIn .~ ParamQuery
+          & schemaType .~ ParamInteger
+          & schemaFormat ?~ "int32" }) ]
 
 paramsDefinitionExampleJSON :: Value
 paramsDefinitionExampleJSON = [aesonQQ|
@@ -500,20 +495,18 @@ swaggerExample = mempty
                   { _operationResponses = mempty
                       { _responsesResponses =
                           [ (200, Inline mempty
-                              { _responseSchema = Just $ Inline mempty
+                              { _responseSchema = Just $ Inline (mempty & schemaType .~ SchemaObject)
                                 { _schemaExample = Just [aesonQQ|
                                     {
                                       "created": 100,
                                       "description": "get milk"
                                     } |]
-                                , _schemaType = SchemaObject
                                 , _schemaDescription = Just "This is some real Todo right here"
                                 , _schemaProperties =
-                                    [ ("created", Inline mempty
-                                        { _schemaType = SchemaInteger
-                                        , _schemaFormat = Just "int32" })
-                                    , ("description", Inline mempty
-                                        { _schemaType = SchemaString }) ] }
+                                    [ ("created", Inline $ mempty
+                                        & schemaType   .~ SchemaInteger
+                                        & schemaFormat ?~ "int32")
+                                    , ("description", Inline (mempty & schemaType .~ SchemaString)) ] }
                               , _responseDescription = "OK" }) ] }
                   , _operationProduces = Just (MimeList [ "application/json" ])
                   , _operationParameters =
@@ -521,9 +514,9 @@ swaggerExample = mempty
                           { _paramRequired = Just True
                           , _paramName = "id"
                           , _paramDescription = Just "TodoId param"
-                          , _paramSchema = ParamOther mempty
-                              { _paramOtherSchemaIn = ParamPath
-                              , _paramOtherSchemaType = ParamString } } ]
+                          , _paramSchema = ParamOther $ mempty
+                              & paramOtherSchemaIn .~ ParamPath
+                              & schemaType .~ ParamString } ]
                   , _operationTags = [ "todo" ] } }) ] } }
 
 swaggerExampleJSON :: Value

@@ -34,17 +34,17 @@ class ToParamSchema a where
 instance {-# OVERLAPPING #-} ToParamSchema String where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamString
+    & schemaType .~ ParamString
 
 instance ToParamSchema Bool where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamBoolean
+    & schemaType .~ ParamBoolean
 
 instance ToParamSchema Integer where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamInteger
+    & schemaType .~ ParamInteger
 
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral
@@ -61,59 +61,59 @@ instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
 toParamSchemaBoundedIntegral :: forall proxy a. (Bounded a, Integral a) => proxy a -> ParamLocation -> ParamOtherSchema
 toParamSchemaBoundedIntegral _ loc = mempty
   & paramOtherSchemaIn   .~ loc
-  & paramOtherSchemaType .~ ParamInteger
+  & schemaType .~ ParamInteger
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
   & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
 instance ToParamSchema Char where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamString
+    & schemaType .~ ParamString
     & schemaMaxLength ?~ 1
     & schemaMinLength ?~ 1
 
 instance ToParamSchema Scientific where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamNumber
+    & schemaType .~ ParamNumber
 
 instance ToParamSchema Double where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamNumber
+    & schemaType .~ ParamNumber
 
 instance ToParamSchema Float where
   toParamSchema _ loc = mempty
     & paramOtherSchemaIn   .~ loc
-    & paramOtherSchemaType .~ ParamNumber
+    & schemaType .~ ParamNumber
 
 timeParamSchema :: String -> ParamLocation -> ParamOtherSchema
 timeParamSchema format loc = mempty
   & paramOtherSchemaIn      .~ loc
-  & paramOtherSchemaType    .~ ParamString
-  & paramOtherSchemaFormat  ?~ T.pack format
+  & schemaType    .~ ParamString
+  & schemaFormat  ?~ T.pack format
   & schemaMinLength         ?~ toInteger (length format)
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy Day) ParamQuery ^. paramOtherSchemaFormat
+-- >>> toParamSchema (Proxy :: Proxy Day) ParamQuery ^. schemaFormat
 -- Just "yyyy-mm-dd"
 instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "yyyy-mm-dd"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy LocalTime) ParamQuery ^. paramOtherSchemaFormat
+-- >>> toParamSchema (Proxy :: Proxy LocalTime) ParamQuery ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToParamSchema LocalTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy ZonedTime) ParamQuery ^. paramOtherSchemaFormat
+-- >>> toParamSchema (Proxy :: Proxy ZonedTime) ParamQuery ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss+hhMM"
 instance ToParamSchema ZonedTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss+hhMM"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy UTCTime) ParamQuery ^. paramOtherSchemaFormat
+-- >>> toParamSchema (Proxy :: Proxy UTCTime) ParamQuery ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToParamSchema UTCTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ssZ"
@@ -162,7 +162,7 @@ instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) 
 instance Constructor c => GEnumParamSchema (C1 c U1) where
   genumParamSchema opts _ loc s = s
     & paramOtherSchemaIn    .~ loc
-    & paramOtherSchemaType  .~ ParamString
+    & schemaType  .~ ParamString
     & schemaEnum            %~ addEnumValue tag
     where
       tag = toJSON (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
