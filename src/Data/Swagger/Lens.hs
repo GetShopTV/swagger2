@@ -57,57 +57,60 @@ instance HasDescription Schema         (Maybe Text) where description = schemaDe
 instance HasDescription SecurityScheme (Maybe Text) where description = securitySchemeDescription
 instance HasDescription ExternalDocs   (Maybe Text) where description = externalDocsDescription
 
-class HasSchemaCommon s t | s -> t where
-  schemaCommon :: Lens' s (SchemaCommon t)
+class HasSchemaCommon s t i | s -> t i where
+  schemaCommon :: Lens' s (SchemaCommon t i)
 
-instance HasSchemaCommon Schema SchemaType where schemaCommon = schemaSchemaCommon
-instance HasSchemaCommon ParamOtherSchema ParamType where schemaCommon = paramOtherSchemaCommon
-instance HasSchemaCommon Items ItemsType where schemaCommon = itemsCommon
-instance HasSchemaCommon Header ItemsType where schemaCommon = headerCommon
-instance HasSchemaCommon (SchemaCommon t) t where schemaCommon = id
+instance HasSchemaCommon Schema SchemaType SchemaItems where schemaCommon = schemaSchemaCommon
+instance HasSchemaCommon ParamOtherSchema ParamType Items where schemaCommon = paramOtherSchemaCommon
+instance HasSchemaCommon Items ItemsType Items where schemaCommon = itemsCommon
+instance HasSchemaCommon Header ItemsType Items where schemaCommon = headerCommon
+instance HasSchemaCommon (SchemaCommon t i) t i where schemaCommon = id
 
-schemaType :: HasSchemaCommon s t => Lens' s t
+schemaType :: HasSchemaCommon s t i => Lens' s t
 schemaType = schemaCommon.schemaCommonType
 
-schemaFormat :: HasSchemaCommon s t => Lens' s (Maybe Format)
+schemaFormat :: HasSchemaCommon s t i => Lens' s (Maybe Format)
 schemaFormat = schemaCommon.schemaCommonFormat
 
-schemaDefault :: HasSchemaCommon s t => Lens' s (Maybe Value)
+schemaItems :: HasSchemaCommon s t i => Lens' s (Maybe i)
+schemaItems = schemaCommon.schemaCommonItems
+
+schemaDefault :: HasSchemaCommon s t i => Lens' s (Maybe Value)
 schemaDefault = schemaCommon.schemaCommonDefault
 
-schemaMaximum :: HasSchemaCommon s t => Lens' s (Maybe Scientific)
+schemaMaximum :: HasSchemaCommon s t i => Lens' s (Maybe Scientific)
 schemaMaximum = schemaCommon.schemaCommonMaximum
 
-schemaExclusiveMaximum :: HasSchemaCommon s t => Lens' s (Maybe Bool)
+schemaExclusiveMaximum :: HasSchemaCommon s t i => Lens' s (Maybe Bool)
 schemaExclusiveMaximum = schemaCommon.schemaCommonExclusiveMaximum
 
-schemaMinimum :: HasSchemaCommon s t => Lens' s (Maybe Scientific)
+schemaMinimum :: HasSchemaCommon s t i => Lens' s (Maybe Scientific)
 schemaMinimum = schemaCommon.schemaCommonMinimum
 
-schemaExclusiveMinimum :: HasSchemaCommon s t => Lens' s (Maybe Bool)
+schemaExclusiveMinimum :: HasSchemaCommon s t i => Lens' s (Maybe Bool)
 schemaExclusiveMinimum = schemaCommon.schemaCommonExclusiveMinimum
 
-schemaMaxLength :: HasSchemaCommon s t => Lens' s (Maybe Integer)
+schemaMaxLength :: HasSchemaCommon s t i => Lens' s (Maybe Integer)
 schemaMaxLength = schemaCommon.schemaCommonMaxLength
 
-schemaMinLength :: HasSchemaCommon s t => Lens' s (Maybe Integer)
+schemaMinLength :: HasSchemaCommon s t i => Lens' s (Maybe Integer)
 schemaMinLength = schemaCommon.schemaCommonMinLength
 
-schemaPattern :: HasSchemaCommon s t => Lens' s (Maybe Text)
+schemaPattern :: HasSchemaCommon s t i => Lens' s (Maybe Text)
 schemaPattern = schemaCommon.schemaCommonPattern
 
-schemaMaxItems :: HasSchemaCommon s t => Lens' s (Maybe Integer)
+schemaMaxItems :: HasSchemaCommon s t i => Lens' s (Maybe Integer)
 schemaMaxItems = schemaCommon.schemaCommonMaxItems
 
-schemaMinItems :: HasSchemaCommon s t => Lens' s (Maybe Integer)
+schemaMinItems :: HasSchemaCommon s t i => Lens' s (Maybe Integer)
 schemaMinItems = schemaCommon.schemaCommonMinItems
 
-schemaUniqueItems :: HasSchemaCommon s t => Lens' s (Maybe Bool)
+schemaUniqueItems :: HasSchemaCommon s t i => Lens' s (Maybe Bool)
 schemaUniqueItems = schemaCommon.schemaCommonUniqueItems
 
-schemaEnum :: HasSchemaCommon s t => Lens' s (Maybe [Value])
+schemaEnum :: HasSchemaCommon s t i => Lens' s (Maybe [Value])
 schemaEnum = schemaCommon.schemaCommonEnum
 
-schemaMultipleOf :: HasSchemaCommon s t => Lens' s (Maybe Scientific)
+schemaMultipleOf :: HasSchemaCommon s t i => Lens' s (Maybe Scientific)
 schemaMultipleOf = schemaCommon.schemaCommonMultipleOf
 

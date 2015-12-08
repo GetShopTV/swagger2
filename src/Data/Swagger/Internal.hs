@@ -289,15 +289,11 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is @False@.
   , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
-    -- | __Required if type is @'ParamArray'@__.
-    -- Describes the type of items in the array.
-  , _paramOtherSchemaItems :: Maybe Items
-
     -- | Determines the format of the array if @'ParamArray'@ is used.
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe CollectionFormat
 
-  , _paramOtherSchemaCommon :: SchemaCommon ParamType
+  , _paramOtherSchemaCommon :: SchemaCommon ParamType Items
   } deriving (Eq, Show, Generic)
 
 data ParamType
@@ -375,7 +371,6 @@ data Schema = Schema
   , _schemaDescription :: Maybe Text
   , _schemaRequired :: [ParamName]
 
-  , _schemaItems :: Maybe SchemaItems
   , _schemaAllOf :: Maybe [Schema]
   , _schemaProperties :: HashMap Text (Referenced Schema)
   , _schemaAdditionalProperties :: Maybe Schema
@@ -389,7 +384,7 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaSchemaCommon :: SchemaCommon SchemaType
+  , _schemaSchemaCommon :: SchemaCommon SchemaType SchemaItems
   } deriving (Eq, Show, Generic)
 
 data SchemaItems
@@ -397,7 +392,7 @@ data SchemaItems
   | SchemaItemsArray [Referenced Schema]
   deriving (Eq, Show)
 
-data SchemaCommon typeDomain = SchemaCommon
+data SchemaCommon typeDomain items = SchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
@@ -407,6 +402,7 @@ data SchemaCommon typeDomain = SchemaCommon
 
   , _schemaCommonType :: typeDomain
   , _schemaCommonFormat :: Maybe Format
+  , _schemaCommonItems :: Maybe items
   , _schemaCommonMaximum :: Maybe Scientific
   , _schemaCommonExclusiveMaximum :: Maybe Bool
   , _schemaCommonMinimum :: Maybe Scientific
@@ -450,15 +446,11 @@ data Xml = Xml
   } deriving (Eq, Show, Generic)
 
 data Items = Items
-  { -- | __Required if type is @'ItemsArray'@.__
-    -- Describes the type of items in the array.
-    _itemsItems :: Maybe Items
-
-    -- | Determines the format of the array if type array is used.
+  { -- | Determines the format of the array if type array is used.
     -- Default value is @'ItemsCollectionCSV'@.
-  , _itemsCollectionFormat :: Maybe ItemsCollectionFormat
+    _itemsCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _itemsCommon :: SchemaCommon ItemsType
+  , _itemsCommon :: SchemaCommon ItemsType Items
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -504,15 +496,11 @@ data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe Text
 
-    -- | __Required if type is @'ItemsArray'@__.
-    -- Describes the type of items in the array.
-  , _headerItems :: Maybe Items
-
     -- | Determines the format of the array if type array is used.
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _headerCommon :: SchemaCommon ItemsType
+  , _headerCommon :: SchemaCommon ItemsType Items
   } deriving (Eq, Show, Generic)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -634,7 +622,7 @@ instance Monoid Schema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance SwaggerMonoid t => Monoid (SchemaCommon t) where
+instance SwaggerMonoid t => Monoid (SchemaCommon t i) where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -670,7 +658,7 @@ instance SwaggerMonoid Info
 instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
-instance SwaggerMonoid t => SwaggerMonoid (SchemaCommon t)
+instance SwaggerMonoid t => SwaggerMonoid (SchemaCommon t i)
 instance SwaggerMonoid Param
 instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses
