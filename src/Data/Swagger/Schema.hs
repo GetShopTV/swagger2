@@ -25,4 +25,4 @@ module Data.Swagger.Schema (
   defaultSchemaOptions,
 ) where
 
-import Data.Swagger.Schema.Internal
+import Data.Swagger.Internal.Schema

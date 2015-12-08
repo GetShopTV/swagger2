@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Data.Swagger.Schema.Internal where
+module Data.Swagger.Internal.Schema where
 
 import Control.Lens
 import Data.Aeson
