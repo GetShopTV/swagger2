@@ -27,9 +27,7 @@ module Data.Swagger (
   Operation(..),
 
   -- * Types and formats
-  ParamType(..),
-  ItemsType(..),
-  SchemaType(..),
+  SwaggerType(..),
   Format,
   CollectionFormat(..),
   ItemsCollectionFormat(..),

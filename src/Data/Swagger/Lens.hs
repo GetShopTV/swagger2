@@ -60,10 +60,10 @@ instance HasDescription ExternalDocs   (Maybe Text) where description = external
 class HasSchemaCommon s t i | s -> t i where
   schemaCommon :: Lens' s (SchemaCommon t i)
 
-instance HasSchemaCommon Schema SchemaType SchemaItems where schemaCommon = schemaSchemaCommon
-instance HasSchemaCommon ParamOtherSchema ParamType Items where schemaCommon = paramOtherSchemaCommon
-instance HasSchemaCommon Items ItemsType Items where schemaCommon = itemsCommon
-instance HasSchemaCommon Header ItemsType Items where schemaCommon = headerCommon
+instance HasSchemaCommon Schema (SwaggerType Schema) SchemaItems where schemaCommon = schemaSchemaCommon
+instance HasSchemaCommon ParamOtherSchema (SwaggerType Param) Items where schemaCommon = paramOtherSchemaCommon
+instance HasSchemaCommon Items (SwaggerType Items) Items where schemaCommon = itemsCommon
+instance HasSchemaCommon Header (SwaggerType Items) Items where schemaCommon = headerCommon
 instance HasSchemaCommon (SchemaCommon t i) t i where schemaCommon = id
 
 schemaType :: HasSchemaCommon s t i => Lens' s t

@@ -58,7 +58,7 @@ named name schema = (Just name, schema)
 --
 -- instance ToSchema Coord where
 --   toNamedSchema = (Just \"Coord\", mempty
---      & schemaType .~ SchemaObject
+--      & schemaType .~ SwaggerObject
 --      & schemaProperties .~
 --          [ ("x", toSchemaRef (Proxy :: Proxy Double))
 --          , ("y", toSchemaRef (Proxy :: Proxy Double))
@@ -113,17 +113,17 @@ gtoSchema opts proxy = snd . gtoNamedSchema opts proxy
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   toNamedSchema _ = unnamed $ mempty
-    & schemaType  .~ SchemaArray
+    & schemaType  .~ SwaggerArray
     & schemaItems ?~ SchemaItemsObject (toSchemaRef (Proxy :: Proxy a))
 
 instance {-# OVERLAPPING #-} ToSchema String where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaString
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerString
 
 instance ToSchema Bool where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaBoolean
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerBoolean
 
 instance ToSchema Integer where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaInteger
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerInteger
 
 instance ToSchema Int    where toNamedSchema = unnamed . toSchemaBoundedIntegral
 instance ToSchema Int8   where toNamedSchema = unnamed . toSchemaBoundedIntegral
@@ -139,18 +139,18 @@ instance ToSchema Word64 where toNamedSchema = unnamed . toSchemaBoundedIntegral
 
 instance ToSchema Char where
   toNamedSchema _ = unnamed $ mempty
-    & schemaType .~ SchemaString
+    & schemaType .~ SwaggerString
     & schemaMaxLength ?~ 1
     & schemaMinLength ?~ 1
 
 instance ToSchema Scientific where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
 
 instance ToSchema Double where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
 
 instance ToSchema Float where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SchemaNumber
+  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
 
 instance ToSchema a => ToSchema (Maybe a) where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
@@ -167,7 +167,7 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f
 
 timeNamedSchema :: String -> String -> NamedSchema
 timeNamedSchema name format = (Just name, mempty
-  & schemaType .~ SchemaString
+  & schemaType .~ SwaggerString
   & schemaFormat ?~ T.pack format
   & schemaMinLength ?~ toInteger (length format))
 
@@ -188,7 +188,7 @@ instance ToSchema LocalTime where
 -- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
 instance ToSchema ZonedTime where
   toNamedSchema _ = (Just "ZonedTime", mempty
-    & schemaType .~ SchemaString
+    & schemaType .~ SwaggerString
     & schemaFormat ?~ "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
     & schemaMinLength ?~ toInteger (length ("yyyy-mm-ddThh:MM:ssZ" :: String)))
 
@@ -215,7 +215,7 @@ instance ToSchema a => ToSchema (IntMap a) where
 
 instance ToSchema a => ToSchema (Map String a) where
   toNamedSchema _ = unnamed $ mempty
-    & schemaType  .~ SchemaObject
+    & schemaType  .~ SwaggerObject
     & schemaAdditionalProperties ?~ toSchema (Proxy :: Proxy a)
 
 instance ToSchema a => ToSchema (Map T.Text  a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Map String a))
@@ -295,7 +295,7 @@ defaultSchemaOptions = SchemaOptions
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
-  & schemaType .~ SchemaInteger
+  & schemaType .~ SwaggerInteger
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
   & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
@@ -327,7 +327,7 @@ gdatatypeSchemaName opts _ = case name of
 
 nullarySchema :: Schema
 nullarySchema = mempty
-  & schemaType .~ SchemaArray
+  & schemaType .~ SwaggerArray
   & schemaEnum ?~ [ toJSON () ]
 
 instance GToSchema U1 where
@@ -370,10 +370,10 @@ appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) => SchemaOptions -> proxy s f -> Bool -> Schema -> Schema
 withFieldSchema opts _ isRequiredField schema
   | T.null fieldName = schema
-      & schemaType .~ SchemaArray
+      & schemaType .~ SwaggerArray
       & schemaItems %~ appendItem fieldSchemaRef
   | otherwise = schema
-      & schemaType .~ SchemaObject
+      & schemaType .~ SwaggerObject
       & schemaProperties . at fieldName ?~ fieldSchemaRef
       & if isRequiredField
           then schemaRequired %~ (fieldName :)
@@ -401,7 +401,7 @@ instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
       (All allNullary, sumSchema) = gsumToSchema opts (Proxy :: Proxy (f :+: g)) s
 
       toStringTag schema = mempty
-        & schemaType .~ SchemaString
+        & schemaType .~ SwaggerString
         & schemaEnum ?~ map toJSON (schema ^.. schemaProperties.ifolded.asIndex)
 
 type AllNullary = All
@@ -420,7 +420,7 @@ instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
 gsumConToSchema :: forall c f proxy. Constructor c =>
   Bool -> Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> (AllNullary, Schema)
 gsumConToSchema isNullary tagSchemaRef opts _ schema = (All isNullary, schema
-  & schemaType .~ SchemaObject
+  & schemaType .~ SwaggerObject
   & schemaProperties . at tag ?~ tagSchemaRef
   & schemaMaxProperties ?~ 1
   & schemaMinProperties ?~ 1)

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -293,17 +294,21 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe CollectionFormat
 
-  , _paramOtherSchemaCommon :: SchemaCommon ParamType Items
+  , _paramOtherSchemaCommon :: SchemaCommon (SwaggerType Param) Items
   } deriving (Eq, Show, Generic)
 
-data ParamType
-  = ParamString
-  | ParamNumber
-  | ParamInteger
-  | ParamBoolean
-  | ParamArray
-  | ParamFile
-  deriving (Eq, Show)
+data SwaggerType t where
+  SwaggerString   :: SwaggerType t
+  SwaggerNumber   :: SwaggerType t
+  SwaggerInteger  :: SwaggerType t
+  SwaggerBoolean  :: SwaggerType t
+  SwaggerArray    :: SwaggerType t
+  SwaggerFile     :: SwaggerType Param
+  SwaggerNull     :: SwaggerType Schema
+  SwaggerObject   :: SwaggerType Schema
+
+deriving instance Eq (SwaggerType t)
+deriving instance Show (SwaggerType t)
 
 data ParamLocation
   = -- | Parameters that are appended to the URL.
@@ -338,24 +343,6 @@ data CollectionFormat
                     -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
   deriving (Eq, Show)
 
-data ItemsType
-  = ItemsString
-  | ItemsNumber
-  | ItemsInteger
-  | ItemsBoolean
-  | ItemsArray
-  deriving (Eq, Show)
-
-data SchemaType
-  = SchemaArray
-  | SchemaBoolean
-  | SchemaInteger
-  | SchemaNumber
-  | SchemaNull
-  | SchemaObject
-  | SchemaString
-  deriving (Eq, Show)
-
 -- | Determines the format of the nested array.
 data ItemsCollectionFormat
   = ItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
@@ -384,7 +371,7 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaSchemaCommon :: SchemaCommon SchemaType SchemaItems
+  , _schemaSchemaCommon :: SchemaCommon (SwaggerType Schema) SchemaItems
   } deriving (Eq, Show, Generic)
 
 data SchemaItems
@@ -450,7 +437,7 @@ data Items = Items
     -- Default value is @'ItemsCollectionCSV'@.
     _itemsCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _itemsCommon :: SchemaCommon ItemsType Items
+  , _itemsCommon :: SchemaCommon (SwaggerType Items) Items
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -500,7 +487,7 @@ data Header = Header
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe ItemsCollectionFormat
 
-  , _headerCommon :: SchemaCommon ItemsType Items
+  , _headerCommon :: SchemaCommon (SwaggerType Items) Items
   } deriving (Eq, Show, Generic)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -669,12 +656,8 @@ instance SwaggerMonoid Operation
 instance SwaggerMonoid MimeList
 deriving instance SwaggerMonoid URL
 
-instance SwaggerMonoid SchemaType where
-  swaggerMempty = SchemaNull
-  swaggerMappend _ y = y
-
-instance SwaggerMonoid ParamType where
-  swaggerMempty = ParamString
+instance SwaggerMonoid (SwaggerType t) where
+  swaggerMempty = SwaggerString
   swaggerMappend _ y = y
 
 instance SwaggerMonoid ParamLocation where
@@ -729,12 +712,9 @@ instance SwaggerMonoid ParamSchema where
 -- =======================================================================
 
 deriveJSON (jsonPrefix "Param") ''ParamLocation
-deriveJSON (jsonPrefix "Param") ''ParamType
 deriveJSON' ''Info
 deriveJSON' ''Contact
 deriveJSON' ''License
-deriveJSON (jsonPrefix "Schema") ''SchemaType
-deriveJSON (jsonPrefix "Items") ''ItemsType
 deriveJSON (jsonPrefix "ItemsCollection") ''ItemsCollectionFormat
 deriveJSON (jsonPrefix "Collection") ''CollectionFormat
 deriveJSON (jsonPrefix "ApiKey") ''ApiKeyLocation
@@ -837,6 +817,16 @@ instance ToJSON Reference where
 instance ToJSON a => ToJSON (Referenced a) where
   toJSON (Ref ref) = toJSON ref
   toJSON (Inline x) = toJSON x
+
+instance ToJSON (SwaggerType t) where
+  toJSON SwaggerArray   = "array"
+  toJSON SwaggerString  = "string"
+  toJSON SwaggerInteger = "integer"
+  toJSON SwaggerNumber  = "number"
+  toJSON SwaggerBoolean = "boolean"
+  toJSON SwaggerFile    = "file"
+  toJSON SwaggerNull    = "null"
+  toJSON SwaggerObject  = "object"
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -969,4 +959,13 @@ instance FromJSON a => FromJSON (Referenced a) where
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
+
+instance FromJSON (SwaggerType Schema) where
+  parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerNull, SwaggerObject]
+
+instance FromJSON (SwaggerType Param) where
+  parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerFile]
+
+instance FromJSON (SwaggerType Items) where
+  parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
 
