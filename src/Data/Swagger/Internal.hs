@@ -292,7 +292,7 @@ data ParamOtherSchema = ParamOtherSchema
 
     -- | Determines the format of the array if @'ParamArray'@ is used.
     -- Default value is csv.
-  , _paramOtherSchemaCollectionFormat :: Maybe CollectionFormat
+  , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
 
   , _paramOtherSchemaCommon :: SchemaCommon (SwaggerType Param) Items
   } deriving (Eq, Show, Generic)
@@ -333,23 +333,22 @@ data ParamLocation
 type Format = Text
 
 -- | Determines the format of the array.
-data CollectionFormat
-  = CollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | CollectionSSV   -- ^ Space separated values: @foo bar@.
-  | CollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
-  | CollectionPipes -- ^ Pipe separated values: @foo|bar@.
-  | CollectionMulti -- ^ Corresponds to multiple parameter instances
-                    -- instead of multiple values for a single instance @foo=bar&foo=baz@.
-                    -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
-  deriving (Eq, Show)
+data CollectionFormat t where
+  -- Comma separated values: @foo,bar@.
+  CollectionCSV :: CollectionFormat t
+  -- Space separated values: @foo bar@.
+  CollectionSSV :: CollectionFormat t
+  -- Tab separated values: @foo\\tbar@.
+  CollectionTSV :: CollectionFormat t
+  -- Pipe separated values: @foo|bar@.
+  CollectionPipes :: CollectionFormat t
+  -- Corresponds to multiple parameter instances
+  -- instead of multiple values for a single instance @foo=bar&foo=baz@.
+  -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
+  CollectionMulti :: CollectionFormat Param
 
--- | Determines the format of the nested array.
-data ItemsCollectionFormat
-  = ItemsCollectionCSV   -- ^ Comma separated values: @foo,bar@.
-  | ItemsCollectionSSV   -- ^ Space separated values: @foo bar@.
-  | ItemsCollectionTSV   -- ^ Tab separated values: @foo\\tbar@.
-  | ItemsCollectionPipes -- ^ Pipe separated values: @foo|bar@.
-  deriving (Eq, Show)
+deriving instance Eq (CollectionFormat t)
+deriving instance Show (CollectionFormat t)
 
 type ParamName = Text
 
@@ -435,7 +434,7 @@ data Xml = Xml
 data Items = Items
   { -- | Determines the format of the array if type array is used.
     -- Default value is @'ItemsCollectionCSV'@.
-    _itemsCollectionFormat :: Maybe ItemsCollectionFormat
+    _itemsCollectionFormat :: Maybe (CollectionFormat Items)
 
   , _itemsCommon :: SchemaCommon (SwaggerType Items) Items
   } deriving (Eq, Show, Generic)
@@ -485,7 +484,7 @@ data Header = Header
 
     -- | Determines the format of the array if type array is used.
     -- Default value is @'ItemsCollectionCSV'@.
-  , _headerCollectionFormat :: Maybe ItemsCollectionFormat
+  , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
   , _headerCommon :: SchemaCommon (SwaggerType Items) Items
   } deriving (Eq, Show, Generic)
@@ -715,8 +714,6 @@ deriveJSON (jsonPrefix "Param") ''ParamLocation
 deriveJSON' ''Info
 deriveJSON' ''Contact
 deriveJSON' ''License
-deriveJSON (jsonPrefix "ItemsCollection") ''ItemsCollectionFormat
-deriveJSON (jsonPrefix "Collection") ''CollectionFormat
 deriveJSON (jsonPrefix "ApiKey") ''ApiKeyLocation
 deriveJSON (jsonPrefix "apiKey") ''ApiKeyParams
 deriveJSON' ''SchemaCommon
@@ -827,6 +824,13 @@ instance ToJSON (SwaggerType t) where
   toJSON SwaggerFile    = "file"
   toJSON SwaggerNull    = "null"
   toJSON SwaggerObject  = "object"
+
+instance ToJSON (CollectionFormat t) where
+  toJSON CollectionCSV   = "csv"
+  toJSON CollectionSSV   = "ssv"
+  toJSON CollectionTSV   = "tsv"
+  toJSON CollectionPipes = "pipes"
+  toJSON CollectionMulti = "multi"
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -968,4 +972,10 @@ instance FromJSON (SwaggerType Param) where
 
 instance FromJSON (SwaggerType Items) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
+
+instance FromJSON (CollectionFormat Param) where
+  parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes, CollectionMulti]
+
+instance FromJSON (CollectionFormat Items) where
+  parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 

@@ -30,7 +30,6 @@ module Data.Swagger (
   SwaggerType(..),
   Format,
   CollectionFormat(..),
-  ItemsCollectionFormat(..),
 
   -- * Parameters
   Param(..),
