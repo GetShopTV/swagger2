@@ -32,6 +32,7 @@ import Data.Word
 import GHC.Generics
 
 import Data.Swagger.Internal
+import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
@@ -117,41 +118,24 @@ instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
     & schemaType  .~ SwaggerArray
     & schemaItems ?~ SchemaItemsObject (toSchemaRef (Proxy :: Proxy a))
 
-instance {-# OVERLAPPING #-} ToSchema String where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerString
+instance {-# OVERLAPPING #-} ToSchema String where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Bool    where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Integer where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Int     where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Int8    where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Int16   where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Int32   where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Int64   where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Word    where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Word8   where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Word16  where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Word32  where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Word64  where toNamedSchema = unnamed . paramSchemaToSchema
 
-instance ToSchema Bool where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerBoolean
-
-instance ToSchema Integer where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerInteger
-
-instance ToSchema Int    where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Int8   where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Int16  where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Int32  where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Int64  where toNamedSchema = unnamed . toSchemaBoundedIntegral
-
-instance ToSchema Word   where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Word8  where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Word16 where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Word32 where toNamedSchema = unnamed . toSchemaBoundedIntegral
-instance ToSchema Word64 where toNamedSchema = unnamed . toSchemaBoundedIntegral
-
-instance ToSchema Char where
-  toNamedSchema _ = unnamed $ mempty
-    & schemaType .~ SwaggerString
-    & schemaMaxLength ?~ 1
-    & schemaMinLength ?~ 1
-
-instance ToSchema Scientific where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
-
-instance ToSchema Double where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
-
-instance ToSchema Float where
-  toNamedSchema _ = unnamed $ mempty & schemaType .~ SwaggerNumber
+instance ToSchema Char        where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Scientific  where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Double      where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Float       where toNamedSchema = unnamed . paramSchemaToSchema
 
 instance ToSchema a => ToSchema (Maybe a) where
   toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
@@ -202,11 +186,8 @@ instance ToSchema NominalDiffTime where
 instance ToSchema UTCTime where
   toNamedSchema _ = timeNamedSchema "UTCTime" "yyyy-mm-ddThh:MM:ssZ"
 
-instance ToSchema T.Text where
-  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
-
-instance ToSchema TL.Text where
-  toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy String)
+instance ToSchema T.Text where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema TL.Text where toNamedSchema = unnamed . paramSchemaToSchema
 
 instance ToSchema IntSet where toNamedSchema _ = toNamedSchema (Proxy :: Proxy (Set Int))
 
@@ -232,8 +213,9 @@ instance ToSchema a => ToSchema (Set a) where
 
 instance ToSchema a => ToSchema (HashSet a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy (Set a))
 
-instance ToSchema All where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy Bool)
-instance ToSchema Any where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy Bool)
+instance ToSchema All where toNamedSchema = unnamed . paramSchemaToSchema
+instance ToSchema Any where toNamedSchema = unnamed . paramSchemaToSchema
+
 instance ToSchema a => ToSchema (Sum a)     where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 instance ToSchema a => ToSchema (Product a) where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
 instance ToSchema a => ToSchema (First a)   where toNamedSchema _ = unnamed $ toSchema (Proxy :: Proxy a)
@@ -272,6 +254,16 @@ gdatatypeSchemaName opts _ = case name of
   _ -> Nothing
   where
     name = datatypeNameModifier opts (datatypeName (Proxy3 :: Proxy3 d f a))
+
+-- | Lift a plain @'ParamSchema'@ into a model @'NamedSchema'@.
+paramSchemaToNamedSchema :: forall a d f proxy.
+  (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d)
+  => SchemaOptions -> proxy a -> NamedSchema
+paramSchemaToNamedSchema opts proxy = (gdatatypeSchemaName opts (Proxy :: Proxy d), paramSchemaToSchema proxy)
+
+-- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
+paramSchemaToSchema :: forall a proxy. ToParamSchema a => proxy a -> Schema
+paramSchemaToSchema _ = mempty & schemaParamSchema .~ toParamSchema (Proxy :: Proxy a)
 
 nullarySchema :: Schema
 nullarySchema = mempty
