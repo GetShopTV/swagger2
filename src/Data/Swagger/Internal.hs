@@ -721,7 +721,6 @@ deriveJSONDefault ''Scheme
 deriveJSON' ''Tag
 deriveJSON' ''ExternalDocs
 
-deriveToJSON' ''ParamSchema
 deriveToJSON' ''Operation
 deriveToJSON' ''Response
 deriveToJSON' ''PathItem
@@ -832,6 +831,9 @@ instance ToJSON (CollectionFormat t) where
   toJSON CollectionTSV   = "tsv"
   toJSON CollectionPipes = "pipes"
   toJSON CollectionMulti = "multi"
+
+instance ToJSON i => ToJSON (ParamSchema t i) where
+  toJSON = genericToJSON (jsonPrefix "paramSchema")
 
 -- =======================================================================
 -- Manual FromJSON instances
