@@ -61,9 +61,9 @@ class HasSchemaCommon s t i | s -> t i where
   schemaCommon :: Lens' s (SchemaCommon t i)
 
 instance HasSchemaCommon Schema Schema SchemaItems where schemaCommon = schemaSchemaCommon
-instance HasSchemaCommon ParamOtherSchema Param Items where schemaCommon = paramOtherSchemaCommon
+instance HasSchemaCommon ParamOtherSchema ParamOtherSchema Items where schemaCommon = paramOtherSchemaCommon
 instance HasSchemaCommon Items Items Items where schemaCommon = itemsCommon
-instance HasSchemaCommon Header Items Items where schemaCommon = headerCommon
+instance HasSchemaCommon Header Header Items where schemaCommon = headerCommon
 instance HasSchemaCommon (SchemaCommon t i) t i where schemaCommon = id
 
 schemaType :: HasSchemaCommon s t i => Lens' s (SwaggerType t)

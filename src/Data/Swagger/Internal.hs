@@ -295,7 +295,7 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
 
-  , _paramOtherSchemaCommon :: SchemaCommon Param Items
+  , _paramOtherSchemaCommon :: SchemaCommon ParamOtherSchema Items
   } deriving (Eq, Show, Generic)
 
 data SwaggerType t where
@@ -304,7 +304,7 @@ data SwaggerType t where
   SwaggerInteger  :: SwaggerType t
   SwaggerBoolean  :: SwaggerType t
   SwaggerArray    :: SwaggerType t
-  SwaggerFile     :: SwaggerType Param
+  SwaggerFile     :: SwaggerType ParamOtherSchema
   SwaggerNull     :: SwaggerType Schema
   SwaggerObject   :: SwaggerType Schema
 
@@ -487,7 +487,7 @@ data Header = Header
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
-  , _headerCommon :: SchemaCommon Items Items
+  , _headerCommon :: SchemaCommon Header Items
   } deriving (Eq, Show, Generic)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -968,10 +968,10 @@ instance FromJSON Xml where
 instance FromJSON (SwaggerType Schema) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerNull, SwaggerObject]
 
-instance FromJSON (SwaggerType Param) where
+instance FromJSON (SwaggerType ParamOtherSchema) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerFile]
 
-instance FromJSON (SwaggerType Items) where
+instance {-# OVERLAPPABLE #-} FromJSON (SwaggerType t) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
 
 instance FromJSON (CollectionFormat Param) where
@@ -980,5 +980,8 @@ instance FromJSON (CollectionFormat Param) where
 instance FromJSON (CollectionFormat Items) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
+-- NOTE: The constraint @FromJSON (SwaggerType t)@ is necessary here!
+-- Without the constraint the general instance will be used
+-- that only accepts common types (i.e. NOT object, null or file).
 instance (FromJSON (SwaggerType t), FromJSON i) => FromJSON (SchemaCommon t i) where
   parseJSON = genericParseJSON (jsonPrefix "SchemaCommon")
