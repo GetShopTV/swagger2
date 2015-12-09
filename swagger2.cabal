@@ -25,8 +25,8 @@ library
 
     -- internal modules
     Data.Swagger.Internal
-    Data.Swagger.Internal.Param
     Data.Swagger.Internal.Schema
+    Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
   build-depends:       base == 4.*
                      , aeson < 0.10

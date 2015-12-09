@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Data.Swagger.Internal.Param where
+module Data.Swagger.Internal.ParamSchema where
 
 import Control.Lens
 import Data.Aeson
@@ -27,24 +27,18 @@ import Data.Swagger.Lens
 
 class ToParamSchema a where
   -- | Convert a type into a non-body parameter schema.
-  toParamSchema :: proxy a -> ParamLocation -> ParamOtherSchema
-  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamLocation -> ParamOtherSchema
+  toParamSchema :: proxy a -> ParamSchema t Items
+  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamSchema t Items
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
 instance {-# OVERLAPPING #-} ToParamSchema String where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerString
+  toParamSchema _ = mempty & schemaType .~ SwaggerString
 
 instance ToParamSchema Bool where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerBoolean
+  toParamSchema _ = mempty & schemaType .~ SwaggerBoolean
 
 instance ToParamSchema Integer where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerInteger
+  toParamSchema _ = mempty & schemaType .~ SwaggerInteger
 
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral
@@ -58,62 +52,53 @@ instance ToParamSchema Word16 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word32 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
 
-toParamSchemaBoundedIntegral :: forall proxy a. (Bounded a, Integral a) => proxy a -> ParamLocation -> ParamOtherSchema
-toParamSchemaBoundedIntegral _ loc = mempty
-  & paramOtherSchemaIn   .~ loc
+toParamSchemaBoundedIntegral :: forall proxy a t. (Bounded a, Integral a) => proxy a -> ParamSchema t Items
+toParamSchemaBoundedIntegral _ = mempty
   & schemaType .~ SwaggerInteger
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
   & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
 
 instance ToParamSchema Char where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
+  toParamSchema _ = mempty
     & schemaType .~ SwaggerString
     & schemaMaxLength ?~ 1
     & schemaMinLength ?~ 1
 
 instance ToParamSchema Scientific where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
 
 instance ToParamSchema Double where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
 
 instance ToParamSchema Float where
-  toParamSchema _ loc = mempty
-    & paramOtherSchemaIn   .~ loc
-    & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
 
-timeParamSchema :: String -> ParamLocation -> ParamOtherSchema
-timeParamSchema format loc = mempty
-  & paramOtherSchemaIn      .~ loc
-  & schemaType    .~ SwaggerString
-  & schemaFormat  ?~ T.pack format
-  & schemaMinLength         ?~ toInteger (length format)
+timeParamSchema :: String -> ParamSchema t Items
+timeParamSchema format = mempty
+  & schemaType      .~ SwaggerString
+  & schemaFormat    ?~ T.pack format
+  & schemaMinLength ?~ toInteger (length format)
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy Day) ParamQuery ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy Day) ^. schemaFormat
 -- Just "yyyy-mm-dd"
 instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "yyyy-mm-dd"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy LocalTime) ParamQuery ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToParamSchema LocalTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy ZonedTime) ParamQuery ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss+hhMM"
 instance ToParamSchema ZonedTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss+hhMM"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy UTCTime) ParamQuery ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToParamSchema UTCTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ssZ"
@@ -135,11 +120,11 @@ instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 
-genericToParamSchema :: forall proxy a. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamLocation -> ParamOtherSchema
-genericToParamSchema opts _ loc = gtoParamSchema opts (Proxy :: Proxy (Rep a)) loc mempty
+genericToParamSchema :: forall proxy a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamSchema t Items
+genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 class GToParamSchema (f :: * -> *) where
-  gtoParamSchema :: SchemaOptions -> proxy f -> ParamLocation -> ParamOtherSchema -> ParamOtherSchema
+  gtoParamSchema :: SchemaOptions -> proxy f -> ParamSchema t Items -> ParamSchema t Items
 
 instance GToParamSchema f => GToParamSchema (D1 d f) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
@@ -148,22 +133,21 @@ instance GToParamSchema f => GToParamSchema (C1 c (S1 s f)) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
 
 instance ToParamSchema c => GToParamSchema (K1 i c) where
-  gtoParamSchema _ _ loc _ = toParamSchema (Proxy :: Proxy c) loc
+  gtoParamSchema _ _ _ = toParamSchema (Proxy :: Proxy c)
 
 instance (GEnumParamSchema f, GEnumParamSchema g) => GToParamSchema (f :+: g) where
   gtoParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy (f :+: g))
 
 class GEnumParamSchema (f :: * -> *) where
-  genumParamSchema :: SchemaOptions -> proxy f -> ParamLocation -> ParamOtherSchema -> ParamOtherSchema
+  genumParamSchema :: SchemaOptions -> proxy f -> ParamSchema t Items -> ParamSchema t Items
 
 instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) where
-  genumParamSchema opts _ loc = genumParamSchema opts (Proxy :: Proxy f) loc . genumParamSchema opts (Proxy :: Proxy g) loc
+  genumParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy f) . genumParamSchema opts (Proxy :: Proxy g)
 
 instance Constructor c => GEnumParamSchema (C1 c U1) where
-  genumParamSchema opts _ loc s = s
-    & paramOtherSchemaIn    .~ loc
-    & schemaType  .~ SwaggerString
-    & schemaEnum            %~ addEnumValue tag
+  genumParamSchema opts _ s = s
+    & schemaType .~ SwaggerString
+    & schemaEnum %~ addEnumValue tag
     where
       tag = toJSON (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 
