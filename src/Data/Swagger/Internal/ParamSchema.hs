@@ -25,8 +25,43 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
+-- | Convert a type into a plain @'ParamSchema'@.
+--
+-- An example type and instance:
+--
+-- @
+-- {-\# LANGUAGE OverloadedStrings \#-}   -- allows to write 'T.Text' literals
+--
+-- import Control.Lens
+--
+-- data Direction = Up | Down
+--
+-- instance ToParamSchema Direction where
+--   toParamSchema = mempty
+--      & schemaType .~ SwaggerString
+--      & schemaEnum .~ [ \"Up\", \"Down\" ]
+-- @
+--
+-- Instead of manually writing your @'ToParamSchema'@ instance you can
+-- use a default generic implementation of @'toParamSchema'@.
+--
+-- To do that, simply add @deriving 'Generic'@ clause to your datatype
+-- and declare a @'ToParamSchema'@ instance for your datatype without
+-- giving definition for @'toParamSchema'@.
+--
+-- For instance, the previous example can be simplified into this:
+--
+-- @
+-- {-\# LANGUAGE DeriveGeneric \#-}
+--
+-- import GHC.Generics (Generic)
+--
+-- data Direction = Up | Down deriving Generic
+--
+-- instance ToParamSchema Direction
+-- @
 class ToParamSchema a where
-  -- | Convert a type into a non-body parameter schema.
+  -- | Convert a type into a plain parameter schema.
   toParamSchema :: proxy a -> ParamSchema t i
   default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamSchema t i
   toParamSchema = genericToParamSchema defaultSchemaOptions
@@ -52,6 +87,7 @@ instance ToParamSchema Word16 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word32 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
 
+-- | Default plain schema for @'Bounded'@, @'Integral'@ types.
 toParamSchemaBoundedIntegral :: forall proxy a t i. (Bounded a, Integral a) => proxy a -> ParamSchema t i
 toParamSchemaBoundedIntegral _ = mempty
   & schemaType .~ SwaggerInteger
@@ -120,6 +156,7 @@ instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 
+-- | A configurable generic @'ParamSchema'@ creator.
 genericToParamSchema :: forall proxy a t i. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamSchema t i
 genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
