@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -294,7 +295,7 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
 
-  , _paramOtherSchemaCommon :: SchemaCommon (SwaggerType Param) Items
+  , _paramOtherSchemaCommon :: SchemaCommon Param Items
   } deriving (Eq, Show, Generic)
 
 data SwaggerType t where
@@ -370,7 +371,7 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaSchemaCommon :: SchemaCommon (SwaggerType Schema) SchemaItems
+  , _schemaSchemaCommon :: SchemaCommon Schema SchemaItems
   } deriving (Eq, Show, Generic)
 
 data SchemaItems
@@ -378,7 +379,7 @@ data SchemaItems
   | SchemaItemsArray [Referenced Schema]
   deriving (Eq, Show)
 
-data SchemaCommon typeDomain items = SchemaCommon
+data SchemaCommon t items = SchemaCommon
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
@@ -386,7 +387,7 @@ data SchemaCommon typeDomain items = SchemaCommon
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _schemaCommonDefault :: Maybe Value
 
-  , _schemaCommonType :: typeDomain
+  , _schemaCommonType :: SwaggerType t
   , _schemaCommonFormat :: Maybe Format
   , _schemaCommonItems :: Maybe items
   , _schemaCommonMaximum :: Maybe Scientific
@@ -436,7 +437,7 @@ data Items = Items
     -- Default value is @'ItemsCollectionCSV'@.
     _itemsCollectionFormat :: Maybe (CollectionFormat Items)
 
-  , _itemsCommon :: SchemaCommon (SwaggerType Items) Items
+  , _itemsCommon :: SchemaCommon Items Items
   } deriving (Eq, Show, Generic)
 
 -- | A container for the expected responses of an operation.
@@ -486,7 +487,7 @@ data Header = Header
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
-  , _headerCommon :: SchemaCommon (SwaggerType Items) Items
+  , _headerCommon :: SchemaCommon Items Items
   } deriving (Eq, Show, Generic)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -608,7 +609,7 @@ instance Monoid Schema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance SwaggerMonoid t => Monoid (SchemaCommon t i) where
+instance Monoid (SchemaCommon t i) where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -644,7 +645,7 @@ instance SwaggerMonoid Info
 instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
-instance SwaggerMonoid t => SwaggerMonoid (SchemaCommon t i)
+instance SwaggerMonoid (SchemaCommon t i)
 instance SwaggerMonoid Param
 instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses
@@ -716,11 +717,11 @@ deriveJSON' ''Contact
 deriveJSON' ''License
 deriveJSON (jsonPrefix "ApiKey") ''ApiKeyLocation
 deriveJSON (jsonPrefix "apiKey") ''ApiKeyParams
-deriveJSON' ''SchemaCommon
 deriveJSONDefault ''Scheme
 deriveJSON' ''Tag
 deriveJSON' ''ExternalDocs
 
+deriveToJSON' ''SchemaCommon
 deriveToJSON' ''Operation
 deriveToJSON' ''Response
 deriveToJSON' ''PathItem
@@ -979,3 +980,5 @@ instance FromJSON (CollectionFormat Param) where
 instance FromJSON (CollectionFormat Items) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
+instance (FromJSON (SwaggerType t), FromJSON i) => FromJSON (SchemaCommon t i) where
+  parseJSON = genericParseJSON (jsonPrefix "SchemaCommon")
