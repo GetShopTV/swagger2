@@ -21,6 +21,7 @@ library
   exposed-modules:
     Data.Swagger
     Data.Swagger.Lens
+    Data.Swagger.ParamSchema
     Data.Swagger.Schema
     Data.Swagger.SchemaOptions
 
