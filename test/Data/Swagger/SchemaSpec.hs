@@ -33,6 +33,7 @@ spec = do
     context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
     context "Point (fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
     context "Color (bounded enum)" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
+    context "Shade (paramSchemaToNamedSchema)" $ checkToSchema (Proxy :: Proxy Shade) shadeSchemaJSON
     context "Paint (record with bounded enum field)" $ checkToSchema (Proxy :: Proxy Paint) paintSchemaJSON
     context "UserGroup (set newtype)" $ checkToSchema (Proxy :: Proxy UserGroup) userGroupSchemaJSON
     context "Unary records" $ do
@@ -49,6 +50,7 @@ spec = do
       context "String" $ checkSchemaName Nothing (Proxy :: Proxy String)
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
       context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
+      context "Shade" $ checkSchemaName (Just "Shade") (Proxy :: Proxy Shade)
 
 main :: IO ()
 main = hspec spec
@@ -134,6 +136,22 @@ colorSchemaJSON = [aesonQQ|
 {
   "type": "string",
   "enum": ["Red", "Green", "Blue"]
+}
+|]
+
+-- ========================================================================
+-- Shade (paramSchemaToNamedSchema)
+-- ========================================================================
+
+data Shade = Dim | Bright deriving (Generic, ToParamSchema)
+
+instance ToSchema Shade where toNamedSchema = paramSchemaToNamedSchema defaultSchemaOptions
+
+shadeSchemaJSON :: Value
+shadeSchemaJSON = [aesonQQ|
+{
+  "type": "string",
+  "enum": ["Dim", "Bright"]
 }
 |]
 
