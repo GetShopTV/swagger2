@@ -33,7 +33,7 @@ module Data.Swagger (
 
   -- * Parameters
   Param(..),
-  ParamSchema(..),
+  ParamAnySchema(..),
   ParamOtherSchema(..),
   ParamLocation(..),
   ParamName,
@@ -41,10 +41,10 @@ module Data.Swagger (
   Header(..),
   Example(..),
 
-  -- * Schema
+  -- * Schemas
+  ParamSchema(..),
   Schema(..),
   SchemaItems(..),
-  SchemaCommon(..),
   Xml(..),
 
   -- * Responses
