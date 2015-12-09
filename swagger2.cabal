@@ -22,6 +22,7 @@ library
     Data.Swagger
     Data.Swagger.Lens
     Data.Swagger.Schema
+    Data.Swagger.SchemaOptions
 
     -- internal modules
     Data.Swagger.Internal

@@ -26,3 +26,4 @@ module Data.Swagger.Schema (
 ) where
 
 import Data.Swagger.Internal.Schema
+import Data.Swagger.SchemaOptions

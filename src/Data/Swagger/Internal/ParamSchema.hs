@@ -22,13 +22,13 @@ import Data.Time
 import Data.Word
 
 import Data.Swagger.Internal
-import Data.Swagger.Internal.Schema (SchemaOptions(..), defaultSchemaOptions)
 import Data.Swagger.Lens
+import Data.Swagger.SchemaOptions
 
 class ToParamSchema a where
   -- | Convert a type into a non-body parameter schema.
-  toParamSchema :: proxy a -> ParamSchema t Items
-  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamSchema t Items
+  toParamSchema :: proxy a -> ParamSchema t i
+  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamSchema t i
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
 instance {-# OVERLAPPING #-} ToParamSchema String where
@@ -52,7 +52,7 @@ instance ToParamSchema Word16 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word32 where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
 
-toParamSchemaBoundedIntegral :: forall proxy a t. (Bounded a, Integral a) => proxy a -> ParamSchema t Items
+toParamSchemaBoundedIntegral :: forall proxy a t i. (Bounded a, Integral a) => proxy a -> ParamSchema t i
 toParamSchemaBoundedIntegral _ = mempty
   & schemaType .~ SwaggerInteger
   & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
@@ -73,7 +73,7 @@ instance ToParamSchema Double where
 instance ToParamSchema Float where
   toParamSchema _ = mempty & schemaType .~ SwaggerNumber
 
-timeParamSchema :: String -> ParamSchema t Items
+timeParamSchema :: String -> ParamSchema t i
 timeParamSchema format = mempty
   & schemaType      .~ SwaggerString
   & schemaFormat    ?~ T.pack format
@@ -120,11 +120,11 @@ instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 
-genericToParamSchema :: forall proxy a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamSchema t Items
+genericToParamSchema :: forall proxy a t i. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamSchema t i
 genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 class GToParamSchema (f :: * -> *) where
-  gtoParamSchema :: SchemaOptions -> proxy f -> ParamSchema t Items -> ParamSchema t Items
+  gtoParamSchema :: SchemaOptions -> proxy f -> ParamSchema t i -> ParamSchema t i
 
 instance GToParamSchema f => GToParamSchema (D1 d f) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
@@ -139,7 +139,7 @@ instance (GEnumParamSchema f, GEnumParamSchema g) => GToParamSchema (f :+: g) wh
   gtoParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy (f :+: g))
 
 class GEnumParamSchema (f :: * -> *) where
-  genumParamSchema :: SchemaOptions -> proxy f -> ParamSchema t Items -> ParamSchema t Items
+  genumParamSchema :: SchemaOptions -> proxy f -> ParamSchema t i -> ParamSchema t i
 
 instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) where
   genumParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy f) . genumParamSchema opts (Proxy :: Proxy g)
