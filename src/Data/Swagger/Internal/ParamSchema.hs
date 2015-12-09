@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -155,6 +156,14 @@ instance ToParamSchema a => ToParamSchema (Product a) where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
+
+-- |
+-- >>> encode (toParamSchema (Proxy :: Proxy ()) :: ParamSchema t Items)
+-- "{\"type\":\"string\",\"enum\":[\"_\"]}"
+instance ToParamSchema () where
+  toParamSchema _ = mempty
+    & schemaType .~ SwaggerString
+    & schemaEnum ?~ ["_"]
 
 -- | A configurable generic @'ParamSchema'@ creator.
 genericToParamSchema :: forall proxy a t i. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> proxy a -> ParamSchema t i
