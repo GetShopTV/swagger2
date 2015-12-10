@@ -60,14 +60,17 @@ test-suite spec
   main-is:          Spec.hs
   build-depends:    base
                   , base-compat
-                  , swagger2
-                  , hspec
-                  , HUnit
-                  , QuickCheck
-                  , text
                   , aeson
                   , aeson-qq
                   , containers
+                  , hashable
+                  , hspec
+                  , HUnit
+                  , mtl
+                  , QuickCheck
+                  , swagger2
+                  , text
+                  , time
                   , unordered-containers
                   , vector
                   , lens
@@ -75,6 +78,7 @@ test-suite spec
     SpecCommon
     Data.SwaggerSpec
     Data.Swagger.SchemaSpec
+    Data.Swagger.Schema.ValidationSpec
   default-language: Haskell2010
 
 test-suite doctest
