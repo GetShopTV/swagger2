@@ -95,6 +95,7 @@ validateWithSchema schema value
         (SwaggerString,  String s)   -> validateString s
         (SwaggerArray,   Array xs)   -> validateArray xs
         (SwaggerObject,  Object o)   -> validateObject o
+        (t, _) -> invalid $ "expected JSON value of type " ++ show t ++ ": " ++ show (encode value)
 
     validateInteger n
       = when (not (isInteger n)) (invalid $ "not an integer: " ++ show n)
@@ -141,23 +142,23 @@ validateWithSchema schema value
       where
         allUnique = Vector.length xs == HashSet.size (HashSet.fromList (Vector.toList xs))
 
-    validateObject o = case schema ^. schemaDiscriminator of
+    validateObject o = case schema ^. discriminator of
         Just name -> validateWithSchemaRef (Ref (Reference name)) value
         Nothing ->
-            when' (fromIntegral (HashMap.size o) >) schemaMaxProperties
+            when' (fromIntegral (HashMap.size o) >) maxProperties
               (\n -> invalid $ "object size exceeds maximum (total number of properties should be <=" ++ show n ++ "): " ++ show (encode o))
-         *> when' (fromIntegral (HashMap.size o) <) schemaMaxProperties
+         *> when' (fromIntegral (HashMap.size o) <) minProperties
               (\n -> invalid $ "object size is too small (total number of properties should be >=" ++ show n ++ "): " ++ show (encode o))
          *> validateRequired
          *> validateProps
       where
-        validateRequired = traverse_ validateReq (schema ^. schemaRequired)
+        validateRequired = traverse_ validateReq (schema ^. required)
         validateReq name = when (not (HashMap.member name o))
           (invalid $ "property " ++ show name ++ " is required, but not found in " ++ show (encode o))
 
         validateProps = for_ (HashMap.toList o) $ \(k, v) ->
-          case HashMap.lookup k (schema ^. schemaProperties) of
-            Nothing -> case schema ^. schemaAdditionalProperties of
+          case HashMap.lookup k (schema ^. properties) of
+            Nothing -> case schema ^. additionalProperties of
               Nothing -> valid -- TODO: issue a warning
               Just s -> validateWithSchema s v
             Just s -> validateWithSchemaRef s v
