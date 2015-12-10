@@ -18,7 +18,7 @@ import Control.Lens
 import Control.Monad.Reader
 
 import Data.Aeson
-import Data.Foldable (traverse_)
+import Data.Foldable (traverse_, for_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
@@ -42,13 +42,18 @@ instance Applicative ValidationResult where
   ValidationFailed xs <*> _ = ValidationFailed xs
   _ <*> ValidationFailed ys = ValidationFailed ys
 
+instance Alternative ValidationResult where
+  empty = ValidationFailed []
+  ValidationPassed x <|> _ = ValidationPassed x
+  _ <|> y = y
+
 instance Monad ValidationResult where
   return = pure
   ValidationPassed x   >>= f = f x
   ValidationFailed msg >>= _ = ValidationFailed msg
 
 newtype Validation a = Validation { runValidation :: ReaderT (HashMap Text Schema) ValidationResult a }
-  deriving (Functor, Applicative, Monad, MonadReader (HashMap Text Schema))
+  deriving (Functor, Applicative, Alternative, Monad, MonadReader (HashMap Text Schema))
 
 invalid :: String -> Validation a
 invalid msg = Validation (ReaderT (const (ValidationFailed [msg])))
@@ -136,8 +141,26 @@ validateWithSchema schema value
       where
         allUnique = Vector.length xs == HashSet.size (HashSet.fromList (Vector.toList xs))
 
-    validateObject o
-      = valid
+    validateObject o = case schema ^. schemaDiscriminator of
+        Just name -> validateWithSchemaRef (Ref (Reference name)) value
+        Nothing ->
+            when' (fromIntegral (HashMap.size o) >) schemaMaxProperties
+              (\n -> invalid $ "object size exceeds maximum (total number of properties should be <=" ++ show n ++ "): " ++ show (encode o))
+         *> when' (fromIntegral (HashMap.size o) <) schemaMaxProperties
+              (\n -> invalid $ "object size is too small (total number of properties should be >=" ++ show n ++ "): " ++ show (encode o))
+         *> validateRequired
+         *> validateProps
+      where
+        validateRequired = traverse_ validateReq (schema ^. schemaRequired)
+        validateReq name = when (not (HashMap.member name o))
+          (invalid $ "property " ++ show name ++ " is required, but not found in " ++ show (encode o))
+
+        validateProps = for_ (HashMap.toList o) $ \(k, v) ->
+          case HashMap.lookup k (schema ^. schemaProperties) of
+            Nothing -> case schema ^. schemaAdditionalProperties of
+              Nothing -> valid -- TODO: issue a warning
+              Just s -> validateWithSchema s v
+            Just s -> validateWithSchemaRef s v
 
     validateEnum = case schema ^. enum_ of
       Nothing -> valid
