@@ -15,6 +15,7 @@ import           Control.Applicative
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.TH            (deriveJSON)
+import qualified Data.Aeson.Types         as JSON
 import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
@@ -811,9 +812,13 @@ instance ToJSON Example where
 instance ToJSON Reference where
   toJSON (Reference ref) = object [ "$ref" .= ref ]
 
-instance ToJSON a => ToJSON (Referenced a) where
-  toJSON (Ref ref) = toJSON ref
-  toJSON (Inline x) = toJSON x
+referencedToJSON :: ToJSON a => Text -> Referenced a -> Value
+referencedToJSON prefix (Ref (Reference ref)) = object [ "$ref" .= (prefix <> ref) ]
+referencedToJSON _ (Inline x) = toJSON x
+
+instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/definitions/"
+instance ToJSON (Referenced Param)    where toJSON = referencedToJSON "#/parameters/"
+instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/responses/"
 
 instance ToJSON (SwaggerType t) where
   toJSON SwaggerArray   = "array"
@@ -959,10 +964,21 @@ instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
   parseJSON _ = empty
 
-instance FromJSON a => FromJSON (Referenced a) where
-  parseJSON js
-      = Ref    <$> parseJSON js
-    <|> Inline <$> parseJSON js
+referencedParseJSON :: FromJSON a => Text -> Value -> JSON.Parser (Referenced a)
+referencedParseJSON prefix js@(Object o) = do
+  ms <- o .:? "$ref"
+  case ms of
+    Nothing -> Inline <$> parseJSON js
+    Just s  -> Ref <$> parseRef s
+  where
+    parseRef s = do
+      case Text.stripPrefix prefix s of
+        Nothing     -> fail $ "expected $ref of the form \"" <> Text.unpack prefix <> "*\", but got " <> show s
+        Just suffix -> pure (Reference suffix)
+
+instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/definitions/"
+instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/parameters/"
+instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#/responses/"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")

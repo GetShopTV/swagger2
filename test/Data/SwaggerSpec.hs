@@ -237,7 +237,7 @@ schemaSimpleModelExample = mempty
   & schemaRequired .~ [ "name" ]
   & schemaProperties .~
       [ ("name", Inline (mempty & schemaType .~ SwaggerString))
-      , ("address", Ref (Reference "#/definitions/Address"))
+      , ("address", Ref (Reference "Address"))
       , ("age", Inline $ mempty
             & schemaMinimum ?~ 0
             & schemaType    .~ SwaggerInteger

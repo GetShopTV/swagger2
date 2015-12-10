@@ -158,7 +158,7 @@ declareSchemaRef proxy = do
       when (not known) $ do
         declare [(name, schema)]
         void $ declareNamedSchema proxy
-      return $ Ref (Reference ("#/definitions/" <> name))
+      return $ Ref (Reference name)
     _ -> Inline <$> declareSchema proxy
 
 class GToSchema (f :: * -> *) where
@@ -376,7 +376,7 @@ gdeclareSchemaRef opts proxy = do
       when (not known) $ do
         declare [(name, schema)]
         void $ gdeclareNamedSchema opts proxy mempty
-      return $ Ref (Reference ("#/definitions/" <> name))
+      return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
