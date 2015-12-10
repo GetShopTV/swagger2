@@ -18,7 +18,7 @@ import Control.Lens
 import Control.Monad.Reader
 
 import Data.Aeson
-import Data.Foldable (traverse_, for_)
+import Data.Foldable (traverse_, for_, sequenceA_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
@@ -134,7 +134,7 @@ validateWithSchema schema value
           Just (SwaggerItemsArray itemSchemas) ->
             when (Vector.length xs /= length itemSchemas)
               (invalid ("array size is invalid (should be exactly " ++ show (length itemSchemas) ++ "): " ++ show (encode xs)))
-            *> sequence_ (zipWith validateWithSchemaRef itemSchemas (Vector.toList xs))
+            *> sequenceA_ (zipWith validateWithSchemaRef itemSchemas (Vector.toList xs))
           Nothing -> invalid "invalid schema: array item schema expected"
      *> when ((Just True == schema ^. uniqueItems) && not allUnique)
           (invalid $ "array is expected to contain unique items, but it does not: " ++ show (encode xs))
