@@ -28,6 +28,7 @@ library
     Data.Swagger.Lens
     Data.Swagger.ParamSchema
     Data.Swagger.Schema
+    Data.Swagger.Schema.Validate
     Data.Swagger.SchemaOptions
 
     -- internal modules
@@ -41,15 +42,16 @@ library
                      , containers
                      , hashable
                      , http-media
+                     , lens
                      , mtl
                      , network
+                     , scientific
                      , text
                      , template-haskell
                      , time
                      , transformers
                      , unordered-containers
-                     , lens
-                     , scientific
+                     , vector
   default-language:    Haskell2010
 
 test-suite spec
