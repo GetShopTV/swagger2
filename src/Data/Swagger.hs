@@ -6,6 +6,7 @@
 -- and Swagger-Codegen to generate clients in various languages.
 -- Additional utilities can also take advantage of the resulting files, such as testing tools.
 module Data.Swagger (
+  module Data.Swagger.ParamSchema,
   module Data.Swagger.Schema,
 
   -- * Swagger specification
@@ -27,27 +28,24 @@ module Data.Swagger (
   Operation(..),
 
   -- * Types and formats
-  ParameterType(..),
-  ItemsType(..),
-  SchemaType(..),
+  SwaggerType(..),
   Format,
   CollectionFormat(..),
-  ItemsCollectionFormat(..),
 
   -- * Parameters
-  Parameter(..),
-  ParameterSchema(..),
-  ParameterOtherSchema(..),
-  ParameterLocation(..),
+  Param(..),
+  ParamAnySchema(..),
+  ParamOtherSchema(..),
+  ParamLocation(..),
   ParamName,
   Items(..),
   Header(..),
   Example(..),
 
-  -- * Schema
+  -- * Schemas
+  ParamSchema(..),
   Schema(..),
   SchemaItems(..),
-  SchemaCommon(..),
   Xml(..),
 
   -- * Responses
@@ -81,6 +79,7 @@ module Data.Swagger (
   URL(..),
 ) where
 
+import Data.Swagger.ParamSchema
 import Data.Swagger.Schema
 
 import Data.Swagger.Internal

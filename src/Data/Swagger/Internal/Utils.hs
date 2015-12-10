@@ -52,6 +52,14 @@ deriveJSONDefault = deriveJSON (jsonPrefix "")
 deriveJSON' :: Name -> Q [Dec]
 deriveJSON' name = deriveJSON (jsonPrefix (nameBase name)) name
 
+parseOneOf :: ToJSON a => [a] -> Value -> Parser a
+parseOneOf xs js =
+  case lookup js ys of
+    Nothing -> fail $ "invalid json: " ++ show js ++ " (expected one of " ++ show (map fst ys) ++ ")"
+    Just x  -> pure x
+  where
+    ys = zip (map toJSON xs) xs
+
 genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> Value
 genericToJSONWithSub sub opts x =
   case genericToJSON opts x of

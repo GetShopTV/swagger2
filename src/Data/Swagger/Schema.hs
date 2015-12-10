@@ -19,10 +19,13 @@ module Data.Swagger.Schema (
   genericToNamedSchema,
   genericToNamedSchemaBoundedIntegral,
   toSchemaBoundedIntegral,
+  paramSchemaToNamedSchema,
+  paramSchemaToSchema,
 
   -- * Generic encoding configuration
   SchemaOptions(..),
   defaultSchemaOptions,
 ) where
 
-import Data.Swagger.Schema.Internal
+import Data.Swagger.Internal.Schema
+import Data.Swagger.SchemaOptions
