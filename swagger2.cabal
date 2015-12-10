@@ -28,7 +28,7 @@ library
     Data.Swagger.Lens
     Data.Swagger.ParamSchema
     Data.Swagger.Schema
-    Data.Swagger.Schema.Validate
+    Data.Swagger.Schema.Validation
     Data.Swagger.SchemaOptions
 
     -- internal modules

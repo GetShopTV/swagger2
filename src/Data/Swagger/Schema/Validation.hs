@@ -11,7 +11,7 @@
 -- Stability:   experimental
 --
 -- Validate JSON values with Swagger Schema.
-module Data.Swagger.Schema.Validate where
+module Data.Swagger.Schema.Validation where
 
 import Control.Applicative
 import Control.Lens
