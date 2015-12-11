@@ -15,15 +15,15 @@ newtype DeclareT d m a = DeclareT { runDeclareT :: d -> m (d, a) }
 instance (Monad m, Monoid d) => Applicative (DeclareT d m) where
   pure x = DeclareT (\_ -> pure (mempty, x))
   DeclareT df <*> DeclareT dx = DeclareT $ \d -> do
-    (d',  f) <- df d
-    (d'', x) <- dx (d <> d')
+    ~(d',  f) <- df d
+    ~(d'', x) <- dx (d <> d')
     return (d' <> d'', f x)
 
 instance (Monad m, Monoid d) => Monad (DeclareT d m) where
   return x = DeclareT (\_ -> pure (mempty, x))
   DeclareT dx >>= f = DeclareT $ \d -> do
-    (d',  x) <- dx d
-    (d'', y) <- runDeclareT (f x) (d <> d')
+    ~(d',  x) <- dx d
+    ~(d'', y) <- runDeclareT (f x) (d <> d')
     return (d' <> d'', y)
 
 instance Monoid d => MonadTrans (DeclareT d) where
@@ -46,6 +46,9 @@ evalDeclareT (DeclareT f) d = snd `liftM` f d
 execDeclareT :: Monad m => DeclareT d m a -> d -> m d
 execDeclareT (DeclareT f) d = fst `liftM` f d
 
+undeclareT :: (Monad m, Monoid d) => DeclareT d m a -> m a
+undeclareT = flip evalDeclareT mempty
+
 type Declare d = DeclareT d Identity
 
 runDeclare :: Declare d a -> d -> (d, a)
@@ -56,4 +59,7 @@ evalDeclare m = runIdentity . evalDeclareT m
 
 execDeclare :: Declare d a -> d -> d
 execDeclare m = runIdentity . execDeclareT m
+
+undeclare :: Monoid d => Declare d a -> a
+undeclare = runIdentity . undeclareT
 
