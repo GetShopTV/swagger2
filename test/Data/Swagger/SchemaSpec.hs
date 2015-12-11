@@ -8,8 +8,12 @@ module Data.Swagger.SchemaSpec where
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
+import qualified Data.HashMap.Strict as HashMap
 import Data.Proxy
 import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Text (Text)
+import qualified Data.Text as Text
 import GHC.Generics
 
 import Data.Swagger
@@ -24,6 +28,13 @@ checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
 checkSchemaName sname proxy =
   it ("schema name is " ++ show sname) $
     schemaName proxy `shouldBe` sname
+
+checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
+checkDefs proxy names =
+  it ("uses these definitions " ++ show names) $
+    Set.fromList (HashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
+  where
+    defs = fst (toSchemaDefinitions proxy)
 
 spec :: Spec
 spec = do
@@ -51,6 +62,12 @@ spec = do
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
       context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
       context "Shade" $ checkSchemaName (Just "Shade") (Proxy :: Proxy Shade)
+  describe "Generic Definitions" $ do
+    context "Unit" $ checkDefs (Proxy :: Proxy Unit) ["Unit"]
+    context "Paint" $ checkDefs (Proxy :: Proxy Paint) ["Paint", "Color"]
+    context "Light" $ checkDefs (Proxy :: Proxy Light) ["Light", "Color"]
+    context "Character" $ checkDefs (Proxy :: Proxy Character) ["Character", "Player", "Point"]
+    context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
 
 main :: IO ()
 main = hspec spec
