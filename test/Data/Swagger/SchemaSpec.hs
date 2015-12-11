@@ -105,7 +105,7 @@ data Point = Point
   } deriving (Generic)
 
 instance ToSchema Point where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
     { fieldLabelModifier = map toLower . drop (length "point") }
 
 pointSchemaJSON :: Value
@@ -145,7 +145,7 @@ colorSchemaJSON = [aesonQQ|
 
 data Shade = Dim | Bright deriving (Generic, ToParamSchema)
 
-instance ToSchema Shade where toNamedSchema = paramSchemaToNamedSchema defaultSchemaOptions
+instance ToSchema Shade where toSchemaDefinitions = independent . paramSchemaToNamedSchema defaultSchemaOptions
 
 shadeSchemaJSON :: Value
 shadeSchemaJSON = [aesonQQ|
@@ -185,7 +185,7 @@ newtype Email = Email { getEmail :: String }
   deriving (Generic)
 
 instance ToSchema Email where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 emailSchemaJSON :: Value
@@ -258,7 +258,7 @@ data MyRoseTree = MyRoseTree
   } deriving (Generic)
 
 instance ToSchema MyRoseTree where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
     { datatypeNameModifier = drop (length "My") }
 
 myRoseTreeSchemaJSON :: Value
@@ -288,7 +288,9 @@ myRoseTreeSchemaJSON = [aesonQQ|
 newtype Inlined a = Inlined { getInlined :: a }
 
 instance ToSchema a => ToSchema (Inlined a) where
-  toNamedSchema _ = (Nothing, toSchema (Proxy :: Proxy a))
+  toSchemaDefinitions _ = (defs, (Nothing, schema))
+    where
+      (defs, (_, schema)) = toSchemaDefinitions (Proxy :: Proxy a)
 
 newtype Players = Players [Inlined Player]
   deriving (Generic, ToSchema)
@@ -322,7 +324,7 @@ data Status
   deriving (Generic)
 
 instance ToSchema Status where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
     { constructorTagModifier = map toLower . drop (length "Status") }
 
 statusSchemaJSON :: Value
@@ -397,7 +399,7 @@ data Light
   deriving (Generic)
 
 instance ToSchema Light where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 lightSchemaJSON :: Value

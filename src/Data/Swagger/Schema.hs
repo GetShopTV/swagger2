@@ -13,10 +13,12 @@ module Data.Swagger.Schema (
   toSchema,
   toSchemaRef,
   schemaName,
+  independent,
 
   -- * Generic schema encoding
   genericToSchema,
   genericToNamedSchema,
+  genericToSchemaDefinitions,
   genericToNamedSchemaBoundedIntegral,
   toSchemaBoundedIntegral,
   paramSchemaToNamedSchema,
