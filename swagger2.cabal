@@ -20,6 +20,7 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Data.Swagger
+    Data.Swagger.Declare
     Data.Swagger.Lens
     Data.Swagger.ParamSchema
     Data.Swagger.Schema
@@ -35,6 +36,7 @@ library
                      , containers
                      , hashable
                      , http-media
+                     , mtl
                      , network
                      , template-haskell
                      , text
