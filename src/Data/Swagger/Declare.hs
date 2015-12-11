@@ -48,9 +48,9 @@ instance Monoid d => MonadTrans (DeclareT d) where
 -- declare mempty == return ()
 -- declare x >> declare y == declare (x <> y)
 --
--- declare x >> look == fmap (<> x) look
+-- declare x >> look == fmap (<> x) look <* declare x
 --
--- look >> f == f
+-- look >> m == m
 -- @
 class Monad m => MonadDeclare d m | m -> d where
   -- | @'declare' x@ is an action that produces the output @x@.
