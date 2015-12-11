@@ -63,11 +63,12 @@ spec = do
       context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
       context "Shade" $ checkSchemaName (Just "Shade") (Proxy :: Proxy Shade)
   describe "Generic Definitions" $ do
-    context "Unit" $ checkDefs (Proxy :: Proxy Unit) ["Unit"]
-    context "Paint" $ checkDefs (Proxy :: Proxy Paint) ["Paint", "Color"]
-    context "Light" $ checkDefs (Proxy :: Proxy Light) ["Light", "Color"]
-    context "Character" $ checkDefs (Proxy :: Proxy Character) ["Character", "Player", "Point"]
+    context "Unit" $ checkDefs (Proxy :: Proxy Unit) []
+    context "Paint" $ checkDefs (Proxy :: Proxy Paint) ["Color"]
+    context "Light" $ checkDefs (Proxy :: Proxy Light) ["Color"]
+    context "Character" $ checkDefs (Proxy :: Proxy Character) ["Player", "Point"]
     context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
+    context "[Set (Unit, Maybe Color)]" $ checkDefs (Proxy :: Proxy [Set (Unit, Maybe Color)]) ["Unit", "Color"]
 
 main :: IO ()
 main = hspec spec
@@ -162,7 +163,7 @@ colorSchemaJSON = [aesonQQ|
 
 data Shade = Dim | Bright deriving (Generic, ToParamSchema)
 
-instance ToSchema Shade where toSchemaDefinitions = independent . paramSchemaToNamedSchema defaultSchemaOptions
+instance ToSchema Shade where toSchemaDefinitions = pure . paramSchemaToNamedSchema defaultSchemaOptions
 
 shadeSchemaJSON :: Value
 shadeSchemaJSON = [aesonQQ|

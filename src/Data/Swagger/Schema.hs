@@ -13,7 +13,6 @@ module Data.Swagger.Schema (
   toSchema,
   toSchemaRef,
   schemaName,
-  independent,
 
   -- * Generic schema encoding
   genericToSchema,

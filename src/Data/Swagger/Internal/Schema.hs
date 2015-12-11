@@ -17,6 +17,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Char
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
 import "unordered-containers" Data.HashSet (HashSet)
 import Data.Int
 import Data.IntSet (IntSet)
@@ -44,11 +45,6 @@ type NamedSchema = (Maybe String, Schema)
 -- | Schema definitions, a mapping from schema name to @'Schema'@.
 type Definitions = HashMap T.Text Schema
 
--- | Annotate @'NamedSchema'@ with its definition if name is present.
-independent :: NamedSchema -> (Definitions, NamedSchema)
-independent ns@(Just name, schema) = ([(T.pack name, schema)], ns)
-independent ns = pure ns
-
 unnamed :: Schema -> NamedSchema
 unnamed schema = (Nothing, schema)
 
@@ -74,7 +70,7 @@ unname (_, schema) = (Nothing, schema)
 -- data Coord = Coord { x :: Double, y :: Double }
 --
 -- instance ToSchema Coord where
---   toSchemaDefinitions = ([("Coord", schema)], (Just "Coord", schema))
+--   toSchemaDefinitions = pure (Just "Coord", schema)
 --    where
 --      schema = mempty
 --        & schemaType .~ SwaggerObject
@@ -105,7 +101,9 @@ unname (_, schema) = (Nothing, schema)
 -- @
 class ToSchema a where
   -- | Convert a type into an optionally named schema
-  -- together with all used definitions (including this schema).
+  -- together with all used definitions.
+  -- Note that the schema itself is included in definitions
+  -- only if it is recursive (and thus needs its definition in scope).
   toSchemaDefinitions :: proxy a -> (Definitions, NamedSchema)
   default toSchemaDefinitions :: (Generic a, GToSchema (Rep a)) => proxy a -> (Definitions, NamedSchema)
   toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
@@ -130,18 +128,22 @@ toSchemaRef proxy = case toNamedSchema proxy of
   (_, schema)     -> Inline schema
 
 class GToSchema (f :: * -> *) where
-  gtoSchemaDefinitions :: SchemaOptions -> proxy f -> Schema -> (Definitions, NamedSchema)
+  gtoSchemaDefinitions :: SchemaOptions -> proxy f -> (Definitions, Schema) -> (Definitions, NamedSchema)
 
-gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema -> NamedSchema
+gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> (Definitions, Schema) -> NamedSchema
 gtoNamedSchema opts proxy = snd . gtoSchemaDefinitions opts proxy
 
-gtoSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema -> Schema
+gtoSchema :: GToSchema f => SchemaOptions -> proxy f -> (Definitions, Schema) -> Schema
 gtoSchema opts proxy = snd . gtoNamedSchema opts proxy
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
-  toSchemaDefinitions _ = plain $ mempty
-    & schemaType  .~ SwaggerArray
-    & schemaItems ?~ SchemaItemsObject (toSchemaRef (Proxy :: Proxy a))
+  toSchemaDefinitions _ = (defs, unnamed schema)
+    where
+      schema = mempty
+        & schemaType  .~ SwaggerArray
+        & schemaItems ?~ SchemaItemsObject (toSchemaRef (Proxy :: Proxy a))
+
+      (defs, _) = toSchemaDefinitions (Proxy :: Proxy a)
 
 instance {-# OVERLAPPING #-} ToSchema String where toSchemaDefinitions = plain . paramSchemaToSchema
 instance ToSchema Bool    where toSchemaDefinitions = plain . paramSchemaToSchema
@@ -163,7 +165,9 @@ instance ToSchema Double      where toSchemaDefinitions = plain . paramSchemaToS
 instance ToSchema Float       where toSchemaDefinitions = plain . paramSchemaToSchema
 
 instance ToSchema a => ToSchema (Maybe a) where
-  toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
+  toSchemaDefinitions _ = (defs, unnamed schema)
+    where
+      (defs, (_, schema)) = toSchemaDefinitions (Proxy :: Proxy a)
 
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
@@ -221,31 +225,36 @@ instance ToSchema a => ToSchema (IntMap a) where
   toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy [(Int, a)])
 
 instance ToSchema a => ToSchema (Map String a) where
-  toSchemaDefinitions _ = plain $ mempty
-    & schemaType  .~ SwaggerObject
-    & schemaAdditionalProperties ?~ toSchema (Proxy :: Proxy a)
+  toSchemaDefinitions _ = (defs, unnamed schema)
+    where
+      schema = mempty
+        & schemaType  .~ SwaggerObject
+        & schemaAdditionalProperties ?~ toSchema (Proxy :: Proxy a)
 
-instance ToSchema a => ToSchema (Map T.Text  a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (Map TL.Text a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Map String a))
+      (defs, _) = toSchemaDefinitions (Proxy :: Proxy a)
 
-instance ToSchema a => ToSchema (HashMap String  a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap T.Text  a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap TL.Text a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map T.Text  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map TL.Text a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+
+instance ToSchema a => ToSchema (HashMap String  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap T.Text  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap TL.Text a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
 
 instance ToSchema a => ToSchema (Set a) where
-  toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy [a])
-    & schemaUniqueItems ?~ True
+  toSchemaDefinitions _ = (defs, unnamed (schema & schemaUniqueItems ?~ True))
+    where
+      (defs, (_, schema)) = toSchemaDefinitions (Proxy :: Proxy [a])
 
-instance ToSchema a => ToSchema (HashSet a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy (Set a))
+instance ToSchema a => ToSchema (HashSet a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Set a))
 
 instance ToSchema All where toSchemaDefinitions = plain . paramSchemaToSchema
 instance ToSchema Any where toSchemaDefinitions = plain . paramSchemaToSchema
 
-instance ToSchema a => ToSchema (Sum a)     where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Product a) where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (First a)   where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Last a)    where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Dual a)    where toSchemaDefinitions _ = plain $ toSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Sum a)     where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Product a) where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (First a)   where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Last a)    where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Dual a)    where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
@@ -303,37 +312,34 @@ instance GToSchema U1 where
   gtoSchemaDefinitions _ _ _ = plain nullarySchema
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
-  gtoSchemaDefinitions opts _ schema = (fdefs <> gdefs, unnamed fschema)
+  gtoSchemaDefinitions opts _ (defs, schema) = (fdefs, unnamed fschema)
     where
-      (fdefs, (_, fschema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) gschema
-      (gdefs, (_, gschema)) = gtoSchemaDefinitions opts (Proxy :: Proxy g) schema
+      (fdefs, (_, fschema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) (gdefs, gschema)
+      (gdefs, (_, gschema)) = gtoSchemaDefinitions opts (Proxy :: Proxy g) (defs, schema)
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
-  gtoSchemaDefinitions opts _ s = (defs, (name, schema))
+  gtoSchemaDefinitions opts _ (ds, s) = (schemaDefs, (name, schema))
     where
-      defs = case name of
-        Nothing -> schemaDefs
-        Just n  -> [(T.pack n, schema)] <> schemaDefs
-      (schemaDefs, (_, schema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) s
+      (schemaDefs, (_, schema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) (ds, s)
       name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
 instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
-  gtoSchemaDefinitions opts _ s = (defs, unnamed schema)
+  gtoSchemaDefinitions opts _ (ds, s) = (defs, unnamed schema)
     where
-      (defs, (_, schema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) s
+      (defs, (_, schema)) = gtoSchemaDefinitions opts (Proxy :: Proxy f) (ds, s)
 
 -- | Single field constructor.
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
-  gtoSchemaDefinitions opts _ s
-    | unwrapUnaryRecords opts = fieldSchemaDefs
+  gtoSchemaDefinitions opts _ (ds, s)
+    | unwrapUnaryRecords opts = (fieldDefs, fieldNamedSchema)
     | otherwise =
         case schema ^. schemaItems of
-          Just (SchemaItemsArray [_]) -> fieldSchemaDefs
-          _ -> unname <$> schemaDefs
+          Just (SchemaItemsArray [_]) -> (fieldDefs, fieldNamedSchema)
+          _ -> (defs, unnamed schema)
     where
-      (_, (_, schema)) = schemaDefs
-      schemaDefs = gtoSchemaDefinitions opts (Proxy :: Proxy (S1 s f)) s
-      fieldSchemaDefs = gtoSchemaDefinitions opts (Proxy :: Proxy f) s
+      (defs, (_, schema)) = schemaDefs
+      schemaDefs = gtoSchemaDefinitions opts (Proxy :: Proxy (S1 s f)) (ds, s)
+      (fieldDefs, fieldNamedSchema) = gtoSchemaDefinitions opts (Proxy :: Proxy f) (ds, s)
 
 gtoSchemaRef :: GToSchema f => SchemaOptions -> proxy f -> (Definitions, Referenced Schema)
 gtoSchemaRef opts proxy = case gtoSchemaDefinitions opts proxy mempty of
@@ -346,8 +352,9 @@ appendItem x Nothing = Just (SchemaItemsArray [x])
 appendItem x (Just (SchemaItemsArray xs)) = Just (SchemaItemsArray (x:xs))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject"
 
-withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) => SchemaOptions -> proxy s f -> Bool -> Schema -> (Definitions, Schema)
-withFieldSchema opts _ isRequiredField schema = (defs, schema')
+withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
+  SchemaOptions -> proxy s f -> Bool -> (Definitions, Schema) -> (Definitions, Schema)
+withFieldSchema opts _ isRequiredField (ds, schema) = (ds <> defs, schema')
   where
     schema'
       | T.null fieldName = schema
@@ -372,14 +379,21 @@ instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) wh
   gtoSchemaDefinitions opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
 instance ToSchema c => GToSchema (K1 i c) where
-  gtoSchemaDefinitions _ _ _ = toSchemaDefinitions (Proxy :: Proxy c)
+  gtoSchemaDefinitions _ _ (ds, _)
+    | present   = (ds, (name, schema))
+    | otherwise = (ds <> defs <> def, (name, schema))
+    where
+      (present, def) = case name of
+        Nothing -> (False, mempty)
+        Just n  -> (HashMap.member (T.pack n) ds, [(T.pack n, schema)])
+      (defs, (name, schema)) = toSchemaDefinitions (Proxy :: Proxy c)
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
-  gtoSchemaDefinitions opts _ s
-    | allNullaryToStringTag opts && allNullary = plain (toStringTag sumSchema)
-    | otherwise = (defs, unnamed sumSchema)
+  gtoSchemaDefinitions opts _ (ds, s)
+    | allNullaryToStringTag opts && allNullary = (ds, unnamed (toStringTag sumSchema))
+    | otherwise = (ds <> defs, unnamed sumSchema)
     where
-      ((All allNullary, defs), sumSchema) = gsumToSchema opts (Proxy :: Proxy (f :+: g)) s
+      (All allNullary, (defs, sumSchema)) = gsumToSchema opts (Proxy :: Proxy (f :+: g)) (ds, s)
 
       toStringTag schema = mempty
         & schemaType .~ SwaggerString
@@ -388,7 +402,7 @@ instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
 type AllNullary = All
 
 class GSumToSchema f where
-  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> ((AllNullary, Definitions), Schema)
+  gsumToSchema :: SchemaOptions -> proxy f -> (Definitions, Schema) -> (AllNullary, (Definitions, Schema))
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
   gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) `after` gsumToSchema opts (Proxy :: Proxy g)
@@ -399,12 +413,12 @@ instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
           (b, s'') = g s'
 
 gsumConToSchema :: forall c f proxy. Constructor c =>
-  Bool -> (Definitions, Referenced Schema) -> SchemaOptions -> proxy (C1 c f) -> Schema -> ((AllNullary, Definitions), Schema)
-gsumConToSchema isNullary (tagSchemaDefs, tagSchemaRef) opts _ schema = ((All isNullary, tagSchemaDefs), schema
+  Bool -> (Definitions, Referenced Schema) -> SchemaOptions -> proxy (C1 c f) -> (Definitions, Schema) -> (AllNullary, (Definitions, Schema))
+gsumConToSchema isNullary (tagSchemaDefs, tagSchemaRef) opts _ (defs, schema) = (All isNullary, (defs <> tagSchemaDefs, schema
   & schemaType .~ SwaggerObject
   & schemaProperties . at tag ?~ tagSchemaRef
   & schemaMaxProperties ?~ 1
-  & schemaMinProperties ?~ 1)
+  & schemaMinProperties ?~ 1))
   where
     tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 
