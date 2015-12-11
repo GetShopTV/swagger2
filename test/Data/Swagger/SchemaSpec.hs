@@ -17,6 +17,7 @@ import qualified Data.Text as Text
 import GHC.Generics
 
 import Data.Swagger
+import Data.Swagger.Declare
 
 import SpecCommon
 import Test.Hspec
@@ -34,7 +35,7 @@ checkDefs proxy names =
   it ("uses these definitions " ++ show names) $
     Set.fromList (HashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
   where
-    defs = fst (toSchemaDefinitions proxy)
+    defs = execDeclare (toSchemaDefinitions proxy) mempty
 
 spec :: Spec
 spec = do
@@ -306,9 +307,9 @@ myRoseTreeSchemaJSON = [aesonQQ|
 newtype Inlined a = Inlined { getInlined :: a }
 
 instance ToSchema a => ToSchema (Inlined a) where
-  toSchemaDefinitions _ = (defs, (Nothing, schema))
+  toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
     where
-      (defs, (_, schema)) = toSchemaDefinitions (Proxy :: Proxy a)
+      unname (_, schema) = (Nothing, schema)
 
 newtype Players = Players [Inlined Player]
   deriving (Generic, ToSchema)
