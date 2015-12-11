@@ -76,7 +76,7 @@ rename name (_, schema) = (name, schema)
 -- data Coord = Coord { x :: Double, y :: Double }
 --
 -- instance ToSchema Coord where
---   toSchemaDefinitions = pure (Just "Coord", schema)
+--   declareNamedSchema = pure (Just "Coord", schema)
 --    where
 --      schema = mempty
 --        & schemaType .~ SwaggerObject
@@ -88,11 +88,11 @@ rename name (_, schema) = (name, schema)
 -- @
 --
 -- Instead of manually writing your @'ToSchema'@ instance you can
--- use a default generic implementation of @'toSchemaDefinitions'@.
+-- use a default generic implementation of @'declareNamedSchema'@.
 --
 -- To do that, simply add @deriving 'Generic'@ clause to your datatype
 -- and declare a @'ToSchema'@ instance for your datatype without
--- giving definition for @'toSchemaDefinitions'@.
+-- giving definition for @'declareNamedSchema'@.
 --
 -- For instance, the previous example can be simplified into this:
 --
@@ -110,13 +110,13 @@ class ToSchema a where
   -- together with all used definitions.
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
-  toSchemaDefinitions :: proxy a -> Declare Definitions NamedSchema
-  default toSchemaDefinitions :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare Definitions NamedSchema
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema :: proxy a -> Declare Definitions NamedSchema
+  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare Definitions NamedSchema
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 -- | Convert a type into an optionally named schema.
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
-toNamedSchema = undeclare . toSchemaDefinitions
+toNamedSchema = undeclare . declareNamedSchema
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
 schemaName :: ToSchema a => proxy a -> Maybe String
@@ -127,7 +127,7 @@ toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
 
 declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
-declareSchema = fmap snd . toSchemaDefinitions
+declareSchema = fmap snd . declareNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be references, nameless schemas are inlined.
@@ -141,41 +141,41 @@ declareSchemaRef proxy = do
       known <- looks (HashMap.member (T.pack name))
       when (not known) $ do
         declare [(T.pack name, schema)]
-        void $ toSchemaDefinitions proxy
+        void $ declareNamedSchema proxy
       return $ Ref (Reference ("#/definitions/" <> T.pack name))
     _ -> Inline <$> declareSchema proxy
 
 class GToSchema (f :: * -> *) where
-  gtoSchemaDefinitions :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
+  gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
-  toSchemaDefinitions _ = do
+  declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & schemaType  .~ SwaggerArray
       & schemaItems ?~ SchemaItemsObject ref
 
-instance {-# OVERLAPPING #-} ToSchema String where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Bool    where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Integer where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Int     where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Int8    where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Int16   where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Int32   where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Int64   where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Word    where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Word8   where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Word16  where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Word32  where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Word64  where toSchemaDefinitions = plain . paramSchemaToSchema
+instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Integer where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Int     where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Int8    where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Int16   where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Int32   where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Int64   where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Word    where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Word8   where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Word16  where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Word32  where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Word64  where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema Char        where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Scientific  where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Double      where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Float       where toSchemaDefinitions = plain . paramSchemaToSchema
+instance ToSchema Char        where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Scientific  where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Double      where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Float       where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema a => ToSchema (Maybe a) where
-  toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy a)
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
 
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
@@ -197,69 +197,69 @@ timeSchema format = mempty
 -- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
 -- Just "yyyy-mm-dd"
 instance ToSchema Day where
-  toSchemaDefinitions _ = pure $ named "Day" (timeSchema "yyyy-mm-dd")
+  declareNamedSchema _ = pure $ named "Day" (timeSchema "yyyy-mm-dd")
 
 -- |
 -- >>> toSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToSchema LocalTime where
-  toSchemaDefinitions _ = pure $ named "LocalTime" (timeSchema "yyyy-mm-ddThh:MM:ss")
+  declareNamedSchema _ = pure $ named "LocalTime" (timeSchema "yyyy-mm-ddThh:MM:ss")
 
 -- |
 -- >>> toSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
 instance ToSchema ZonedTime where
-  toSchemaDefinitions _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
+  declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
     & schemaMinLength ?~ toInteger (length ("yyyy-mm-ddThh:MM:ssZ" :: String))
 
 instance ToSchema NominalDiffTime where
-  toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy Integer)
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToSchema UTCTime where
-  toSchemaDefinitions _ = pure $ named "UTCTime" (timeSchema "yyyy-mm-ddThh:MM:ssZ")
+  declareNamedSchema _ = pure $ named "UTCTime" (timeSchema "yyyy-mm-ddThh:MM:ssZ")
 
-instance ToSchema T.Text where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema TL.Text where toSchemaDefinitions = plain . paramSchemaToSchema
+instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema IntSet where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Set Int))
+instance ToSchema IntSet where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set Int))
 
 -- | NOTE: This schema does not account for the uniqueness of keys.
 instance ToSchema a => ToSchema (IntMap a) where
-  toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy [(Int, a)])
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [(Int, a)])
 
 instance ToSchema a => ToSchema (Map String a) where
-  toSchemaDefinitions _ = do
+  declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & schemaType  .~ SwaggerObject
       & schemaAdditionalProperties ?~ schema
 
-instance ToSchema a => ToSchema (Map T.Text  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (Map TL.Text a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (Map TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 
-instance ToSchema a => ToSchema (HashMap String  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap T.Text  a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap TL.Text a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap String  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
+instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 
 instance ToSchema a => ToSchema (Set a) where
-  toSchemaDefinitions _ = do
+  declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])
     return $ unnamed $ schema
       & schemaUniqueItems ?~ True
 
-instance ToSchema a => ToSchema (HashSet a) where toSchemaDefinitions _ = toSchemaDefinitions (Proxy :: Proxy (Set a))
+instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
 
-instance ToSchema All where toSchemaDefinitions = plain . paramSchemaToSchema
-instance ToSchema Any where toSchemaDefinitions = plain . paramSchemaToSchema
+instance ToSchema All where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Any where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema a => ToSchema (Sum a)     where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Product a) where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (First a)   where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Last a)    where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
-instance ToSchema a => ToSchema (Dual a)    where toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Sum a)     where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Product a) where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (First a)   where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Last a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+instance ToSchema a => ToSchema (Dual a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
@@ -282,14 +282,14 @@ genericToSchema opts = snd . genericToNamedSchema opts
 
 -- | A configurable generic @'NamedSchema'@ creator.
 genericToNamedSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> NamedSchema
-genericToNamedSchema opts = undeclare . genericToSchemaDefinitions opts
+genericToNamedSchema opts = undeclare . genericDeclareNamedSchema opts
 
 -- | A configurable generic @'NamedSchema'@ creator with declarations.
 -- This function applied to @'defaultSchemaOptions'@
--- is used as the default for @'toSchemaDefinitions'@
+-- is used as the default for @'declareNamedSchema'@
 -- when the type is an instance of @'Generic'@.
-genericToSchemaDefinitions :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions NamedSchema
-genericToSchemaDefinitions opts _ = gtoSchemaDefinitions opts (Proxy :: Proxy (Rep a)) mempty
+genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions NamedSchema
+genericDeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe String
 gdatatypeSchemaName opts _ = case name of
@@ -314,36 +314,36 @@ nullarySchema = mempty
   & schemaEnum ?~ [ toJSON () ]
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
-gtoNamedSchema opts proxy = undeclare $ gtoSchemaDefinitions opts proxy mempty
+gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 
 gtoSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema
 gtoSchema opts = snd . gtoNamedSchema opts
 
 gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare Definitions Schema
-gdeclareSchema opts proxy = snd <$> gtoSchemaDefinitions opts proxy mempty
+gdeclareSchema opts proxy = snd <$> gdeclareNamedSchema opts proxy mempty
 
 gschemaName :: GToSchema f => SchemaOptions -> proxy f -> Maybe String
 gschemaName opts = fst . gtoNamedSchema opts
 
 instance GToSchema U1 where
-  gtoSchemaDefinitions _ _ _ = plain nullarySchema
+  gdeclareNamedSchema _ _ _ = plain nullarySchema
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
-  gtoSchemaDefinitions opts _ schema = do
-    (_, gschema) <- gtoSchemaDefinitions opts (Proxy :: Proxy g) schema
-    gtoSchemaDefinitions opts (Proxy :: Proxy f) gschema
+  gdeclareNamedSchema opts _ schema = do
+    (_, gschema) <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
+    gdeclareNamedSchema opts (Proxy :: Proxy f) gschema
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
-  gtoSchemaDefinitions opts _ s = rename name <$> gtoSchemaDefinitions opts (Proxy :: Proxy f) s
+  gdeclareNamedSchema opts _ s = rename name <$> gdeclareNamedSchema opts (Proxy :: Proxy f) s
     where
       name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
 instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
-  gtoSchemaDefinitions opts _ = gtoSchemaDefinitions opts (Proxy :: Proxy f)
+  gdeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy f)
 
 -- | Single field constructor.
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
-  gtoSchemaDefinitions opts _ s
+  gdeclareNamedSchema opts _ s
     | unwrapUnaryRecords opts = fieldSchema
     | otherwise = do
         (_, schema) <- recordSchema
@@ -351,8 +351,8 @@ instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
           Just (SchemaItemsArray [_]) -> fieldSchema
           _ -> pure (unnamed schema)
     where
-      recordSchema = gtoSchemaDefinitions opts (Proxy :: Proxy (S1 s f)) s
-      fieldSchema  = gtoSchemaDefinitions opts (Proxy :: Proxy f) s
+      recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
+      fieldSchema  = gdeclareNamedSchema opts (Proxy :: Proxy f) s
 
 gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare Definitions (Referenced Schema)
 gdeclareSchemaRef opts proxy = do
@@ -361,7 +361,7 @@ gdeclareSchemaRef opts proxy = do
       known <- looks (HashMap.member (T.pack name))
       when (not known) $ do
         declare [(T.pack name, schema)]
-        void $ gtoSchemaDefinitions opts proxy mempty
+        void $ gdeclareNamedSchema opts proxy mempty
       return $ Ref (Reference ("#/definitions/" <> T.pack name))
     _ -> Inline <$> gdeclareSchema opts proxy
 
@@ -390,20 +390,20 @@ withFieldSchema opts _ isRequiredField schema = do
 
 -- | Optional record fields.
 instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
-  gtoSchemaDefinitions opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
+  gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
 
 -- | Record fields.
 instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
-  gtoSchemaDefinitions opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
+  gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
 instance {-# OVERLAPPING #-} ToSchema c => GToSchema (K1 i (Maybe c)) where
-  gtoSchemaDefinitions _ _ _ = toSchemaDefinitions (Proxy :: Proxy c)
+  gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
 instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
-  gtoSchemaDefinitions _ _ _ = toSchemaDefinitions (Proxy :: Proxy c)
+  gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
-  gtoSchemaDefinitions opts _ s
+  gdeclareNamedSchema opts _ s
     | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchema)
     | otherwise = (unnamed . fst) <$> runWriterT declareSumSchema
     where

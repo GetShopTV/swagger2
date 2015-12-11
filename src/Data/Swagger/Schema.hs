@@ -17,7 +17,7 @@ module Data.Swagger.Schema (
   -- * Generic schema encoding
   genericToSchema,
   genericToNamedSchema,
-  genericToSchemaDefinitions,
+  genericDeclareNamedSchema,
   genericToNamedSchemaBoundedIntegral,
   toSchemaBoundedIntegral,
   paramSchemaToNamedSchema,

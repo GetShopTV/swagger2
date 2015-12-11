@@ -35,7 +35,7 @@ checkDefs proxy names =
   it ("uses these definitions " ++ show names) $
     Set.fromList (HashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
   where
-    defs = execDeclare (toSchemaDefinitions proxy) mempty
+    defs = execDeclare (declareNamedSchema proxy) mempty
 
 spec :: Spec
 spec = do
@@ -124,7 +124,7 @@ data Point = Point
   } deriving (Generic)
 
 instance ToSchema Point where
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { fieldLabelModifier = map toLower . drop (length "point") }
 
 pointSchemaJSON :: Value
@@ -164,7 +164,7 @@ colorSchemaJSON = [aesonQQ|
 
 data Shade = Dim | Bright deriving (Generic, ToParamSchema)
 
-instance ToSchema Shade where toSchemaDefinitions = pure . paramSchemaToNamedSchema defaultSchemaOptions
+instance ToSchema Shade where declareNamedSchema = pure . paramSchemaToNamedSchema defaultSchemaOptions
 
 shadeSchemaJSON :: Value
 shadeSchemaJSON = [aesonQQ|
@@ -204,7 +204,7 @@ newtype Email = Email { getEmail :: String }
   deriving (Generic)
 
 instance ToSchema Email where
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 emailSchemaJSON :: Value
@@ -277,7 +277,7 @@ data MyRoseTree = MyRoseTree
   } deriving (Generic)
 
 instance ToSchema MyRoseTree where
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { datatypeNameModifier = drop (length "My") }
 
 myRoseTreeSchemaJSON :: Value
@@ -307,7 +307,7 @@ myRoseTreeSchemaJSON = [aesonQQ|
 newtype Inlined a = Inlined { getInlined :: a }
 
 instance ToSchema a => ToSchema (Inlined a) where
-  toSchemaDefinitions _ = unname <$> toSchemaDefinitions (Proxy :: Proxy a)
+  declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
     where
       unname (_, schema) = (Nothing, schema)
 
@@ -343,7 +343,7 @@ data Status
   deriving (Generic)
 
 instance ToSchema Status where
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { constructorTagModifier = map toLower . drop (length "Status") }
 
 statusSchemaJSON :: Value
@@ -418,7 +418,7 @@ data Light
   deriving (Generic)
 
 instance ToSchema Light where
-  toSchemaDefinitions = genericToSchemaDefinitions defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 lightSchemaJSON :: Value
