@@ -170,7 +170,8 @@ declareSchemaRef proxy = do
 -- /NOTE:/ if a referenced schema is not found in definitions the predicate is ignored
 -- and schema stays referenced.
 --
--- __WARNING:__ @'inlineSchemasWhen'@ will loop when inlining recursive schemas.
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
 inlineSchemasWhen :: Data s => (T.Text -> Bool) -> Definitions -> s -> s
 inlineSchemasWhen p defs = template %~ deref
   where
@@ -186,14 +187,16 @@ inlineSchemasWhen p defs = template %~ deref
 -- /NOTE:/ if a referenced schema is not found in definitions
 -- it stays referenced even if it appears in the list of names.
 --
--- __WARNING:__ @'inlineSchemas'@ will loop when inlining recursive schemas.
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
 inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
 inlineSchemas names = inlineSchemasWhen (`elem` names)
 
 -- | Inline all schema references for which the definition
 -- can be found in @'Definitions'@.
 --
--- __WARNING:__ @'inlineAllSchemas'@ will loop when inlining recursive schemas.
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
 inlineAllSchemas :: Data s => Definitions -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
 
