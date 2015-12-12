@@ -146,6 +146,14 @@ declareSchemaRef :: ToSchema a => proxy a -> Declare Definitions (Referenced Sch
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
     (Just name, schema) -> do
+      -- This check is very important as it allows generically
+      -- derive used definitions for recursive schemas.
+      -- Lazy Declare monad allows toNamedSchema to ignore
+      -- any declarations (which would otherwise loop) and
+      -- retrieve the schema and its name to check if we
+      -- have already declared it.
+      -- If we have, we don't need to declare anything for
+      -- this schema this time and thus simply return the reference.
       known <- looks (HashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
@@ -356,6 +364,14 @@ gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare Definiti
 gdeclareSchemaRef opts proxy = do
   case gtoNamedSchema opts proxy of
     (Just name, schema) -> do
+      -- This check is very important as it allows generically
+      -- derive used definitions for recursive schemas.
+      -- Lazy Declare monad allows toNamedSchema to ignore
+      -- any declarations (which would otherwise loop) and
+      -- retrieve the schema and its name to check if we
+      -- have already declared it.
+      -- If we have, we don't need to declare anything for
+      -- this schema this time and thus simply return the reference.
       known <- looks (HashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
