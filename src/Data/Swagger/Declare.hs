@@ -42,16 +42,22 @@ instance Monoid d => MonadTrans (DeclareT d) where
   lift m = DeclareT (\_ -> (,) mempty <$> m)
 
 -- |
--- Laws:
+-- Definitions of @declare@ and @look@ must satisfy the following laws:
 --
--- @
--- declare mempty == return ()
--- declare x >> declare y == declare (x <> y)
+-- [/monoid homomorphism (mempty)/]
+--   @'declare' mempty == return ()@
 --
--- declare x >> look == fmap (<> x) look <* declare x
+-- [/monoid homomorphism (mappend)/]
+--   @'declare' x >> 'declare' y == 'declare' (x <> y)@
+--   for every @x@, @y@
 --
--- look >> m == m
--- @
+-- [/@declare@-@look@/]
+--   @'declare' x >> 'look' == 'fmap' (<> x) 'look' <* 'declare' x@
+--   for every @x@
+--
+-- [/@look@ as left identity/]
+--   @'look' >> m == m@
+--   for every @m@
 class Monad m => MonadDeclare d m | m -> d where
   -- | @'declare' x@ is an action that produces the output @x@.
   declare :: d -> m ()
