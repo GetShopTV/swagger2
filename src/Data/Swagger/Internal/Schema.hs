@@ -21,6 +21,7 @@ import Control.Monad.Writer
 import Data.Aeson
 import Data.Char
 import Data.Data (Data)
+import Data.Foldable (traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import "unordered-containers" Data.HashSet (HashSet)
@@ -195,6 +196,27 @@ inlineSchemas names = inlineSchemasWhen (`elem` names)
 -- __WARNING:__ @'inlineAllSchemas'@ will loop when inlining recursive schemas.
 inlineAllSchemas :: Data s => Definitions -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
+
+-- | Inline all /non-recursive/ schemas for which the definition
+-- can be found in @'Definitions'@.
+inlineNonRecursiveSchemas :: Data s => Definitions -> s -> s
+inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
+  where
+    nonRecursive name =
+      case HashMap.lookup name defs of
+        Just schema -> name `notElem` execDeclare (usedNames schema) mempty
+        Nothing     -> False
+
+    usedNames schema = traverse_ schemaRefNames (schema ^.. template)
+
+    schemaRefNames :: Referenced Schema -> Declare [T.Text] ()
+    schemaRefNames ref = case ref of
+      Ref (Reference name) -> do
+        seen <- looks (name `elem`)
+        when (not seen) $ do
+          declare [name]
+          traverse_ usedNames (HashMap.lookup name defs)
+      Inline subschema -> usedNames subschema
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema

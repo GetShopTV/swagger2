@@ -26,6 +26,7 @@ module Data.Swagger.Schema (
   paramSchemaToSchema,
 
   -- * Inlining @'Schema'@s
+  inlineNonRecursiveSchemas,
   inlineAllSchemas,
   inlineSchemas,
   inlineSchemasWhen,
