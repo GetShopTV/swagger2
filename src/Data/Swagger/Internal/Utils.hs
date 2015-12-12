@@ -60,6 +60,12 @@ parseOneOf xs js =
   where
     ys = zip (map toJSON xs) xs
 
+omitEmpties :: Value -> Value
+omitEmpties (Object o) = Object (HashMap.filter nonEmpty o)
+  where
+    nonEmpty js = (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
+omitEmpties js = js
+
 genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> Value
 genericToJSONWithSub sub opts x =
   case genericToJSON opts x of
