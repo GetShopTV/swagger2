@@ -114,6 +114,10 @@ class ToSchema a where
   default declareNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare Definitions NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
+-- | Convert a type into a schema and declare all used schema definitions.
+declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
+declareSchema = fmap snd . declareNamedSchema
+
 -- | Convert a type into an optionally named schema.
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
@@ -126,14 +130,18 @@ schemaName = fst . toNamedSchema
 toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
 
-declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
-declareSchema = fmap snd . declareNamedSchema
-
 -- | Convert a type into a referenced schema if possible.
--- Only named schemas can be references, nameless schemas are inlined.
+-- Only named schemas can be referenced, nameless schemas are inlined.
 toSchemaRef :: ToSchema a => proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
+-- | Convert a type into a referenced schema if possible
+-- and declare all used schema definitions.
+-- Only named schemas can be referenced, nameless schemas are inlined.
+--
+-- Schema definitions are typically declared for every referenced schema.
+-- If @'declareSchemaRef'@ returns a reference, a corresponding schema
+-- will be declared (regardless of whether it is recusive or not).
 declareSchemaRef :: ToSchema a => proxy a -> Declare Definitions (Referenced Schema)
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
@@ -277,14 +285,10 @@ genericToNamedSchemaBoundedIntegral opts proxy
   = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
 
 -- | A configurable generic @'Schema'@ creator.
-genericToSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Schema
-genericToSchema opts = snd . genericToNamedSchema opts
+genericDeclareSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions Schema
+genericDeclareSchema opts proxy = snd <$> genericDeclareNamedSchema opts proxy
 
 -- | A configurable generic @'NamedSchema'@ creator.
-genericToNamedSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> NamedSchema
-genericToNamedSchema opts = undeclare . genericDeclareNamedSchema opts
-
--- | A configurable generic @'NamedSchema'@ creator with declarations.
 -- This function applied to @'defaultSchemaOptions'@
 -- is used as the default for @'declareNamedSchema'@
 -- when the type is an instance of @'Generic'@.
