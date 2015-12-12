@@ -43,7 +43,7 @@ import Data.Swagger.SchemaOptions
 
 -- | A @'Schema'@ with an optional name.
 -- This name can be used in references.
-type NamedSchema = (Maybe String, Schema)
+type NamedSchema = (Maybe T.Text, Schema)
 
 -- | Schema definitions, a mapping from schema name to @'Schema'@.
 type Definitions = HashMap T.Text Schema
@@ -51,7 +51,7 @@ type Definitions = HashMap T.Text Schema
 unnamed :: Schema -> NamedSchema
 unnamed schema = (Nothing, schema)
 
-named :: String -> Schema -> NamedSchema
+named :: T.Text -> Schema -> NamedSchema
 named name schema = (Just name, schema)
 
 plain :: Schema -> Declare Definitions NamedSchema
@@ -60,7 +60,7 @@ plain = pure . unnamed
 unname :: NamedSchema -> NamedSchema
 unname (_, schema) = (Nothing, schema)
 
-rename :: Maybe String -> NamedSchema -> NamedSchema
+rename :: Maybe T.Text -> NamedSchema -> NamedSchema
 rename name (_, schema) = (name, schema)
 
 -- | Convert a type into @'Schema'@.
@@ -123,7 +123,7 @@ toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
-schemaName :: ToSchema a => proxy a -> Maybe String
+schemaName :: ToSchema a => proxy a -> Maybe T.Text
 schemaName = fst . toNamedSchema
 
 -- | Convert a type into a schema.
@@ -146,11 +146,11 @@ declareSchemaRef :: ToSchema a => proxy a -> Declare Definitions (Referenced Sch
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
     (Just name, schema) -> do
-      known <- looks (HashMap.member (T.pack name))
+      known <- looks (HashMap.member name)
       when (not known) $ do
-        declare [(T.pack name, schema)]
+        declare [(name, schema)]
         void $ declareNamedSchema proxy
-      return $ Ref (Reference ("#/definitions/" <> T.pack name))
+      return $ Ref (Reference ("#/definitions/" <> name))
     _ -> Inline <$> declareSchema proxy
 
 class GToSchema (f :: * -> *) where
@@ -195,11 +195,11 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e) => ToSchem
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f) => ToSchema (a, b, c, d, e, f)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
 
-timeSchema :: String -> Schema
+timeSchema :: T.Text -> Schema
 timeSchema format = mempty
   & schemaType .~ SwaggerString
-  & schemaFormat ?~ T.pack format
-  & schemaMinLength ?~ toInteger (length format)
+  & schemaFormat ?~ format
+  & schemaMinLength ?~ toInteger (T.length format)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
@@ -218,7 +218,7 @@ instance ToSchema LocalTime where
 -- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
 instance ToSchema ZonedTime where
   declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
-    & schemaMinLength ?~ toInteger (length ("yyyy-mm-ddThh:MM:ssZ" :: String))
+    & schemaMinLength ?~ toInteger (T.length "yyyy-mm-ddThh:MM:ssZ")
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
@@ -295,9 +295,9 @@ genericDeclareSchema opts proxy = snd <$> genericDeclareNamedSchema opts proxy
 genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions NamedSchema
 genericDeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
-gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe String
+gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe T.Text
 gdatatypeSchemaName opts _ = case name of
-  (c:_) | isAlpha c && isUpper c -> Just name
+  (c:_) | isAlpha c && isUpper c -> Just (T.pack name)
   _ -> Nothing
   where
     name = datatypeNameModifier opts (datatypeName (Proxy3 :: Proxy3 d f a))
@@ -356,11 +356,11 @@ gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare Definiti
 gdeclareSchemaRef opts proxy = do
   case gtoNamedSchema opts proxy of
     (Just name, schema) -> do
-      known <- looks (HashMap.member (T.pack name))
+      known <- looks (HashMap.member name)
       when (not known) $ do
-        declare [(T.pack name, schema)]
+        declare [(name, schema)]
         void $ gdeclareNamedSchema opts proxy mempty
-      return $ Ref (Reference ("#/definitions/" <> T.pack name))
+      return $ Ref (Reference ("#/definitions/" <> name))
     _ -> Inline <$> gdeclareSchema opts proxy
 
 appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems

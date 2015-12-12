@@ -28,7 +28,7 @@ checkToSchema proxy js = toSchema proxy <~> js
 checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
 checkSchemaName sname proxy =
   it ("schema name is " ++ show sname) $
-    schemaName proxy `shouldBe` sname
+    schemaName proxy `shouldBe` fmap Text.pack sname
 
 checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
 checkDefs proxy names =
