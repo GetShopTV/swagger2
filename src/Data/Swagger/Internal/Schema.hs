@@ -320,14 +320,8 @@ nullarySchema = mempty
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 
-gtoSchema :: GToSchema f => SchemaOptions -> proxy f -> Schema
-gtoSchema opts = snd . gtoNamedSchema opts
-
 gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare Definitions Schema
 gdeclareSchema opts proxy = snd <$> gdeclareNamedSchema opts proxy mempty
-
-gschemaName :: GToSchema f => SchemaOptions -> proxy f -> Maybe String
-gschemaName opts = fst . gtoNamedSchema opts
 
 instance GToSchema U1 where
   gdeclareNamedSchema _ _ _ = plain nullarySchema
