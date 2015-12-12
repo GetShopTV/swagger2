@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 module Data.Swagger.Internal.Utils where
 
@@ -10,6 +11,7 @@ import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types (Parser, Pair)
 import Data.Char
+import Data.Data
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
@@ -18,6 +20,11 @@ import Data.Text (Text)
 import GHC.Generics
 import Language.Haskell.TH
 import Text.Read (readMaybe)
+
+gunfoldEnum :: String -> [(ConIndex, a)] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a
+gunfoldEnum tname xs _k z c = case lookup (constrIndex c) xs of
+  Just x -> z x
+  Nothing -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type " ++ tname ++ "."
 
 hashMapMapKeys :: (Eq k', Hashable k') => (k -> k') -> HashMap k v -> HashMap k' v
 hashMapMapKeys f = HashMap.fromList . map (first f) . HashMap.toList

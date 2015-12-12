@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -16,6 +17,7 @@ import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.TH            (deriveJSON)
 import qualified Data.Aeson.Types         as JSON
+import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
@@ -91,7 +93,7 @@ data Swagger = Swagger
 
     -- | Additional external documentation.
   , _externalDocs :: Maybe ExternalDocs
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The object provides metadata about the API.
 -- The metadata can be used by the clients if needed,
@@ -116,7 +118,7 @@ data Info = Info
     -- | Provides the version of the application API
     -- (not to be confused with the specification version).
   , _infoVersion :: Text
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Contact information for the exposed API.
 data Contact = Contact
@@ -128,7 +130,7 @@ data Contact = Contact
 
     -- | The email address of the contact person/organization.
   , _contactEmail :: Maybe Text
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | License information for the exposed API.
 data License = License
@@ -137,13 +139,26 @@ data License = License
 
     -- | A URL to the license used for the API.
   , _licenseUrl :: Maybe URL
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
 data Host = Host
   { _hostName :: HostName         -- ^ Host name.
   , _hostPort :: Maybe PortNumber -- ^ Optional port.
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic, Typeable)
+
+hostConstr :: Constr
+hostConstr = mkConstr hostDataType "Host" [] Prefix
+
+hostDataType :: DataType
+hostDataType = mkDataType "Data.Swagger.Host" [hostConstr]
+
+instance Data Host where
+  gunfold k z c = case constrIndex c of
+    1 -> k (k (z (\name mport -> Host name (fromInteger <$> mport))))
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type Host."
+  toConstr (Host _ _) = hostConstr
+  dataTypeOf _ = hostDataType
 
 -- | The transfer protocol of the API.
 data Scheme
@@ -151,14 +166,14 @@ data Scheme
   | Https
   | Ws
   | Wss
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The available paths and operations for the API.
 data Paths = Paths
   { -- | Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'basePath'@ in order to construct the full URL.
     _pathsMap         :: HashMap FilePath PathItem
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes the operations available on a single path.
 -- A @'PathItem'@ may be empty, due to ACL constraints.
@@ -191,7 +206,7 @@ data PathItem = PathItem
     -- The list MUST NOT include duplicated parameters.
     -- A unique parameter is defined by a combination of a name and location.
   , _pathItemParameters :: [Referenced Param]
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes a single API operation on a path.
 data Operation = Operation
@@ -251,10 +266,23 @@ data Operation = Operation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , _operationSecurity :: [SecurityRequirement]
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
-  deriving (Eq, Show, Monoid)
+  deriving (Eq, Show, Monoid, Typeable)
+
+mimeListConstr :: Constr
+mimeListConstr = mkConstr mimeListDataType "MimeList" ["getMimeList"] Prefix
+
+mimeListDataType :: DataType
+mimeListDataType = mkDataType "Data.Swagger.MimeList" [mimeListConstr]
+
+instance Data MimeList where
+  gunfold k z c = case constrIndex c of
+    1 -> k (z (\xs -> MimeList (map fromString xs)))
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type MimeList."
+  toConstr (MimeList _) = mimeListConstr
+  dataTypeOf _ = mimeListDataType
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
@@ -275,12 +303,12 @@ data Param = Param
 
     -- | Parameter schema.
   , _paramSchema :: ParamAnySchema
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data ParamAnySchema
   = ParamBody (Referenced Schema)
   | ParamOther ParamOtherSchema
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 data ParamOtherSchema = ParamOtherSchema
   { -- | The location of the parameter.
@@ -297,7 +325,7 @@ data ParamOtherSchema = ParamOtherSchema
   , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
 
   , _paramOtherSchemaParamSchema :: ParamSchema ParamOtherSchema Items
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SwaggerType t where
   SwaggerString   :: SwaggerType t
@@ -311,6 +339,75 @@ data SwaggerType t where
 
 deriving instance Eq (SwaggerType t)
 deriving instance Show (SwaggerType t)
+deriving instance Typeable (SwaggerType t)
+
+swaggerStringConstr :: DataType -> Constr
+swaggerStringConstr dt = mkConstr dt "SwaggerString" [] Prefix
+
+swaggerNumberConstr :: DataType -> Constr
+swaggerNumberConstr dt = mkConstr dt "SwaggerNumber" [] Prefix
+
+swaggerIntegerConstr :: DataType -> Constr
+swaggerIntegerConstr dt = mkConstr dt "SwaggerInteger" [] Prefix
+
+swaggerBooleanConstr :: DataType -> Constr
+swaggerBooleanConstr dt = mkConstr dt "SwaggerBoolean" [] Prefix
+
+swaggerArrayConstr :: DataType -> Constr
+swaggerArrayConstr dt = mkConstr dt "SwaggerArray" [] Prefix
+
+swaggerFileConstr :: DataType -> Constr
+swaggerFileConstr dt = mkConstr dt "SwaggerFile" [] Prefix
+
+swaggerNullConstr :: DataType -> Constr
+swaggerNullConstr dt = mkConstr dt "SwaggerNull" [] Prefix
+
+swaggerObjectConstr :: DataType -> Constr
+swaggerObjectConstr dt = mkConstr dt "SwaggerObject" [] Prefix
+
+swaggerTypeDataType :: [DataType -> Constr] -> DataType
+swaggerTypeDataType extra = dt
+  where
+    dt = mkDataType "Data.Swagger.SwaggerType" $ map ($ dt) $
+      [ swaggerStringConstr, swaggerNumberConstr, swaggerIntegerConstr, swaggerBooleanConstr , swaggerArrayConstr ]
+      ++ extra
+
+swaggerTypeToConstr :: Data (SwaggerType t) => SwaggerType t -> Constr
+swaggerTypeToConstr t = case t of
+  SwaggerString   -> swaggerStringConstr  dt
+  SwaggerNumber   -> swaggerNumberConstr  dt
+  SwaggerInteger  -> swaggerIntegerConstr dt
+  SwaggerBoolean  -> swaggerBooleanConstr dt
+  SwaggerArray    -> swaggerArrayConstr   dt
+  SwaggerFile     -> swaggerFileConstr    dt
+  SwaggerNull     -> swaggerNullConstr    dt
+  SwaggerObject   -> swaggerObjectConstr  dt
+  where
+    dt = dataTypeOf t
+
+instance Data (SwaggerType Items) where
+  gunfold = gunfoldEnum "SwaggerType Items" $ zip [1..]
+    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
+  toConstr = swaggerTypeToConstr
+  dataTypeOf _ = swaggerTypeDataType []
+
+instance Data (SwaggerType Header) where
+  gunfold = gunfoldEnum "SwaggerType Header" $ zip [1..]
+    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
+  toConstr = swaggerTypeToConstr
+  dataTypeOf _ = swaggerTypeDataType []
+
+instance Data (SwaggerType ParamOtherSchema) where
+  gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" $ zip [1..]
+    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray, SwaggerFile]
+  toConstr = swaggerTypeToConstr
+  dataTypeOf _ = swaggerTypeDataType [swaggerFileConstr]
+
+instance Data (SwaggerType Schema) where
+  gunfold = gunfoldEnum "SwaggerType Schema" $ zip [1, 2, 3, 4, 5, 7, 8]
+    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray, SwaggerNull, SwaggerObject]
+  toConstr = swaggerTypeToConstr
+  dataTypeOf _ = swaggerTypeDataType [swaggerNullConstr, swaggerObjectConstr]
 
 data ParamLocation
   = -- | Parameters that are appended to the URL.
@@ -330,7 +427,7 @@ data ParamLocation
     -- Form parameters have a different format based on the content-type used
     -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
   | ParamFormData
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 type Format = Text
 
@@ -351,6 +448,36 @@ data CollectionFormat t where
 
 deriving instance Eq (CollectionFormat t)
 deriving instance Show (CollectionFormat t)
+deriving instance Typeable (CollectionFormat t)
+
+collectionCsvConstr :: Constr
+collectionCsvConstr = mkConstr collectionFormatDataType "CollectionCSV" [] Prefix
+
+collectionSsvConstr :: Constr
+collectionSsvConstr = mkConstr collectionFormatDataType "CollectionSSV" [] Prefix
+
+collectionTsvConstr :: Constr
+collectionTsvConstr = mkConstr collectionFormatDataType "CollectionTSV" [] Prefix
+
+collectionPipesConstr :: Constr
+collectionPipesConstr = mkConstr collectionFormatDataType "CollectionPipes" [] Prefix
+
+collectionFormatDataType :: DataType
+collectionFormatDataType = mkDataType "Data.Swagger.CollectionFormat"
+  [ collectionCsvConstr, collectionSsvConstr, collectionTsvConstr, collectionPipesConstr ]
+
+instance {-# OVERLAPPABLE #-} Data t => Data (CollectionFormat t) where
+  gunfold = gunfoldEnum "CollectionFormat" $ zip [1..]
+    [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
+
+  toConstr CollectionCSV   = collectionCsvConstr
+  toConstr CollectionSSV   = collectionSsvConstr
+  toConstr CollectionTSV   = collectionTsvConstr
+  toConstr CollectionPipes = collectionPipesConstr
+
+  dataTypeOf _ = collectionFormatDataType
+
+deriving instance {-# OVERLAPPING #-} Data (CollectionFormat Param)
 
 type ParamName = Text
 
@@ -373,12 +500,12 @@ data Schema = Schema
   , _schemaMinProperties :: Maybe Integer
 
   , _schemaParamSchema :: ParamSchema Schema SchemaItems
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SchemaItems
   = SchemaItemsObject (Referenced Schema)
   | SchemaItemsArray [Referenced Schema]
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 data ParamSchema t items = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
@@ -403,7 +530,9 @@ data ParamSchema t items = ParamSchema
   , _paramSchemaUniqueItems :: Maybe Bool
   , _paramSchemaEnum :: Maybe [Value]
   , _paramSchemaMultipleOf :: Maybe Scientific
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Typeable)
+
+deriving instance (Data t, Data (SwaggerType t), Data i) => Data (ParamSchema t i)
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -431,7 +560,7 @@ data Xml = Xml
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
   , _xmlWrapped :: Maybe Bool
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Items = Items
   { -- | Determines the format of the array if type array is used.
@@ -439,7 +568,7 @@ data Items = Items
     _itemsCollectionFormat :: Maybe (CollectionFormat Items)
 
   , _itemsParamSchema :: ParamSchema Items Items
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A container for the expected responses of an operation.
 -- The container maps a HTTP response code to the expected response.
@@ -454,7 +583,7 @@ data Responses = Responses
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
   , _responsesResponses :: HashMap HttpStatusCode (Referenced Response)
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 type HttpStatusCode = Int
 
@@ -476,7 +605,7 @@ data Response = Response
 
     -- | An example of the response message.
   , _responseExamples :: Maybe Example
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 type HeaderName = Text
 
@@ -489,16 +618,29 @@ data Header = Header
   , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
   , _headerParamSchema :: ParamSchema Header Items
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Example = Example { getExample :: Map MediaType Value }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Typeable)
+
+exampleConstr :: Constr
+exampleConstr = mkConstr exampleDataType "Example" ["getExample"] Prefix
+
+exampleDataType :: DataType
+exampleDataType = mkDataType "Data.Swagger.Example" [exampleConstr]
+
+instance Data Example where
+  gunfold k z c = case constrIndex c of
+    1 -> k (z (\m -> Example (Map.mapKeys fromString m)))
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type Example."
+  toConstr (Example _) = exampleConstr
+  dataTypeOf _ = exampleDataType
 
 -- | The location of the API key.
 data ApiKeyLocation
   = ApiKeyQuery
   | ApiKeyHeader
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 data ApiKeyParams = ApiKeyParams
   { -- | The name of the header or query parameter to be used.
@@ -506,7 +648,7 @@ data ApiKeyParams = ApiKeyParams
 
     -- | The location of the API key.
   , _apiKeyIn :: ApiKeyLocation
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The authorization URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type AuthorizationURL = Text
@@ -519,7 +661,7 @@ data OAuth2Flow
   | OAuth2Password TokenURL
   | OAuth2Application TokenURL
   | OAuth2AccessCode AuthorizationURL TokenURL
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 data OAuth2Params = OAuth2Params
   { -- | The flow used by the OAuth2 security scheme.
@@ -527,13 +669,13 @@ data OAuth2Params = OAuth2Params
 
     -- | The available scopes for the OAuth2 security scheme.
   , _oauth2Scopes :: HashMap Text Text
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecuritySchemeType
   = SecuritySchemeBasic
   | SecuritySchemeApiKey ApiKeyParams
   | SecuritySchemeOAuth2 OAuth2Params
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecurityScheme = SecurityScheme
   { -- | The type of the security scheme.
@@ -541,14 +683,14 @@ data SecurityScheme = SecurityScheme
 
     -- | A short description for security scheme.
   , _securitySchemeDescription :: Maybe Text
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
 newtype SecurityRequirement = SecurityRequirement
   { getSecurityRequirement :: HashMap Text [Text]
-  } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON)
+  } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON, Data, Typeable)
 
 -- | Allows adding meta data to a single tag that is used by @Operation@.
 -- It is not mandatory to have a @Tag@ per tag used there.
@@ -562,7 +704,7 @@ data Tag = Tag
 
     -- | Additional external documentation for this tag.
   , _tagExternalDocs :: Maybe ExternalDocs
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Allows referencing an external resource for extended documentation.
 data ExternalDocs = ExternalDocs
@@ -572,19 +714,19 @@ data ExternalDocs = ExternalDocs
 
     -- | The URL for the target documentation.
   , _externalDocsUrl :: URL
-  } deriving (Eq, Show, Generic)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A simple object to allow referencing other definitions in the specification.
 -- It can be used to reference parameters and responses that are defined at the top level for reuse.
 newtype Reference = Reference { getReference :: Text }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Data, Typeable)
 
 data Referenced a
   = Ref Reference
   | Inline a
-  deriving (Eq, Show)
+  deriving (Eq, Show, Data, Typeable)
 
-newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON)
+newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON, Data, Typeable)
 
 -- =======================================================================
 -- Monoid instances
