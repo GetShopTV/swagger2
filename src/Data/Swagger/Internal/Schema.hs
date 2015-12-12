@@ -164,15 +164,37 @@ declareSchemaRef proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> declareSchema proxy
 
-inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
-inlineSchemas names defs = template %~ deref
+-- | Inline any referenced schema if its name satisfies given predicate.
+--
+-- /NOTE:/ if a referenced schema is not found in definitions the predicate is ignored
+-- and schema stays referenced.
+--
+-- __WARNING:__ @'inlineSchemasWhen'@ will loop when inlining recursive schemas.
+inlineSchemasWhen :: Data s => (T.Text -> Bool) -> Definitions -> s -> s
+inlineSchemasWhen p defs = template %~ deref
   where
     deref r@(Ref (Reference name))
-      | name `elem` names =
+      | p name =
           case HashMap.lookup name defs of
-            Just schema -> Inline (inlineSchemas names defs schema)
+            Just schema -> Inline (inlineSchemasWhen p defs schema)
             Nothing -> r
     deref r = r
+
+-- | Inline any referenced schema if its name is in the given list.
+--
+-- /NOTE:/ if a referenced schema is not found in definitions
+-- it stays referenced even if it appears in the list of names.
+--
+-- __WARNING:__ @'inlineSchemas'@ will loop when inlining recursive schemas.
+inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
+inlineSchemas names = inlineSchemasWhen (`elem` names)
+
+-- | Inline all schema references for which the definition
+-- can be found in @'Definitions'@.
+--
+-- __WARNING:__ @'inlineAllSchemas'@ will loop when inlining recursive schemas.
+inlineAllSchemas :: Data s => Definitions -> s -> s
+inlineAllSchemas = inlineSchemasWhen (const True)
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema

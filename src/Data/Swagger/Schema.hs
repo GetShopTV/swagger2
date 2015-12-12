@@ -25,6 +25,11 @@ module Data.Swagger.Schema (
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 
+  -- * Inlining @'Schema'@s
+  inlineAllSchemas,
+  inlineSchemas,
+  inlineSchemasWhen,
+
   -- * Generic encoding configuration
   SchemaOptions(..),
   defaultSchemaOptions,
