@@ -15,13 +15,6 @@ isSubJSON (Object x) (Object y) = HashMap.keys x == HashMap.keys i && F.and i
 isSubJSON (Array xs) (Array ys) = Vector.length xs == Vector.length ys && F.and (Vector.zipWith isSubJSON xs ys)
 isSubJSON x y = x == y
 
-(<~>) :: (Eq a, Show a, ToJSON a, FromJSON a) => a -> Value -> Spec
-x <~> js = do
-  it "encodes correctly (probably with extra properties)" $ do
-    toJSON x `shouldSatisfy` (js `isSubJSON`)
-  it "decodes correctly" $ do
-    fromJSON js `shouldBe` Success x
-
 (<=>) :: (Eq a, Show a, ToJSON a, FromJSON a) => a -> Value -> Spec
 x <=> js = do
   it "encodes correctly" $ do
