@@ -11,38 +11,61 @@ import Data.Swagger.Internal
 import Data.Text (Text)
 
 -- =======================================================================
--- TH derived lenses
--- =======================================================================
+-- * TH derived lenses
 
+-- ** 'Swagger' lenses
 makeLenses ''Swagger
+-- ** 'Host' lenses
 makeLenses ''Host
+-- ** 'Info' lenses
 makeLenses ''Info
+-- ** 'Contact' lenses
 makeLenses ''Contact
+-- ** 'License' lenses
 makeLenses ''License
+-- ** 'Paths' lenses
 makeLenses ''Paths
+-- ** 'PathItem' lenses
 makeLenses ''PathItem
+-- ** 'Tag' lenses
 makeLenses ''Tag
+-- ** 'Operation' lenses
 makeLenses ''Operation
+-- ** 'Param' lenses
 makeLenses ''Param
+-- ** 'ParamAnySchema' prisms
 makePrisms ''ParamAnySchema
+-- ** 'ParamOtherSchema' lenses
 makeLenses ''ParamOtherSchema
+-- ** 'Items' lenses
 makeLenses ''Items
+-- ** 'Header' lenses
 makeLenses ''Header
+-- ** 'Schema' lenses
 makeLenses ''Schema
+-- ** 'SchemaItems' prisms
 makePrisms ''SchemaItems
+-- ** 'ParamSchema' lenses
 makeLenses ''ParamSchema
+-- ** 'Xml' lenses
 makeLenses ''Xml
+-- ** 'Responses' lenses
 makeLenses ''Responses
+-- ** 'Response' lenses
 makeLenses ''Response
+-- ** 'SecurityScheme' lenses
 makeLenses ''SecurityScheme
+-- ** 'SecuritySchemeType' prisms
 makePrisms ''SecuritySchemeType
+-- ** 'ApiKeyParams' lenses
 makeLenses ''ApiKeyParams
+-- ** 'OAuth2Params' lenses
 makeLenses ''OAuth2Params
+-- ** 'ExternalDocs' lenses
 makeLenses ''ExternalDocs
 
 -- =======================================================================
--- Helper classy lenses
--- =======================================================================
+-- * Helper classy lenses
 
 class HasDescription s d | s -> d where
   description :: Lens' s d

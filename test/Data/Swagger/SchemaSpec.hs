@@ -8,11 +8,16 @@ module Data.Swagger.SchemaSpec where
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
+import qualified Data.HashMap.Strict as HashMap
 import Data.Proxy
 import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.Text (Text)
+import qualified Data.Text as Text
 import GHC.Generics
 
 import Data.Swagger
+import Data.Swagger.Declare
 
 import SpecCommon
 import Test.Hspec
@@ -23,7 +28,14 @@ checkToSchema proxy js = toSchema proxy <~> js
 checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
 checkSchemaName sname proxy =
   it ("schema name is " ++ show sname) $
-    schemaName proxy `shouldBe` sname
+    schemaName proxy `shouldBe` fmap Text.pack sname
+
+checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
+checkDefs proxy names =
+  it ("uses these definitions " ++ show names) $
+    Set.fromList (HashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
+  where
+    defs = execDeclare (declareNamedSchema proxy) mempty
 
 spec :: Spec
 spec = do
@@ -51,6 +63,13 @@ spec = do
       context "(Int, Float)" $ checkSchemaName Nothing (Proxy :: Proxy (Int, Float))
       context "Person" $ checkSchemaName (Just "Person") (Proxy :: Proxy Person)
       context "Shade" $ checkSchemaName (Just "Shade") (Proxy :: Proxy Shade)
+  describe "Generic Definitions" $ do
+    context "Unit" $ checkDefs (Proxy :: Proxy Unit) []
+    context "Paint" $ checkDefs (Proxy :: Proxy Paint) ["Color"]
+    context "Light" $ checkDefs (Proxy :: Proxy Light) ["Color"]
+    context "Character" $ checkDefs (Proxy :: Proxy Character) ["Player", "Point"]
+    context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
+    context "[Set (Unit, Maybe Color)]" $ checkDefs (Proxy :: Proxy [Set (Unit, Maybe Color)]) ["Unit", "Color"]
 
 main :: IO ()
 main = hspec spec
@@ -105,7 +124,7 @@ data Point = Point
   } deriving (Generic)
 
 instance ToSchema Point where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { fieldLabelModifier = map toLower . drop (length "point") }
 
 pointSchemaJSON :: Value
@@ -145,7 +164,7 @@ colorSchemaJSON = [aesonQQ|
 
 data Shade = Dim | Bright deriving (Generic, ToParamSchema)
 
-instance ToSchema Shade where toNamedSchema = paramSchemaToNamedSchema defaultSchemaOptions
+instance ToSchema Shade where declareNamedSchema = pure . paramSchemaToNamedSchema defaultSchemaOptions
 
 shadeSchemaJSON :: Value
 shadeSchemaJSON = [aesonQQ|
@@ -185,7 +204,7 @@ newtype Email = Email { getEmail :: String }
   deriving (Generic)
 
 instance ToSchema Email where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 emailSchemaJSON :: Value
@@ -258,7 +277,7 @@ data MyRoseTree = MyRoseTree
   } deriving (Generic)
 
 instance ToSchema MyRoseTree where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { datatypeNameModifier = drop (length "My") }
 
 myRoseTreeSchemaJSON :: Value
@@ -288,7 +307,9 @@ myRoseTreeSchemaJSON = [aesonQQ|
 newtype Inlined a = Inlined { getInlined :: a }
 
 instance ToSchema a => ToSchema (Inlined a) where
-  toNamedSchema _ = (Nothing, toSchema (Proxy :: Proxy a))
+  declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
+    where
+      unname (_, schema) = (Nothing, schema)
 
 newtype Players = Players [Inlined Player]
   deriving (Generic, ToSchema)
@@ -322,7 +343,7 @@ data Status
   deriving (Generic)
 
 instance ToSchema Status where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { constructorTagModifier = map toLower . drop (length "Status") }
 
 statusSchemaJSON :: Value
@@ -397,7 +418,7 @@ data Light
   deriving (Generic)
 
 instance ToSchema Light where
-  toNamedSchema = genericToNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 lightSchemaJSON :: Value
