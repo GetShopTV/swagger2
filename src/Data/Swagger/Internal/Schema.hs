@@ -14,10 +14,13 @@
 module Data.Swagger.Internal.Schema where
 
 import Control.Lens
+import Data.Data.Lens (template)
+
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
 import Data.Char
+import Data.Data (Data)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import "unordered-containers" Data.HashSet (HashSet)
@@ -160,6 +163,16 @@ declareSchemaRef proxy = do
         void $ declareNamedSchema proxy
       return $ Ref (Reference name)
     _ -> Inline <$> declareSchema proxy
+
+inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
+inlineSchemas names defs = template %~ deref
+  where
+    deref r@(Ref (Reference name))
+      | name `elem` names =
+          case HashMap.lookup name defs of
+            Just schema -> Inline (inlineSchemas names defs schema)
+            Nothing -> r
+    deref r = r
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
