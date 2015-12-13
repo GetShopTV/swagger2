@@ -16,6 +16,7 @@ module Data.Swagger.Schema (
   toSchema,
   toSchemaRef,
   schemaName,
+  toInlinedSchema,
 
   -- * Generic schema encoding
   genericDeclareNamedSchema,

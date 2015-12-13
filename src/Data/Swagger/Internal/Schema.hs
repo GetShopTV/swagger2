@@ -201,6 +201,15 @@ inlineSchemas names = inlineSchemasWhen (`elem` names)
 inlineAllSchemas :: Data s => Definitions -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
 
+-- | Convert a type into a schema without references.
+--
+-- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
+-- when inlining recursive schemas.
+toInlinedSchema :: ToSchema a => proxy a -> Schema
+toInlinedSchema proxy = inlineAllSchemas defs schema
+  where
+    (defs, schema) = runDeclare (declareSchema proxy) mempty
+
 -- | Inline all /non-recursive/ schemas for which the definition
 -- can be found in @'Definitions'@.
 inlineNonRecursiveSchemas :: Data s => Definitions -> s -> s
