@@ -277,7 +277,6 @@ timeSchema :: T.Text -> Schema
 timeSchema format = mempty
   & schemaType .~ SwaggerString
   & schemaFormat ?~ format
-  & schemaMinLength ?~ toInteger (T.length format)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
@@ -296,7 +295,6 @@ instance ToSchema LocalTime where
 -- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
 instance ToSchema ZonedTime where
   declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
-    & schemaMinLength ?~ toInteger (T.length "yyyy-mm-ddThh:MM:ssZ")
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
