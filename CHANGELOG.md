@@ -1,3 +1,40 @@
+1.0
+---
+* Major changes:
+    * Merge `ParamType`/`ItemsType`/`SchemaType` into `SwaggerType` GADT;
+    * Merge collection format types into `CollectionFormat` GADT;
+    * Move type, format and items fields to `ParamSchema` (former `SchemaComon`);
+    * Prepend reference path automatically (see [commit 49d1fad](https://github.com/GetShopTV/swagger2/commit/49d1fadd2100644e70c442667180d0d73e107a5f))
+      and thus remove `"#/definitions/"` from user code, leaving much clearer `Reference "Name"`;
+    * Change `Data.Swagger.Schema` (see [#19](https://github.com/GetShopTV/swagger2/pull/19)):
+        * Change the only method of `ToSchema` to `declareNamedSchema` which should produce a `NamedSchema`
+          along with a list of schema definitions used to produce it;
+        * Add `declareSchema`, `declareSchemaRef`;
+        * Replace `genericTo*` helpers with `genericDeclare*` helpers;
+        * Add `paramSchemaTo[Named]Schema` helpers to facilitate code reuse for primitive schemas;
+    * Add `ToParamSchema` class (see [#17](https://github.com/GetShopTV/swagger2/pull/17)) with
+        * generic default implementation and
+        * instances for some base types compliant with `http-api-data` instances;
+    * Add `Data.Swagger.Declare` module with
+        * `DeclareT` monad transformer;
+        * `MonadDeclare` type class;
+        * various helpers;
+    * Rename parameter-related types:
+        * `Parameter` -> `Param`;
+        * `ParameterSchema` -> `ParamAnySchema`;
+        * `ParameterOtherSchema` -> `ParamOtherSchema`;
+        * `ParameterLocation` -> `ParamLocation`;
+        * `SchemaCommon` -> `ParamSchema`;
+        * `parameter*` fields renamed to `param*` fields;
+        * `schemaCommon*` fields renamed to `paramSchema*` fields;
+        * `HasSchemaCommon` -> `HasParamSchema`.
+
+* Minor changes:
+    * Omit empty array/object properties from `toJSON` output ([#22](https://github.com/GetShopTV/swagger2/pull/22));
+    * Move `SchemaOptions` to `Data.Swagger.SchemaOptions`;
+    * Haddock sections for `Data.Swagger.Lens` for easier navigation;
+    * Place all internal submodules under `Data.Swagger.Internal`.
+
 0.4.1
 ---
 * Fixes:
