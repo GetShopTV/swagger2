@@ -180,7 +180,8 @@ inlineSchemasWhen p defs = template %~ deref
           case HashMap.lookup name defs of
             Just schema -> Inline (inlineSchemasWhen p defs schema)
             Nothing -> r
-    deref r = r
+      | otherwise = r
+    deref (Inline schema) = Inline (inlineSchemasWhen p defs schema)
 
 -- | Inline any referenced schema if its name is in the given list.
 --
