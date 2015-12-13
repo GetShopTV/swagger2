@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Lens where
@@ -43,8 +44,8 @@ makeLenses ''Items
 makeLenses ''Header
 -- ** 'Schema' lenses
 makeLenses ''Schema
--- ** 'SchemaItems' prisms
-makePrisms ''SchemaItems
+-- ** 'SwaggerItems' prisms
+makePrisms ''SwaggerItems
 -- ** 'ParamSchema' lenses
 makeLenses ''ParamSchema
 -- ** 'Xml' lenses
@@ -80,60 +81,60 @@ instance HasDescription Schema         (Maybe Text) where description = schemaDe
 instance HasDescription SecurityScheme (Maybe Text) where description = securitySchemeDescription
 instance HasDescription ExternalDocs   (Maybe Text) where description = externalDocsDescription
 
-class HasParamSchema s t i | s -> t i where
-  parameterSchema :: Lens' s (ParamSchema t i)
+class HasParamSchema s t | s -> t where
+  parameterSchema :: Lens' s (ParamSchema t)
 
-instance HasParamSchema Schema Schema SchemaItems where parameterSchema = schemaParamSchema
-instance HasParamSchema ParamOtherSchema ParamOtherSchema Items where parameterSchema = paramOtherSchemaParamSchema
-instance HasParamSchema Items Items Items where parameterSchema = itemsParamSchema
-instance HasParamSchema Header Header Items where parameterSchema = headerParamSchema
-instance HasParamSchema (ParamSchema t i) t i where parameterSchema = id
+instance HasParamSchema Schema Schema where parameterSchema = schemaParamSchema
+instance HasParamSchema ParamOtherSchema ParamOtherSchema where parameterSchema = paramOtherSchemaParamSchema
+instance HasParamSchema Items Items where parameterSchema = itemsParamSchema
+instance HasParamSchema Header Header where parameterSchema = headerParamSchema
+instance HasParamSchema (ParamSchema t) t where parameterSchema = id
 
-schemaType :: HasParamSchema s t i => Lens' s (SwaggerType t)
+schemaType :: HasParamSchema s t => Lens' s (SwaggerType t)
 schemaType = parameterSchema.paramSchemaType
 
-schemaFormat :: HasParamSchema s t i => Lens' s (Maybe Format)
+schemaFormat :: HasParamSchema s t => Lens' s (Maybe Format)
 schemaFormat = parameterSchema.paramSchemaFormat
 
-schemaItems :: HasParamSchema s t i => Lens' s (Maybe i)
+schemaItems :: HasParamSchema s t => Lens' s (Maybe (SwaggerItems t))
 schemaItems = parameterSchema.paramSchemaItems
 
-schemaDefault :: HasParamSchema s t i => Lens' s (Maybe Value)
+schemaDefault :: HasParamSchema s t => Lens' s (Maybe Value)
 schemaDefault = parameterSchema.paramSchemaDefault
 
-schemaMaximum :: HasParamSchema s t i => Lens' s (Maybe Scientific)
+schemaMaximum :: HasParamSchema s t => Lens' s (Maybe Scientific)
 schemaMaximum = parameterSchema.paramSchemaMaximum
 
-schemaExclusiveMaximum :: HasParamSchema s t i => Lens' s (Maybe Bool)
+schemaExclusiveMaximum :: HasParamSchema s t => Lens' s (Maybe Bool)
 schemaExclusiveMaximum = parameterSchema.paramSchemaExclusiveMaximum
 
-schemaMinimum :: HasParamSchema s t i => Lens' s (Maybe Scientific)
+schemaMinimum :: HasParamSchema s t => Lens' s (Maybe Scientific)
 schemaMinimum = parameterSchema.paramSchemaMinimum
 
-schemaExclusiveMinimum :: HasParamSchema s t i => Lens' s (Maybe Bool)
+schemaExclusiveMinimum :: HasParamSchema s t => Lens' s (Maybe Bool)
 schemaExclusiveMinimum = parameterSchema.paramSchemaExclusiveMinimum
 
-schemaMaxLength :: HasParamSchema s t i => Lens' s (Maybe Integer)
+schemaMaxLength :: HasParamSchema s t => Lens' s (Maybe Integer)
 schemaMaxLength = parameterSchema.paramSchemaMaxLength
 
-schemaMinLength :: HasParamSchema s t i => Lens' s (Maybe Integer)
+schemaMinLength :: HasParamSchema s t => Lens' s (Maybe Integer)
 schemaMinLength = parameterSchema.paramSchemaMinLength
 
-schemaPattern :: HasParamSchema s t i => Lens' s (Maybe Text)
+schemaPattern :: HasParamSchema s t => Lens' s (Maybe Text)
 schemaPattern = parameterSchema.paramSchemaPattern
 
-schemaMaxItems :: HasParamSchema s t i => Lens' s (Maybe Integer)
+schemaMaxItems :: HasParamSchema s t => Lens' s (Maybe Integer)
 schemaMaxItems = parameterSchema.paramSchemaMaxItems
 
-schemaMinItems :: HasParamSchema s t i => Lens' s (Maybe Integer)
+schemaMinItems :: HasParamSchema s t => Lens' s (Maybe Integer)
 schemaMinItems = parameterSchema.paramSchemaMinItems
 
-schemaUniqueItems :: HasParamSchema s t i => Lens' s (Maybe Bool)
+schemaUniqueItems :: HasParamSchema s t => Lens' s (Maybe Bool)
 schemaUniqueItems = parameterSchema.paramSchemaUniqueItems
 
-schemaEnum :: HasParamSchema s t i => Lens' s (Maybe [Value])
+schemaEnum :: HasParamSchema s t => Lens' s (Maybe [Value])
 schemaEnum = parameterSchema.paramSchemaEnum
 
-schemaMultipleOf :: HasParamSchema s t i => Lens' s (Maybe Scientific)
+schemaMultipleOf :: HasParamSchema s t => Lens' s (Maybe Scientific)
 schemaMultipleOf = parameterSchema.paramSchemaMultipleOf
 

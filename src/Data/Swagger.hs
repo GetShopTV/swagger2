@@ -45,7 +45,7 @@ module Data.Swagger (
   -- * Schemas
   ParamSchema(..),
   Schema(..),
-  SchemaItems(..),
+  SwaggerItems(..),
   Xml(..),
 
   -- * Responses

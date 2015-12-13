@@ -18,7 +18,7 @@ import SpecCommon
 import Test.Hspec
 
 checkToParamSchema :: ToParamSchema a => Proxy a -> Value -> Spec
-checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema Param Items) <=> js
+checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema Param) <=> js
 
 spec :: Spec
 spec = do
