@@ -123,19 +123,43 @@ declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
 declareSchema = fmap snd . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
+--
+-- >>> encode <$> toNamedSchema (Proxy :: Proxy String)
+-- (Nothing,"{\"type\":\"string\"}")
+--
+-- >>> encode <$> toNamedSchema (Proxy :: Proxy Day)
+-- (Just "Day","{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"}")
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
+--
+-- >>> schemaName (Proxy :: Proxy Int)
+-- Nothing
+--
+-- >>> schemaName (Proxy :: Proxy UTCTime)
+-- Just "UTCTime"
 schemaName :: ToSchema a => proxy a -> Maybe T.Text
 schemaName = fst . toNamedSchema
 
 -- | Convert a type into a schema.
+--
+-- >>> encode $ toSchema (Proxy :: Proxy Int8)
+-- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
+--
+-- >>> encode $ toSchema (Proxy :: Proxy [Day])
+-- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
 toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
+--
+-- >>> encode $ toSchemaRef (Proxy :: Proxy Integer)
+-- "{\"type\":\"integer\"}"
+--
+-- >>> encode $ toSchemaRef (Proxy :: Proxy Day)
+-- "{\"$ref\":\"#/definitions/Day\"}"
 toSchemaRef :: ToSchema a => proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
@@ -202,6 +226,9 @@ inlineAllSchemas :: Data s => Definitions -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
 
 -- | Convert a type into a schema without references.
+--
+-- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
+-- "{\"items\":{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"},\"type\":\"array\"}"
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
