@@ -21,18 +21,18 @@ spec = do
   describe "License Object" $ licenseExample <=> licenseExampleJSON
   describe "Contact Object" $ contactExample <=> contactExampleJSON
   describe "Info Object" $ infoExample <=> infoExampleJSON
-  describe "Operation Object" $ operationExample <~> operationExampleJSON
+  describe "Operation Object" $ operationExample <=> operationExampleJSON
   describe "Schema Object" $ do
-    context "Primitive Sample" $ schemaPrimitiveExample <~> schemaPrimitiveExampleJSON
-    context "Simple Model" $ schemaSimpleModelExample <~> schemaSimpleModelExampleJSON
-    context "Model with Map/Dictionary Properties" $ schemaModelDictExample <~> schemaModelDictExampleJSON
-    context "Model with Example" $ schemaWithExampleExample <~> schemaWithExampleExampleJSON
-  describe "Definitions Object" $ definitionsExample <~> definitionsExampleJSON
-  describe "Parameters Definition Object" $ paramsDefinitionExample <~> paramsDefinitionExampleJSON
-  describe "Responses Definition Object" $ responsesDefinitionExample <~> responsesDefinitionExampleJSON
-  describe "Security Definitions Object" $ securityDefinitionsExample <~> securityDefinitionsExampleJSON
+    context "Primitive Sample" $ schemaPrimitiveExample <=> schemaPrimitiveExampleJSON
+    context "Simple Model" $ schemaSimpleModelExample <=> schemaSimpleModelExampleJSON
+    context "Model with Map/Dictionary Properties" $ schemaModelDictExample <=> schemaModelDictExampleJSON
+    context "Model with Example" $ schemaWithExampleExample <=> schemaWithExampleExampleJSON
+  describe "Definitions Object" $ definitionsExample <=> definitionsExampleJSON
+  describe "Parameters Definition Object" $ paramsDefinitionExample <=> paramsDefinitionExampleJSON
+  describe "Responses Definition Object" $ responsesDefinitionExample <=> responsesDefinitionExampleJSON
+  describe "Security Definitions Object" $ securityDefinitionsExample <=> securityDefinitionsExampleJSON
   describe "Swagger Object" $ do
-    context "Todo Example" $ swaggerExample <~> swaggerExampleJSON
+    context "Todo Example" $ swaggerExample <=> swaggerExampleJSON
     context "PetStore Example" $
       it "decodes successfully" $ do
         fromJSON petstoreExampleJSON `shouldSatisfy` (\x -> case x of Success (_ :: Swagger) -> True; _ -> False)

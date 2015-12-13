@@ -23,7 +23,7 @@ import SpecCommon
 import Test.Hspec
 
 checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
-checkToSchema proxy js = toSchema proxy <~> js
+checkToSchema proxy js = toSchema proxy <=> js
 
 checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
 checkSchemaName sname proxy =

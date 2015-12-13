@@ -722,9 +722,6 @@ deriveJSONDefault ''Scheme
 deriveJSON' ''Tag
 deriveJSON' ''ExternalDocs
 
-deriveToJSON' ''Operation
-deriveToJSON' ''Response
-deriveToJSON' ''PathItem
 deriveToJSON' ''Xml
 
 -- =======================================================================
@@ -747,7 +744,7 @@ instance ToJSON OAuth2Flow where
     , "tokenUrl"         .= tokenUrl ]
 
 instance ToJSON OAuth2Params where
-  toJSON = genericToJSONWithSub "flow" (jsonPrefix "oauth2")
+  toJSON = omitEmpties . genericToJSONWithSub "flow" (jsonPrefix "oauth2")
 
 instance ToJSON SecuritySchemeType where
   toJSON SecuritySchemeBasic
@@ -760,7 +757,7 @@ instance ToJSON SecuritySchemeType where
     <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
-  toJSON = addVersion . genericToJSON (jsonPrefix "")
+  toJSON = omitEmpties . addVersion . genericToJSON (jsonPrefix "")
     where
       addVersion (Object o) = Object (HashMap.insert "swagger" "2.0" o)
       addVersion _ = error "impossible"
@@ -769,7 +766,7 @@ instance ToJSON SecurityScheme where
   toJSON = genericToJSONWithSub "type" (jsonPrefix "securityScheme")
 
 instance ToJSON Schema where
-  toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "schema")
+  toJSON = omitEmpties . genericToJSONWithSub "paramSchema" (jsonPrefix "schema")
 
 instance ToJSON Header where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "header")
@@ -804,7 +801,17 @@ instance ToJSON SchemaItems where
   toJSON (SchemaItemsArray xs) = toJSON xs
 
 instance ToJSON Responses where
-  toJSON (Responses def rs) = toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
+  toJSON (Responses def rs) = omitEmpties $
+    toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
+
+instance ToJSON Response where
+  toJSON = omitEmpties . genericToJSON (jsonPrefix "response")
+
+instance ToJSON Operation where
+  toJSON = omitEmpties . genericToJSON (jsonPrefix "operation")
+
+instance ToJSON PathItem where
+  toJSON = omitEmpties . genericToJSON (jsonPrefix "pathItem")
 
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample
