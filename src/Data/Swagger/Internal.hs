@@ -10,6 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Internal where
 
 import           Control.Applicative
@@ -324,8 +325,32 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is csv.
   , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
 
-  , _paramOtherSchemaParamSchema :: ParamSchema ParamOtherSchema Items
+  , _paramOtherSchemaParamSchema :: ParamSchema ParamOtherSchema
   } deriving (Eq, Show, Generic, Data, Typeable)
+
+data SwaggerItems t where
+  SwaggerItemsPrimitive :: Items               -> SwaggerItems t
+  SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems Schema
+  SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems Schema
+
+deriving instance Eq (SwaggerItems t)
+deriving instance Show (SwaggerItems t)
+deriving instance Typeable (SwaggerItems t)
+
+swaggerItemsPrimitiveConstr :: Constr
+swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimitive" [] Prefix
+
+swaggerItemsDataType :: DataType
+swaggerItemsDataType = mkDataType "Data.Swagger.SwaggerItems" [swaggerItemsPrimitiveConstr]
+
+instance {-# OVERLAPPABLE #-} Typeable t => Data (SwaggerItems t) where
+  gunfold k z c = case constrIndex c of
+    1 -> k (z SwaggerItemsPrimitive)
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type (SwaggerItems t)."
+  toConstr _ = swaggerItemsPrimitiveConstr
+  dataTypeOf _ = swaggerItemsDataType
+
+deriving instance Data (SwaggerItems Schema)
 
 data SwaggerType t where
   SwaggerString   :: SwaggerType t
@@ -453,15 +478,10 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaParamSchema :: ParamSchema Schema SchemaItems
+  , _schemaParamSchema :: ParamSchema Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
-data SchemaItems
-  = SchemaItemsObject (Referenced Schema)
-  | SchemaItemsArray [Referenced Schema]
-  deriving (Eq, Show, Generic, Data, Typeable)
-
-data ParamSchema t items = ParamSchema
+data ParamSchema t = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
     -- if not supplied by the client in the request.
@@ -471,7 +491,7 @@ data ParamSchema t items = ParamSchema
 
   , _paramSchemaType :: SwaggerType t
   , _paramSchemaFormat :: Maybe Format
-  , _paramSchemaItems :: Maybe items
+  , _paramSchemaItems :: Maybe (SwaggerItems t)
   , _paramSchemaMaximum :: Maybe Scientific
   , _paramSchemaExclusiveMaximum :: Maybe Bool
   , _paramSchemaMinimum :: Maybe Scientific
@@ -486,7 +506,7 @@ data ParamSchema t items = ParamSchema
   , _paramSchemaMultipleOf :: Maybe Scientific
   } deriving (Eq, Show, Generic, Typeable)
 
-deriving instance (Data t, Data (SwaggerType t), Data i) => Data (ParamSchema t i)
+deriving instance (Data t, Data (SwaggerType t), Data (SwaggerItems t)) => Data (ParamSchema t)
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -521,7 +541,7 @@ data Items = Items
     -- Default value is @'ItemsCollectionCSV'@.
     _itemsCollectionFormat :: Maybe (CollectionFormat Items)
 
-  , _itemsParamSchema :: ParamSchema Items Items
+  , _itemsParamSchema :: ParamSchema Items
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A container for the expected responses of an operation.
@@ -571,7 +591,7 @@ data Header = Header
     -- Default value is @'ItemsCollectionCSV'@.
   , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
-  , _headerParamSchema :: ParamSchema Header Items
+  , _headerParamSchema :: ParamSchema Header
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -706,7 +726,7 @@ instance Monoid Schema where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid (ParamSchema t i) where
+instance Monoid (ParamSchema t) where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -742,7 +762,7 @@ instance SwaggerMonoid Info
 instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
-instance SwaggerMonoid (ParamSchema t i)
+instance SwaggerMonoid (ParamSchema t)
 instance SwaggerMonoid Param
 instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses
@@ -870,6 +890,11 @@ instance ToJSON Header where
 instance ToJSON Items where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "items")
 
+instance ToJSON (SwaggerItems t) where
+  toJSON (SwaggerItemsPrimitive x) = toJSON x
+  toJSON (SwaggerItemsObject    x) = toJSON x
+  toJSON (SwaggerItemsArray     x) = toJSON x
+
 instance ToJSON Host where
   toJSON (Host host mport) = toJSON $
     case mport of
@@ -891,10 +916,6 @@ instance ToJSON ParamAnySchema where
 
 instance ToJSON ParamOtherSchema where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "paramOtherSchema")
-
-instance ToJSON SchemaItems where
-  toJSON (SchemaItemsObject x) = toJSON x
-  toJSON (SchemaItemsArray xs) = toJSON xs
 
 instance ToJSON Responses where
   toJSON (Responses def rs) = omitEmpties $
@@ -940,7 +961,7 @@ instance ToJSON (CollectionFormat t) where
   toJSON CollectionPipes = "pipes"
   toJSON CollectionMulti = "multi"
 
-instance ToJSON i => ToJSON (ParamSchema t i) where
+instance ToJSON (ParamSchema t) where
   toJSON = genericToJSON (jsonPrefix "paramSchema")
 
 -- =======================================================================
@@ -1003,6 +1024,14 @@ instance FromJSON Header where
 instance FromJSON Items where
   parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "items")
 
+instance {-# OVERLAPPABLE #-} FromJSON (SwaggerItems t) where
+  parseJSON js = SwaggerItemsPrimitive <$> parseJSON js
+
+instance {-# OVERLAPPING #-} FromJSON (SwaggerItems Schema) where
+  parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
+  parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
+  parseJSON _ = empty
+
 instance FromJSON Host where
   parseJSON (String s) =
     case fromInteger <$> readMaybe portStr of
@@ -1034,11 +1063,6 @@ instance FromJSON ParamAnySchema where
 
 instance FromJSON ParamOtherSchema where
   parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "paramOtherSchema")
-
-instance FromJSON SchemaItems where
-  parseJSON js@(Object _) = SchemaItemsObject <$> parseJSON js
-  parseJSON js@(Array _) = SchemaItemsArray <$> parseJSON js
-  parseJSON _ = empty
 
 instance FromJSON Responses where
   parseJSON (Object o) = Responses
@@ -1101,8 +1125,10 @@ instance FromJSON (CollectionFormat Param) where
 instance FromJSON (CollectionFormat Items) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
--- NOTE: The constraint @FromJSON (SwaggerType t)@ is necessary here!
+-- NOTE: The constraints @FromJSON (SwaggerType t)@ and
+-- @FromJSON (SwaggerItems t)@ are necessary here!
 -- Without the constraint the general instance will be used
--- that only accepts common types (i.e. NOT object, null or file).
-instance (FromJSON (SwaggerType t), FromJSON i) => FromJSON (ParamSchema t i) where
+-- that only accepts common types (i.e. NOT object, null or file)
+-- and primitive array items.
+instance (FromJSON (SwaggerType t), FromJSON (SwaggerItems t)) => FromJSON (ParamSchema t) where
   parseJSON = genericParseJSON (jsonPrefix "ParamSchema")

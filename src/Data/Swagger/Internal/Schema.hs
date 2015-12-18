@@ -266,7 +266,7 @@ instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & schemaType  .~ SwaggerArray
-      & schemaItems ?~ SchemaItemsObject ref
+      & schemaItems ?~ SwaggerItemsObject ref
 
 instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
@@ -449,7 +449,7 @@ instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
     | otherwise = do
         (_, schema) <- recordSchema
         case schema ^. schemaItems of
-          Just (SchemaItemsArray [_]) -> fieldSchema
+          Just (SwaggerItemsArray [_]) -> fieldSchema
           _ -> pure (unnamed schema)
     where
       recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
@@ -474,10 +474,10 @@ gdeclareSchemaRef opts proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
-appendItem :: Referenced Schema -> Maybe SchemaItems -> Maybe SchemaItems
-appendItem x Nothing = Just (SchemaItemsArray [x])
-appendItem x (Just (SchemaItemsArray xs)) = Just (SchemaItemsArray (x:xs))
-appendItem _ _ = error "GToSchema.appendItem: cannot append to SchemaItemsObject"
+appendItem :: Referenced Schema -> Maybe (SwaggerItems Schema) -> Maybe (SwaggerItems Schema)
+appendItem x Nothing = Just (SwaggerItemsArray [x])
+appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (x:xs))
+appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
 
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
   SchemaOptions -> proxy s f -> Bool -> Schema -> Declare Definitions Schema
