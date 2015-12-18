@@ -356,22 +356,17 @@ swaggerParamTypes = swaggerCommonTypes ++ [SwaggerFile]
 swaggerSchemaTypes :: [SwaggerType Schema]
 swaggerSchemaTypes = swaggerCommonTypes ++ [SwaggerNull, SwaggerObject]
 
-instance Data (SwaggerType Items) where
-  gunfold = gunfoldEnum "SwaggerType Items" $ zip [1..] swaggerCommonTypes
+instance {-# OVERLAPPABLE #-} Typeable t => Data (SwaggerType t) where
+  gunfold = gunfoldEnum "SwaggerType" $ zip [1..] swaggerCommonTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType swaggerCommonTypes
 
-instance Data (SwaggerType Header) where
-  gunfold = gunfoldEnum "SwaggerType Header" $ zip [1..] swaggerCommonTypes
-  toConstr = swaggerTypeConstr
-  dataTypeOf = swaggerTypeDataType swaggerCommonTypes
-
-instance Data (SwaggerType ParamOtherSchema) where
+instance {-# OVERLAPPING #-} Data (SwaggerType ParamOtherSchema) where
   gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" $ zip [1..] swaggerParamTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType swaggerParamTypes
 
-instance Data (SwaggerType Schema) where
+instance {-# OVERLAPPING #-} Data (SwaggerType Schema) where
   gunfold = gunfoldEnum "SwaggerType Schema" $ zip ns swaggerSchemaTypes
     where ns = [1, 2, 3, 4, 5, 7, 8] -- skipping constructor #6 here
   toConstr = swaggerTypeConstr
