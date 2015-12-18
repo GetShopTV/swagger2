@@ -344,8 +344,8 @@ deriving instance Typeable (SwaggerType t)
 swaggerTypeConstr :: Data (SwaggerType t) => SwaggerType t -> Constr
 swaggerTypeConstr t = mkConstr (dataTypeOf t) (show t) [] Prefix
 
-swaggerTypeDataType :: Data (SwaggerType t) => [SwaggerType t] -> SwaggerType t -> DataType
-swaggerTypeDataType cons _ = mkDataType "Data.Swagger.SwaggerType" $ map swaggerTypeConstr cons
+swaggerTypeDataType :: Data (SwaggerType t) => SwaggerType t -> DataType
+swaggerTypeDataType _ = mkDataType "Data.Swagger.SwaggerType" swaggerTypeConstrs
 
 swaggerCommonTypes :: [SwaggerType t]
 swaggerCommonTypes = [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
@@ -354,23 +354,26 @@ swaggerParamTypes :: [SwaggerType ParamOtherSchema]
 swaggerParamTypes = swaggerCommonTypes ++ [SwaggerFile]
 
 swaggerSchemaTypes :: [SwaggerType Schema]
-swaggerSchemaTypes = swaggerCommonTypes ++ [SwaggerNull, SwaggerObject]
+swaggerSchemaTypes = swaggerCommonTypes ++ [error "SwaggerFile is invalid SwaggerType Schema", SwaggerNull, SwaggerObject]
+
+swaggerTypeConstrs :: [Constr]
+swaggerTypeConstrs = map swaggerTypeConstr (swaggerCommonTypes :: [SwaggerType Schema])
+  ++ [swaggerTypeConstr SwaggerFile, swaggerTypeConstr SwaggerNull, swaggerTypeConstr SwaggerObject]
 
 instance {-# OVERLAPPABLE #-} Typeable t => Data (SwaggerType t) where
-  gunfold = gunfoldEnum "SwaggerType" $ zip [1..] swaggerCommonTypes
+  gunfold = gunfoldEnum "SwaggerType" swaggerCommonTypes
   toConstr = swaggerTypeConstr
-  dataTypeOf = swaggerTypeDataType swaggerCommonTypes
+  dataTypeOf = swaggerTypeDataType
 
 instance {-# OVERLAPPING #-} Data (SwaggerType ParamOtherSchema) where
-  gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" $ zip [1..] swaggerParamTypes
+  gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" swaggerParamTypes
   toConstr = swaggerTypeConstr
-  dataTypeOf = swaggerTypeDataType swaggerParamTypes
+  dataTypeOf = swaggerTypeDataType
 
 instance {-# OVERLAPPING #-} Data (SwaggerType Schema) where
-  gunfold = gunfoldEnum "SwaggerType Schema" $ zip ns swaggerSchemaTypes
-    where ns = [1, 2, 3, 4, 5, 7, 8] -- skipping constructor #6 here
+  gunfold = gunfoldEnum "SwaggerType Schema" swaggerSchemaTypes
   toConstr = swaggerTypeConstr
-  dataTypeOf = swaggerTypeDataType swaggerSchemaTypes
+  dataTypeOf = swaggerTypeDataType
 
 data ParamLocation
   = -- | Parameters that are appended to the URL.
@@ -424,7 +427,7 @@ collectionCommonFormats :: [CollectionFormat t]
 collectionCommonFormats = [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
 
 instance {-# OVERLAPPABLE #-} Data t => Data (CollectionFormat t) where
-  gunfold = gunfoldEnum "CollectionFormat" $ zip [1..] collectionCommonFormats
+  gunfold = gunfoldEnum "CollectionFormat" collectionCommonFormats
   toConstr = collectionFormatConstr
   dataTypeOf _ = collectionFormatDataType
 

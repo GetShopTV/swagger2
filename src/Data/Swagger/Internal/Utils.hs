@@ -21,8 +21,8 @@ import GHC.Generics
 import Language.Haskell.TH
 import Text.Read (readMaybe)
 
-gunfoldEnum :: String -> [(ConIndex, a)] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a
-gunfoldEnum tname xs _k z c = case lookup (constrIndex c) xs of
+gunfoldEnum :: String -> [a] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a
+gunfoldEnum tname xs _k z c = case lookup (constrIndex c) (zip [1..] xs) of
   Just x -> z x
   Nothing -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type " ++ tname ++ "."
 
