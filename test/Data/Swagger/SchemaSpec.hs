@@ -37,6 +37,19 @@ checkDefs proxy names =
   where
     defs = execDeclare (declareNamedSchema proxy) mempty
 
+checkInlinedSchema :: ToSchema a => Proxy a -> Value -> Spec
+checkInlinedSchema proxy js = toInlinedSchema proxy <=> js
+
+checkInlinedSchemas :: ToSchema a => [String] -> Proxy a -> Value -> Spec
+checkInlinedSchemas names proxy js = inlineSchemas (map Text.pack names) defs schema <=> js
+  where
+    (defs, schema) = runDeclare (declareSchema proxy) mempty
+
+checkInlinedRecSchema :: ToSchema a => Proxy a -> Value -> Spec
+checkInlinedRecSchema proxy js = inlineNonRecursiveSchemas defs schema <=> js
+  where
+    (defs, schema) = runDeclare (declareSchema proxy) mempty
+
 spec :: Spec
 spec = do
   describe "Generic ToSchema" $ do
@@ -70,6 +83,12 @@ spec = do
     context "Character" $ checkDefs (Proxy :: Proxy Character) ["Player", "Point"]
     context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
     context "[Set (Unit, Maybe Color)]" $ checkDefs (Proxy :: Proxy [Set (Unit, Maybe Color)]) ["Unit", "Color"]
+  describe "Inlining Schemas" $ do
+    context "Paint" $ checkInlinedSchema (Proxy :: Proxy Paint) paintInlinedSchemaJSON
+    context "Character" $ checkInlinedSchema (Proxy :: Proxy Character) characterInlinedSchemaJSON
+    context "Character (inlining only Player)" $ checkInlinedSchemas ["Player"] (Proxy :: Proxy Character) characterInlinedPlayerSchemaJSON
+    context "Light" $ checkInlinedSchema (Proxy :: Proxy Light) lightInlinedSchemaJSON
+    context "MyRoseTree (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
 
 main :: IO ()
 main = hspec spec
@@ -190,6 +209,22 @@ paintSchemaJSON = [aesonQQ|
       "color":
         {
           "$ref": "#/definitions/Color"
+        }
+    },
+  "required": ["color"]
+}
+|]
+
+paintInlinedSchemaJSON :: Value
+paintInlinedSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "color":
+        {
+          "type": "string",
+          "enum": ["Red", "Green", "Blue"]
         }
     },
   "required": ["color"]
@@ -407,6 +442,89 @@ characterSchemaJSON = [aesonQQ|
 }
 |]
 
+characterInlinedSchemaJSON :: Value
+characterInlinedSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "PC":
+        {
+          "type": "object",
+          "properties":
+            {
+              "position":
+                {
+                  "type": "object",
+                  "properties":
+                    {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" }
+                    },
+                  "required": ["x", "y"]
+                }
+            },
+          "required": ["position"]
+        },
+      "NPC":
+        {
+          "type": "object",
+          "properties":
+            {
+              "npcName": { "type": "string" },
+              "npcPosition":
+                {
+                  "type": "object",
+                  "properties":
+                    {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" }
+                    },
+                  "required": ["x", "y"]
+                }
+            },
+          "required": ["npcName", "npcPosition"]
+        }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
+}
+|]
+
+characterInlinedPlayerSchemaJSON :: Value
+characterInlinedPlayerSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "PC":
+        {
+          "type": "object",
+          "properties":
+            {
+              "position":
+                {
+                  "$ref": "#/definitions/Point"
+                }
+            },
+          "required": ["position"]
+        },
+      "NPC":
+        {
+          "type": "object",
+          "properties":
+            {
+              "npcName": { "type": "string" },
+              "npcPosition": { "$ref": "#/definitions/Point" }
+            },
+          "required": ["npcName", "npcPosition"]
+        }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
+}
+|]
+
 -- ========================================================================
 -- Light (sum type with unwrapUnaryRecords)
 -- ========================================================================
@@ -429,6 +547,25 @@ lightSchemaJSON = [aesonQQ|
     {
       "LightFreq": { "type": "number" },
       "LightColor": { "$ref": "#/definitions/Color" },
+      "LightWaveLength": { "type": "number" }
+    },
+  "maxProperties": 1,
+  "minProperties": 1
+}
+|]
+
+lightInlinedSchemaJSON :: Value
+lightInlinedSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "LightFreq": { "type": "number" },
+      "LightColor":
+        {
+          "type": "string",
+          "enum": ["Red", "Green", "Blue"]
+        },
       "LightWaveLength": { "type": "number" }
     },
   "maxProperties": 1,

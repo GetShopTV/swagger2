@@ -16,6 +16,7 @@ module Data.Swagger.Schema (
   toSchema,
   toSchemaRef,
   schemaName,
+  toInlinedSchema,
 
   -- * Generic schema encoding
   genericDeclareNamedSchema,
@@ -24,6 +25,12 @@ module Data.Swagger.Schema (
   toSchemaBoundedIntegral,
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
+
+  -- * Inlining @'Schema'@s
+  inlineNonRecursiveSchemas,
+  inlineAllSchemas,
+  inlineSchemas,
+  inlineSchemasWhen,
 
   -- * Generic encoding configuration
   SchemaOptions(..),

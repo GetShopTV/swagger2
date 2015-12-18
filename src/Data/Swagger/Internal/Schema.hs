@@ -14,10 +14,14 @@
 module Data.Swagger.Internal.Schema where
 
 import Control.Lens
+import Data.Data.Lens (template)
+
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
 import Data.Char
+import Data.Data (Data)
+import Data.Foldable (traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import "unordered-containers" Data.HashSet (HashSet)
@@ -119,19 +123,43 @@ declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
 declareSchema = fmap snd . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
+--
+-- >>> encode <$> toNamedSchema (Proxy :: Proxy String)
+-- (Nothing,"{\"type\":\"string\"}")
+--
+-- >>> encode <$> toNamedSchema (Proxy :: Proxy Day)
+-- (Just "Day","{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"}")
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
+--
+-- >>> schemaName (Proxy :: Proxy Int)
+-- Nothing
+--
+-- >>> schemaName (Proxy :: Proxy UTCTime)
+-- Just "UTCTime"
 schemaName :: ToSchema a => proxy a -> Maybe T.Text
 schemaName = fst . toNamedSchema
 
 -- | Convert a type into a schema.
+--
+-- >>> encode $ toSchema (Proxy :: Proxy Int8)
+-- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
+--
+-- >>> encode $ toSchema (Proxy :: Proxy [Day])
+-- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
 toSchema :: ToSchema a => proxy a -> Schema
 toSchema = snd . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
+--
+-- >>> encode $ toSchemaRef (Proxy :: Proxy Integer)
+-- "{\"type\":\"integer\"}"
+--
+-- >>> encode $ toSchemaRef (Proxy :: Proxy Day)
+-- "{\"$ref\":\"#/definitions/Day\"}"
 toSchemaRef :: ToSchema a => proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
@@ -160,6 +188,75 @@ declareSchemaRef proxy = do
         void $ declareNamedSchema proxy
       return $ Ref (Reference name)
     _ -> Inline <$> declareSchema proxy
+
+-- | Inline any referenced schema if its name satisfies given predicate.
+--
+-- /NOTE:/ if a referenced schema is not found in definitions the predicate is ignored
+-- and schema stays referenced.
+--
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
+inlineSchemasWhen :: Data s => (T.Text -> Bool) -> Definitions -> s -> s
+inlineSchemasWhen p defs = template %~ deref
+  where
+    deref r@(Ref (Reference name))
+      | p name =
+          case HashMap.lookup name defs of
+            Just schema -> Inline (inlineSchemasWhen p defs schema)
+            Nothing -> r
+      | otherwise = r
+    deref (Inline schema) = Inline (inlineSchemasWhen p defs schema)
+
+-- | Inline any referenced schema if its name is in the given list.
+--
+-- /NOTE:/ if a referenced schema is not found in definitions
+-- it stays referenced even if it appears in the list of names.
+--
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
+inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
+inlineSchemas names = inlineSchemasWhen (`elem` names)
+
+-- | Inline all schema references for which the definition
+-- can be found in @'Definitions'@.
+--
+-- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- when inlining recursive schemas.
+inlineAllSchemas :: Data s => Definitions -> s -> s
+inlineAllSchemas = inlineSchemasWhen (const True)
+
+-- | Convert a type into a schema without references.
+--
+-- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
+-- "{\"items\":{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"},\"type\":\"array\"}"
+--
+-- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
+-- when inlining recursive schemas.
+toInlinedSchema :: ToSchema a => proxy a -> Schema
+toInlinedSchema proxy = inlineAllSchemas defs schema
+  where
+    (defs, schema) = runDeclare (declareSchema proxy) mempty
+
+-- | Inline all /non-recursive/ schemas for which the definition
+-- can be found in @'Definitions'@.
+inlineNonRecursiveSchemas :: Data s => Definitions -> s -> s
+inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
+  where
+    nonRecursive name =
+      case HashMap.lookup name defs of
+        Just schema -> name `notElem` execDeclare (usedNames schema) mempty
+        Nothing     -> False
+
+    usedNames schema = traverse_ schemaRefNames (schema ^.. template)
+
+    schemaRefNames :: Referenced Schema -> Declare [T.Text] ()
+    schemaRefNames ref = case ref of
+      Ref (Reference name) -> do
+        seen <- looks (name `elem`)
+        when (not seen) $ do
+          declare [name]
+          traverse_ usedNames (HashMap.lookup name defs)
+      Inline subschema -> usedNames subschema
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
@@ -207,7 +304,6 @@ timeSchema :: T.Text -> Schema
 timeSchema format = mempty
   & schemaType .~ SwaggerString
   & schemaFormat ?~ format
-  & schemaMinLength ?~ toInteger (T.length format)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
@@ -226,7 +322,6 @@ instance ToSchema LocalTime where
 -- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
 instance ToSchema ZonedTime where
   declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
-    & schemaMinLength ?~ toInteger (T.length "yyyy-mm-ddThh:MM:ssZ")
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
