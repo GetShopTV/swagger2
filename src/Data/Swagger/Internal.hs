@@ -341,73 +341,41 @@ deriving instance Eq (SwaggerType t)
 deriving instance Show (SwaggerType t)
 deriving instance Typeable (SwaggerType t)
 
-swaggerStringConstr :: DataType -> Constr
-swaggerStringConstr dt = mkConstr dt "SwaggerString" [] Prefix
+swaggerTypeConstr :: Data (SwaggerType t) => SwaggerType t -> Constr
+swaggerTypeConstr t = mkConstr (dataTypeOf t) (show t) [] Prefix
 
-swaggerNumberConstr :: DataType -> Constr
-swaggerNumberConstr dt = mkConstr dt "SwaggerNumber" [] Prefix
+swaggerTypeDataType :: Data (SwaggerType t) => [SwaggerType t] -> SwaggerType t -> DataType
+swaggerTypeDataType cons _ = mkDataType "Data.Swagger.SwaggerType" $ map swaggerTypeConstr cons
 
-swaggerIntegerConstr :: DataType -> Constr
-swaggerIntegerConstr dt = mkConstr dt "SwaggerInteger" [] Prefix
+swaggerCommonTypes :: [SwaggerType t]
+swaggerCommonTypes = [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
 
-swaggerBooleanConstr :: DataType -> Constr
-swaggerBooleanConstr dt = mkConstr dt "SwaggerBoolean" [] Prefix
+swaggerParamTypes :: [SwaggerType ParamOtherSchema]
+swaggerParamTypes = swaggerCommonTypes ++ [SwaggerFile]
 
-swaggerArrayConstr :: DataType -> Constr
-swaggerArrayConstr dt = mkConstr dt "SwaggerArray" [] Prefix
-
-swaggerFileConstr :: DataType -> Constr
-swaggerFileConstr dt = mkConstr dt "SwaggerFile" [] Prefix
-
-swaggerNullConstr :: DataType -> Constr
-swaggerNullConstr dt = mkConstr dt "SwaggerNull" [] Prefix
-
-swaggerObjectConstr :: DataType -> Constr
-swaggerObjectConstr dt = mkConstr dt "SwaggerObject" [] Prefix
-
-swaggerTypeDataType :: [DataType -> Constr] -> DataType
-swaggerTypeDataType extra = dt
-  where
-    dt = mkDataType "Data.Swagger.SwaggerType" $ map ($ dt) $
-      [ swaggerStringConstr, swaggerNumberConstr, swaggerIntegerConstr, swaggerBooleanConstr , swaggerArrayConstr ]
-      ++ extra
-
-swaggerTypeToConstr :: Data (SwaggerType t) => SwaggerType t -> Constr
-swaggerTypeToConstr t = case t of
-  SwaggerString   -> swaggerStringConstr  dt
-  SwaggerNumber   -> swaggerNumberConstr  dt
-  SwaggerInteger  -> swaggerIntegerConstr dt
-  SwaggerBoolean  -> swaggerBooleanConstr dt
-  SwaggerArray    -> swaggerArrayConstr   dt
-  SwaggerFile     -> swaggerFileConstr    dt
-  SwaggerNull     -> swaggerNullConstr    dt
-  SwaggerObject   -> swaggerObjectConstr  dt
-  where
-    dt = dataTypeOf t
+swaggerSchemaTypes :: [SwaggerType Schema]
+swaggerSchemaTypes = swaggerCommonTypes ++ [SwaggerNull, SwaggerObject]
 
 instance Data (SwaggerType Items) where
-  gunfold = gunfoldEnum "SwaggerType Items" $ zip [1..]
-    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
-  toConstr = swaggerTypeToConstr
-  dataTypeOf _ = swaggerTypeDataType []
+  gunfold = gunfoldEnum "SwaggerType Items" $ zip [1..] swaggerCommonTypes
+  toConstr = swaggerTypeConstr
+  dataTypeOf = swaggerTypeDataType swaggerCommonTypes
 
 instance Data (SwaggerType Header) where
-  gunfold = gunfoldEnum "SwaggerType Header" $ zip [1..]
-    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
-  toConstr = swaggerTypeToConstr
-  dataTypeOf _ = swaggerTypeDataType []
+  gunfold = gunfoldEnum "SwaggerType Header" $ zip [1..] swaggerCommonTypes
+  toConstr = swaggerTypeConstr
+  dataTypeOf = swaggerTypeDataType swaggerCommonTypes
 
 instance Data (SwaggerType ParamOtherSchema) where
-  gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" $ zip [1..]
-    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray, SwaggerFile]
-  toConstr = swaggerTypeToConstr
-  dataTypeOf _ = swaggerTypeDataType [swaggerFileConstr]
+  gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" $ zip [1..] swaggerParamTypes
+  toConstr = swaggerTypeConstr
+  dataTypeOf = swaggerTypeDataType swaggerParamTypes
 
 instance Data (SwaggerType Schema) where
-  gunfold = gunfoldEnum "SwaggerType Schema" $ zip [1, 2, 3, 4, 5, 7, 8]
-    [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray, SwaggerNull, SwaggerObject]
-  toConstr = swaggerTypeToConstr
-  dataTypeOf _ = swaggerTypeDataType [swaggerNullConstr, swaggerObjectConstr]
+  gunfold = gunfoldEnum "SwaggerType Schema" $ zip ns swaggerSchemaTypes
+    where ns = [1, 2, 3, 4, 5, 7, 8] -- skipping constructor #6 here
+  toConstr = swaggerTypeConstr
+  dataTypeOf = swaggerTypeDataType swaggerSchemaTypes
 
 data ParamLocation
   = -- | Parameters that are appended to the URL.
@@ -450,31 +418,19 @@ deriving instance Eq (CollectionFormat t)
 deriving instance Show (CollectionFormat t)
 deriving instance Typeable (CollectionFormat t)
 
-collectionCsvConstr :: Constr
-collectionCsvConstr = mkConstr collectionFormatDataType "CollectionCSV" [] Prefix
-
-collectionSsvConstr :: Constr
-collectionSsvConstr = mkConstr collectionFormatDataType "CollectionSSV" [] Prefix
-
-collectionTsvConstr :: Constr
-collectionTsvConstr = mkConstr collectionFormatDataType "CollectionTSV" [] Prefix
-
-collectionPipesConstr :: Constr
-collectionPipesConstr = mkConstr collectionFormatDataType "CollectionPipes" [] Prefix
+collectionFormatConstr :: CollectionFormat t -> Constr
+collectionFormatConstr cf = mkConstr collectionFormatDataType (show cf) [] Prefix
 
 collectionFormatDataType :: DataType
-collectionFormatDataType = mkDataType "Data.Swagger.CollectionFormat"
-  [ collectionCsvConstr, collectionSsvConstr, collectionTsvConstr, collectionPipesConstr ]
+collectionFormatDataType = mkDataType "Data.Swagger.CollectionFormat" $
+  map collectionFormatConstr collectionCommonFormats
+
+collectionCommonFormats :: [CollectionFormat t]
+collectionCommonFormats = [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
 
 instance {-# OVERLAPPABLE #-} Data t => Data (CollectionFormat t) where
-  gunfold = gunfoldEnum "CollectionFormat" $ zip [1..]
-    [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
-
-  toConstr CollectionCSV   = collectionCsvConstr
-  toConstr CollectionSSV   = collectionSsvConstr
-  toConstr CollectionTSV   = collectionTsvConstr
-  toConstr CollectionPipes = collectionPipesConstr
-
+  gunfold = gunfoldEnum "CollectionFormat" $ zip [1..] collectionCommonFormats
+  toConstr = collectionFormatConstr
   dataTypeOf _ = collectionFormatDataType
 
 deriving instance {-# OVERLAPPING #-} Data (CollectionFormat Param)
