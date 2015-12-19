@@ -373,6 +373,9 @@ instance ToSchema a => ToSchema (Last a)    where declareNamedSchema _ = unname 
 instance ToSchema a => ToSchema (Dual a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
+--
+-- >>> encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
+-- "{\"maximum\":32767,\"minimum\":-32768,\"type\":\"integer\"}"
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & schemaType .~ SwaggerInteger
