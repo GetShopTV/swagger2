@@ -19,6 +19,7 @@ module Data.Swagger (
   -- $schema
 
   -- * Re-exports
+  module Data.Swagger.Lens,
   module Data.Swagger.ParamSchema,
   module Data.Swagger.Schema,
 
@@ -92,6 +93,7 @@ module Data.Swagger (
   URL(..),
 ) where
 
+import Data.Swagger.Lens
 import Data.Swagger.ParamSchema
 import Data.Swagger.Schema
 
@@ -102,7 +104,6 @@ import Data.Swagger.Internal
 -- >>> import Data.Aeson
 -- >>> import Data.Monoid
 -- >>> import Data.Proxy
--- >>> import Data.Swagger.Lens
 -- >>> import GHC.Generics
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedStrings
