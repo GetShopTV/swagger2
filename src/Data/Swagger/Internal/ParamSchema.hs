@@ -173,6 +173,7 @@ instance ToParamSchema () where
 
 -- | A configurable generic @'ParamSchema'@ creator.
 --
+-- >>> :set -XDeriveGeneric
 -- >>> data Color = Red | Blue deriving Generic
 -- >>> encode $ genericToParamSchema defaultSchemaOptions (Proxy :: Proxy Color)
 -- "{\"type\":\"string\",\"enum\":[\"Red\",\"Blue\"]}"
