@@ -32,13 +32,12 @@ library
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
   build-depends:       base == 4.*
-                     , aeson < 0.10
+                     , aeson
                      , containers
                      , hashable
                      , http-media
                      , mtl
                      , network
-                     , template-haskell
                      , text
                      , time
                      , unordered-containers

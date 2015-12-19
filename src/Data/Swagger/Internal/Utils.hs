@@ -8,8 +8,7 @@ module Data.Swagger.Internal.Utils where
 import Control.Arrow (first)
 import Control.Applicative
 import Data.Aeson
-import Data.Aeson.TH
-import Data.Aeson.Types (Parser, Pair)
+import Data.Aeson.Types
 import Data.Char
 import Data.Data
 import Data.Hashable (Hashable)
@@ -18,7 +17,6 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Monoid
 import Data.Text (Text)
 import GHC.Generics
-import Language.Haskell.TH
 import Text.Read (readMaybe)
 
 gunfoldEnum :: String -> [a] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a
@@ -49,15 +47,6 @@ jsonPrefix prefix = defaultOptions
 
     lowerFirstUppers s = map toLower x ++ y
       where (x, y) = span isUpper s
-
-deriveToJSON' :: Name -> Q [Dec]
-deriveToJSON' name = deriveToJSON (jsonPrefix (nameBase name)) name
-
-deriveJSONDefault :: Name -> Q [Dec]
-deriveJSONDefault = deriveJSON (jsonPrefix "")
-
-deriveJSON' :: Name -> Q [Dec]
-deriveJSON' name = deriveJSON (jsonPrefix (nameBase name)) name
 
 parseOneOf :: ToJSON a => [a] -> Value -> Parser a
 parseOneOf xs js =

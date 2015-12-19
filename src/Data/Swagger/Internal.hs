@@ -9,14 +9,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Internal where
 
 import           Control.Applicative
 import           Control.Monad
 import           Data.Aeson
-import           Data.Aeson.TH            (deriveJSON)
 import qualified Data.Aeson.Types         as JSON
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.HashMap.Strict      (HashMap)
@@ -825,20 +823,69 @@ instance SwaggerMonoid ParamAnySchema where
   swaggerMappend _ y = y
 
 -- =======================================================================
--- TH derived ToJSON and FromJSON instances
+-- Simple Generic-based ToJSON instances
 -- =======================================================================
 
-deriveJSON (jsonPrefix "Param") ''ParamLocation
-deriveJSON' ''Info
-deriveJSON' ''Contact
-deriveJSON' ''License
-deriveJSON (jsonPrefix "ApiKey") ''ApiKeyLocation
-deriveJSON (jsonPrefix "apiKey") ''ApiKeyParams
-deriveJSONDefault ''Scheme
-deriveJSON' ''Tag
-deriveJSON' ''ExternalDocs
+instance ToJSON ParamLocation where
+  toJSON = genericToJSON (jsonPrefix "Param")
 
-deriveToJSON' ''Xml
+instance ToJSON Info where
+  toJSON = genericToJSON (jsonPrefix "Info")
+
+instance ToJSON Contact where
+  toJSON = genericToJSON (jsonPrefix "Contact")
+
+instance ToJSON License where
+  toJSON = genericToJSON (jsonPrefix "License")
+
+instance ToJSON ApiKeyLocation where
+  toJSON = genericToJSON (jsonPrefix "ApiKey")
+
+instance ToJSON ApiKeyParams where
+  toJSON = genericToJSON (jsonPrefix "apiKey")
+
+instance ToJSON Scheme where
+  toJSON = genericToJSON (jsonPrefix "")
+
+instance ToJSON Tag where
+  toJSON = genericToJSON (jsonPrefix "Tag")
+
+instance ToJSON ExternalDocs where
+  toJSON = genericToJSON (jsonPrefix "ExternalDocs")
+
+instance ToJSON Xml where
+  toJSON = genericToJSON (jsonPrefix "Xml")
+
+-- =======================================================================
+-- Simple Generic-based FromJSON instances
+-- =======================================================================
+
+instance FromJSON ParamLocation where
+  parseJSON = genericParseJSON (jsonPrefix "Param")
+
+instance FromJSON Info where
+  parseJSON = genericParseJSON (jsonPrefix "Info")
+
+instance FromJSON Contact where
+  parseJSON = genericParseJSON (jsonPrefix "Contact")
+
+instance FromJSON License where
+  parseJSON = genericParseJSON (jsonPrefix "License")
+
+instance FromJSON ApiKeyLocation where
+  parseJSON = genericParseJSON (jsonPrefix "ApiKey")
+
+instance FromJSON ApiKeyParams where
+  parseJSON = genericParseJSON (jsonPrefix "apiKey")
+
+instance FromJSON Scheme where
+  parseJSON = genericParseJSON (jsonPrefix "")
+
+instance FromJSON Tag where
+  parseJSON = genericParseJSON (jsonPrefix "Tag")
+
+instance FromJSON ExternalDocs where
+  parseJSON = genericParseJSON (jsonPrefix "ExternalDocs")
 
 -- =======================================================================
 -- Manual ToJSON instances
