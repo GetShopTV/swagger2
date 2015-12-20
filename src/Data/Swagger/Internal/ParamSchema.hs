@@ -120,7 +120,6 @@ timeParamSchema :: String -> ParamSchema t
 timeParamSchema format = mempty
   & schemaType      .~ SwaggerString
   & schemaFormat    ?~ T.pack format
-  & schemaMinLength ?~ toInteger (length format)
 
 -- |
 -- >>> toParamSchema (Proxy :: Proxy Day) ^. schemaFormat
