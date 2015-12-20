@@ -12,7 +12,6 @@ import Data.HashMap.Strict (HashMap)
 import Data.Text (Text)
 
 import Data.Swagger
-import Data.Swagger.Lens
 import SpecCommon
 import Test.Hspec
 

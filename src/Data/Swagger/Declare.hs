@@ -72,12 +72,18 @@ instance (Monad m, Monoid d) => MonadDeclare d (DeclareT d m) where
 looks :: MonadDeclare d m => (d -> a) -> m a
 looks f = f <$> look
 
+-- | Evaluate @'DeclareT' d m a@ computation,
+-- ignoring new output @d@.
 evalDeclareT :: Monad m => DeclareT d m a -> d -> m a
 evalDeclareT (DeclareT f) d = snd `liftM` f d
 
+-- | Execute @'DeclateT' d m a@ computation,
+-- ignoring result and only producing new output @d@.
 execDeclareT :: Monad m => DeclareT d m a -> d -> m d
 execDeclareT (DeclareT f) d = fst `liftM` f d
 
+-- | Evaluate @'DeclareT' d m a@ computation,
+-- starting with empty output history.
 undeclareT :: (Monad m, Monoid d) => DeclareT d m a -> m a
 undeclareT = flip evalDeclareT mempty
 
@@ -91,15 +97,22 @@ undeclareT = flip evalDeclareT mempty
 --  * a writer monad with the extra ability to read all previous output.
 type Declare d = DeclareT d Identity
 
+-- | Run @'Declare' d a@ computation with output history @d@,
+-- producing result @a@ and new output @d@.
 runDeclare :: Declare d a -> d -> (d, a)
 runDeclare m = runIdentity . runDeclareT m
 
+-- | Evaluate @'Declare' d a@ computation, ignoring output @d@.
 evalDeclare :: Declare d a -> d -> a
 evalDeclare m = runIdentity . evalDeclareT m
 
+-- | Execute @'Declate' d a@ computation, ignoring result and only
+-- producing output @d@.
 execDeclare :: Declare d a -> d -> d
 execDeclare m = runIdentity . execDeclareT m
 
+-- | Evaluate @'DeclareT' d m a@ computation,
+-- starting with empty output history.
 undeclare :: Monoid d => Declare d a -> a
 undeclare = runIdentity . undeclareT
 
