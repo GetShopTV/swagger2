@@ -108,6 +108,7 @@ import Data.Swagger.Internal
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XOverloadedLists
+-- >>> :set -fno-warn-missing-methods
 
 -- $howto
 --
