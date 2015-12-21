@@ -14,7 +14,7 @@
         * Add `declareSchema`, `declareSchemaRef`;
         * Replace `genericTo*` helpers with `genericDeclare*` helpers;
         * Add `paramSchemaTo[Named]Schema` helpers to facilitate code reuse for primitive schemas;
-        * Add helpers for inlining `Schema` references dynamically (see [#23](https://github.com/GetShopTV/swagger2/pull/23)).
+        * Add helpers for inlining `Schema` references dynamically (see [#23](https://github.com/GetShopTV/swagger2/pull/23));
     * Add `ToParamSchema` class (see [#17](https://github.com/GetShopTV/swagger2/pull/17)) with
         * generic default implementation and
         * instances for some base types compliant with `http-api-data` instances;
@@ -39,8 +39,8 @@
     * Remove `minLength` property from schemas for `time` types;
     * Move `SchemaOptions` to `Data.Swagger.SchemaOptions`;
     * Remove `useReferences` from `SchemaOptions` (see [#23](https://github.com/GetShopTV/swagger2/pull/23));
-    * Place all internal submodules under `Data.Swagger.Internal`.
-    * Better documentation (see [#26](https://github.com/GetShopTV/swagger2/pull/26));
+    * Place all internal submodules under `Data.Swagger.Internal`;
+    * Better documentation (see [#26](https://github.com/GetShopTV/swagger2/pull/26)).
 
 0.4.1
 ---
@@ -59,7 +59,7 @@
     * Fix `HasSchemaCommon` instance for `Schema`;
     * Change `minimum`, `maximum` and `multipleOf` properties to be any number,
       not necessarily an integer;
-    * Fix all warnings
+    * Fix all warnings.
 
 0.3
 ---
@@ -71,9 +71,9 @@
 
 0.2
 ---
-* Add `Data.Swagger.Lens`
-* Support references
+* Add `Data.Swagger.Lens`;
+* Support references;
 * Fixes:
-    * Fix `FromJSON SwaggerHost` instance
-    * Add missing `Maybe`s for field types
-    * Decode petstore swagger.json successfully
+    * Fix `FromJSON SwaggerHost` instance;
+    * Add missing `Maybe`s for field types;
+    * Decode petstore `swagger.json` successfully.
