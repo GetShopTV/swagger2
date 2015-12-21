@@ -168,6 +168,10 @@ import Data.Swagger.Internal
 -- :}
 -- "{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}"
 --
+-- In the snippet above we declare API paths with a single path @/user@ providing method @GET@
+-- which produces @application/json@ output and should respond with code @200@ and body specified
+-- by schema @User@ (which should be defined in @definitions@ property of swagger specification).
+--
 -- Since @'ParamSchema'@ is basically the /base schema specification/, a special
 -- @'HasParamSchema'@ class has been introduced to generalize @'ParamSchema'@ lenses
 -- and allow them to be used by any type that has a @'ParamSchema'@:
@@ -182,8 +186,18 @@ import Data.Swagger.Internal
 
 -- $schema
 --
--- This library provides two classes for schema encoding.
--- Both these classes provide means to encode _types_ as Swagger _schemas_.
+-- @'ParamSchema'@ and @'Schema'@ are the two core types for data model specification.
+--
+-- @'ParamSchema' t@ specifies all the common properties, available for every data schema.
+-- The @t@ parameter imposes some restrictions on @type@ and @items@ properties (see @'SwaggerType'@ and @'SwaggerItems'@).
+--
+-- @'Schema'@ is used for request and response bodies and allows specifying objects
+-- with properties in addition to what @'ParamSchema'@ provides.
+--
+-- In most cases you will have a Haskell data type for which you would like to
+-- define a corresponding schema. To facilitate thise use case
+-- this library provides two classes for schema encoding.
+-- Both these classes provide means to encode /types/ as Swagger /schemas/.
 --
 -- @'ToParamSchema'@ is intended to be used for primitive API endpoint parameters,
 -- such as query parameters, headers and URL path pieces.
