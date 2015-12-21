@@ -212,7 +212,7 @@ inlineSchemasWhen p defs = template %~ deref
 -- /NOTE:/ if a referenced schema is not found in definitions
 -- it stays referenced even if it appears in the list of names.
 --
--- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- __WARNING:__ @'inlineSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
 inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
 inlineSchemas names = inlineSchemasWhen (`elem` names)
@@ -220,7 +220,7 @@ inlineSchemas names = inlineSchemasWhen (`elem` names)
 -- | Inline all schema references for which the definition
 -- can be found in @'Definitions'@.
 --
--- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
+-- __WARNING:__ @'inlineAllSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
 inlineAllSchemas :: Data s => Definitions -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
