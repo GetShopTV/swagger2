@@ -54,6 +54,7 @@ module Data.Swagger (
   ParamName,
   Items(..),
   Header(..),
+  HeaderName,
   Example(..),
 
   -- ** Schemas
@@ -65,6 +66,7 @@ module Data.Swagger (
   -- ** Responses
   Responses(..),
   Response(..),
+  HttpStatusCode,
 
   -- ** Security
   SecurityScheme(..),
