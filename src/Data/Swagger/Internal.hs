@@ -736,6 +736,10 @@ instance Monoid ParamOtherSchema where
   mempty = genericMempty
   mappend = genericMappend
 
+instance Monoid Header where
+  mempty = genericMempty
+  mappend = genericMappend
+
 instance Monoid Responses where
   mempty = genericMempty
   mappend = genericMappend
@@ -749,6 +753,10 @@ instance Monoid ExternalDocs where
   mappend = genericMappend
 
 instance Monoid Operation where
+  mempty = genericMempty
+  mappend = genericMappend
+
+instance Monoid Example where
   mempty = genericMempty
   mappend = genericMappend
 
