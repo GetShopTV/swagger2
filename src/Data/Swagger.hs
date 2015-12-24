@@ -52,7 +52,6 @@ module Data.Swagger (
   ParamOtherSchema(..),
   ParamLocation(..),
   ParamName,
-  Items(..),
   Header(..),
   HeaderName,
   Example(..),

@@ -174,7 +174,7 @@ instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema [a] where
   toParamSchema _ = mempty
     & schemaType  .~ SwaggerArray
-    & schemaItems ?~ SwaggerItemsPrimitive (Items Nothing (toParamSchema (Proxy :: Proxy a)))
+    & schemaItems ?~ SwaggerItemsPrimitive Nothing (toParamSchema (Proxy :: Proxy a))
 
 instance ToParamSchema a => ToParamSchema (Set a) where
   toParamSchema _ = toParamSchema (Proxy :: Proxy [a])

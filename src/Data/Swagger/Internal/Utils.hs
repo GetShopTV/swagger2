@@ -14,6 +14,7 @@ import Data.Data
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import Data.Map (Map)
 import Data.Monoid
 import Data.Text (Text)
 import GHC.Generics
@@ -66,14 +67,17 @@ genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> 
 genericToJSONWithSub sub opts x =
   case genericToJSON opts x of
     Object o ->
-      let so = HashMap.lookupDefault (error "impossible") sub o
-      in Object (HashMap.delete sub o) <+> so
+      case HashMap.lookup sub o of
+        Just so -> Object (HashMap.delete sub o) <+> so
+        Nothing -> Object o -- no subjson, leaving object as is
     _ -> error "genericToJSONWithSub: subjson is not an object"
 
 genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
-genericParseJSONWithSub sub opts (Object o) = genericParseJSON opts js
+genericParseJSONWithSub sub opts js@(Object o)
+    = genericParseJSON opts js    -- try without subjson
+  <|> genericParseJSON opts js'   -- try with subjson
   where
-    js = Object (HashMap.insert sub (Object o) o)
+    js' = Object (HashMap.insert sub (Object o) o)
 genericParseJSONWithSub _ _ _ = error "genericParseJSONWithSub: given json is not an object"
 
 (<+>) :: Value -> Value -> Value
@@ -119,6 +123,7 @@ class SwaggerMonoid m where
   swaggerMappend = mappend
 
 instance SwaggerMonoid [a]
+instance Ord k => SwaggerMonoid (Map k v)
 
 instance SwaggerMonoid Text where
   swaggerMempty = mempty

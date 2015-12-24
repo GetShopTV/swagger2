@@ -38,8 +38,6 @@ makeLenses ''Param
 makePrisms ''ParamAnySchema
 -- ** 'ParamOtherSchema' lenses
 makeLenses ''ParamOtherSchema
--- ** 'Items' lenses
-makeLenses ''Items
 -- ** 'Header' lenses
 makeLenses ''Header
 -- ** 'Schema' lenses
@@ -86,7 +84,6 @@ class HasParamSchema s t | s -> t where
 
 instance HasParamSchema Schema Schema where parameterSchema = schemaParamSchema
 instance HasParamSchema ParamOtherSchema ParamOtherSchema where parameterSchema = paramOtherSchemaParamSchema
-instance HasParamSchema Items Items where parameterSchema = itemsParamSchema
 instance HasParamSchema Header Header where parameterSchema = headerParamSchema
 instance HasParamSchema (ParamSchema t) t where parameterSchema = id
 

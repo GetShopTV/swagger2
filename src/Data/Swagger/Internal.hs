@@ -319,15 +319,21 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is @False@.
   , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
-    -- | Determines the format of the array if @'ParamArray'@ is used.
-    -- Default value is csv.
-  , _paramOtherSchemaCollectionFormat :: Maybe (CollectionFormat Param)
-
   , _paramOtherSchemaParamSchema :: ParamSchema ParamOtherSchema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Items for @'SwaggerArray'@ schemas.
+--
+-- @'SwaggerItemsPrimitive'@ should be used only for query params, headers and path pieces.
+-- The @'CollectionFormat' t@ parameter specifies how elements of an array should be displayed.
+-- Note that @fmt@ in @'SwaggerItemsPrimitive' fmt schema@ specifies format for elements of type @schema@.
+-- This is different from the original Swagger's <http://swagger.io/specification/#itemsObject Items Object>.
+--
+-- @'SwaggerItemsObject'@ should be used to specify homogenous array @'Schema'@s.
+--
+-- @'SwaggerItemsArray'@ should be used to specify tuple @'Schema'@s.
 data SwaggerItems t where
-  SwaggerItemsPrimitive :: Items               -> SwaggerItems t
+  SwaggerItemsPrimitive :: Maybe (CollectionFormat t) -> ParamSchema t -> SwaggerItems t
   SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems Schema
   SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems Schema
 
@@ -341,9 +347,9 @@ swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimiti
 swaggerItemsDataType :: DataType
 swaggerItemsDataType = mkDataType "Data.Swagger.SwaggerItems" [swaggerItemsPrimitiveConstr]
 
-instance {-# OVERLAPPABLE #-} Typeable t => Data (SwaggerItems t) where
+instance {-# OVERLAPPABLE #-} Data t => Data (SwaggerItems t) where
   gunfold k z c = case constrIndex c of
-    1 -> k (z SwaggerItemsPrimitive)
+    1 -> k (k (z SwaggerItemsPrimitive))
     _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type (SwaggerItems t)."
   toConstr _ = swaggerItemsPrimitiveConstr
   dataTypeOf _ = swaggerItemsDataType
@@ -508,7 +514,7 @@ deriving instance (Data t, Data (SwaggerType t), Data (SwaggerItems t)) => Data 
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
-    -- When defined within the @'Items'@ (items), it will affect the name of the individual XML elements within the list.
+    -- When defined within the @'SwaggerItems'@ (items), it will affect the name of the individual XML elements within the list.
     -- When defined alongside type being array (outside the items),
     -- it will affect the wrapping element and only if wrapped is true.
     -- If wrapped is false, it will be ignored.
@@ -532,14 +538,6 @@ data Xml = Xml
     -- Default value is @False@.
     -- The definition takes effect only when defined alongside type being array (outside the items).
   , _xmlWrapped :: Maybe Bool
-  } deriving (Eq, Show, Generic, Data, Typeable)
-
-data Items = Items
-  { -- | Determines the format of the array if type array is used.
-    -- Default value is @'ItemsCollectionCSV'@.
-    _itemsCollectionFormat :: Maybe (CollectionFormat Items)
-
-  , _itemsParamSchema :: ParamSchema Items
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A container for the expected responses of an operation.
@@ -584,10 +582,6 @@ type HeaderName = Text
 data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe Text
-
-    -- | Determines the format of the array if type array is used.
-    -- Default value is @'ItemsCollectionCSV'@.
-  , _headerCollectionFormat :: Maybe (CollectionFormat Items)
 
   , _headerParamSchema :: ParamSchema Header
   } deriving (Eq, Show, Generic, Data, Typeable)
@@ -942,13 +936,12 @@ instance ToJSON Schema where
 instance ToJSON Header where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "header")
 
-instance ToJSON Items where
-  toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "items")
-
 instance ToJSON (SwaggerItems t) where
-  toJSON (SwaggerItemsPrimitive x) = toJSON x
-  toJSON (SwaggerItemsObject    x) = toJSON x
-  toJSON (SwaggerItemsArray     x) = toJSON x
+  toJSON (SwaggerItemsPrimitive fmt schema) = object
+    [ "collectionFormat" .= fmt
+    , "items"            .= schema ]
+  toJSON (SwaggerItemsObject x) = object [ "items" .= x ]
+  toJSON (SwaggerItemsArray  x) = object [ "items" .= x ]
 
 instance ToJSON Host where
   toJSON (Host host mport) = toJSON $
@@ -1017,7 +1010,7 @@ instance ToJSON (CollectionFormat t) where
   toJSON CollectionMulti = "multi"
 
 instance ToJSON (ParamSchema t) where
-  toJSON = genericToJSON (jsonPrefix "paramSchema")
+  toJSON = omitEmpties . genericToJSONWithSub "items" (jsonPrefix "paramSchema")
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -1076,11 +1069,10 @@ instance FromJSON Schema where
 instance FromJSON Header where
   parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "header")
 
-instance FromJSON Items where
-  parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "items")
-
-instance {-# OVERLAPPABLE #-} FromJSON (SwaggerItems t) where
-  parseJSON js = SwaggerItemsPrimitive <$> parseJSON js
+instance {-# OVERLAPPABLE #-} (FromJSON (CollectionFormat t), FromJSON (ParamSchema t)) => FromJSON (SwaggerItems t) where
+  parseJSON (Object o) = SwaggerItemsPrimitive
+    <$> o .:? "collectionFormat"
+    <*> (o .: "items" >>= parseJSON)
 
 instance {-# OVERLAPPING #-} FromJSON (SwaggerItems Schema) where
   parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
@@ -1174,11 +1166,11 @@ instance FromJSON (SwaggerType ParamOtherSchema) where
 instance {-# OVERLAPPABLE #-} FromJSON (SwaggerType t) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
 
+instance {-# OVERLAPPABLE #-} FromJSON (CollectionFormat t) where
+  parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
+
 instance FromJSON (CollectionFormat Param) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes, CollectionMulti]
-
-instance FromJSON (CollectionFormat Items) where
-  parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
 -- NOTE: The constraints @FromJSON (SwaggerType t)@ and
 -- @FromJSON (SwaggerItems t)@ are necessary here!
@@ -1186,4 +1178,5 @@ instance FromJSON (CollectionFormat Items) where
 -- that only accepts common types (i.e. NOT object, null or file)
 -- and primitive array items.
 instance (FromJSON (SwaggerType t), FromJSON (SwaggerItems t)) => FromJSON (ParamSchema t) where
-  parseJSON = genericParseJSON (jsonPrefix "ParamSchema")
+  parseJSON = genericParseJSONWithSub "items" (jsonPrefix "ParamSchema")
+
