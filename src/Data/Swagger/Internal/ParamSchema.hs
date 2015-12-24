@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -15,7 +16,9 @@ import Data.Proxy
 import GHC.Generics
 
 import Data.Int
+import "unordered-containers" Data.HashSet (HashSet)
 import Data.Monoid
+import Data.Set (Set)
 import Data.Scientific
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -167,6 +170,18 @@ instance ToParamSchema a => ToParamSchema (Product a) where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
+
+instance ToParamSchema a => ToParamSchema [a] where
+  toParamSchema _ = mempty
+    & schemaType  .~ SwaggerArray
+    & schemaItems ?~ SwaggerItemsPrimitive (Items Nothing (toParamSchema (Proxy :: Proxy a)))
+
+instance ToParamSchema a => ToParamSchema (Set a) where
+  toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
+    & schemaUniqueItems ?~ True
+
+instance ToParamSchema a => ToParamSchema (HashSet a) where
+  toParamSchema _ = toParamSchema (Proxy :: Proxy (Set a))
 
 -- |
 -- >>> encode $ toParamSchema (Proxy :: Proxy ())
