@@ -38,8 +38,9 @@ module Data.Swagger (
   PathItem(..),
 
   -- ** Operations
-  Tag(..),
   Operation(..),
+  Tag(..),
+  TagName,
 
   -- ** Types and formats
   SwaggerType(..),

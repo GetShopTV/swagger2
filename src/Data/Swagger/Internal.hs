@@ -211,7 +211,7 @@ data PathItem = PathItem
 data Operation = Operation
   { -- | A list of tags for API documentation control.
     -- Tags can be used for logical grouping of operations by resources or any other qualifier.
-    _operationTags :: [Text]
+    _operationTags :: [TagName]
 
     -- | A short summary of what the operation does.
     -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
@@ -658,11 +658,14 @@ newtype SecurityRequirement = SecurityRequirement
   { getSecurityRequirement :: HashMap Text [Text]
   } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON, Data, Typeable)
 
+-- | Tag name.
+type TagName = Text
+
 -- | Allows adding meta data to a single tag that is used by @Operation@.
 -- It is not mandatory to have a @Tag@ per tag used there.
 data Tag = Tag
   { -- | The name of the tag.
-    _tagName :: Text
+    _tagName :: TagName
 
     -- | A short description for the tag.
     -- GFM syntax can be used for rich text representation.
