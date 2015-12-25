@@ -128,7 +128,7 @@ declareSchema = fmap snd . declareNamedSchema
 -- (Nothing,"{\"type\":\"string\"}")
 --
 -- >>> encode <$> toNamedSchema (Proxy :: Proxy Day)
--- (Just "Day","{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"}")
+-- (Just "Day","{\"format\":\"date\",\"type\":\"string\"}")
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
@@ -228,7 +228,7 @@ inlineAllSchemas = inlineSchemasWhen (const True)
 -- | Convert a type into a schema without references.
 --
 -- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"format\":\"yyyy-mm-dd\",\"type\":\"string\"},\"type\":\"array\"}"
+-- "{\"items\":{\"format\":\"date\",\"type\":\"string\"},\"type\":\"array\"}"
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
@@ -305,11 +305,9 @@ timeSchema format = mempty
   & schemaType .~ SwaggerString
   & schemaFormat ?~ format
 
--- |
--- >>> toSchema (Proxy :: Proxy Day) ^. schemaFormat
--- Just "yyyy-mm-dd"
+-- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToSchema Day where
-  declareNamedSchema _ = pure $ named "Day" (timeSchema "yyyy-mm-dd")
+  declareNamedSchema _ = pure $ named "Day" (timeSchema "date")
 
 -- |
 -- >>> toSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
@@ -317,11 +315,9 @@ instance ToSchema Day where
 instance ToSchema LocalTime where
   declareNamedSchema _ = pure $ named "LocalTime" (timeSchema "yyyy-mm-ddThh:MM:ss")
 
--- |
--- >>> toSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
--- Just "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
+-- | Format @"date"@ corresponds to @yyyy-mm-ddThh:MM:ss(Z|+hh:MM)@ format.
 instance ToSchema ZonedTime where
-  declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "yyyy-mm-ddThh:MM:ss(Z|+hh:MM)"
+  declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "date-time"
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
