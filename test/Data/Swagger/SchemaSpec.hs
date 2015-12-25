@@ -152,8 +152,8 @@ pointSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "x": { "type": "number" },
-      "y": { "type": "number" }
+      "x": { "type": "number", "format": "double" },
+      "y": { "type": "number", "format": "double" }
     },
   "required": ["x", "y"]
 }
@@ -458,8 +458,8 @@ characterInlinedSchemaJSON = [aesonQQ|
                   "type": "object",
                   "properties":
                     {
-                      "x": { "type": "number" },
-                      "y": { "type": "number" }
+                      "x": { "type": "number", "format": "double" },
+                      "y": { "type": "number", "format": "double" }
                     },
                   "required": ["x", "y"]
                 }
@@ -477,8 +477,8 @@ characterInlinedSchemaJSON = [aesonQQ|
                   "type": "object",
                   "properties":
                     {
-                      "x": { "type": "number" },
-                      "y": { "type": "number" }
+                      "x": { "type": "number", "format": "double" },
+                      "y": { "type": "number", "format": "double" }
                     },
                   "required": ["x", "y"]
                 }
@@ -545,9 +545,9 @@ lightSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "LightFreq": { "type": "number" },
+      "LightFreq": { "type": "number", "format": "double" },
       "LightColor": { "$ref": "#/definitions/Color" },
-      "LightWaveLength": { "type": "number" }
+      "LightWaveLength": { "type": "number", "format": "double" }
     },
   "maxProperties": 1,
   "minProperties": 1
@@ -560,13 +560,13 @@ lightInlinedSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "LightFreq": { "type": "number" },
+      "LightFreq": { "type": "number", "format": "double" },
       "LightColor":
         {
           "type": "string",
           "enum": ["Red", "Green", "Blue"]
         },
-      "LightWaveLength": { "type": "number" }
+      "LightWaveLength": { "type": "number", "format": "double" }
     },
   "maxProperties": 1,
   "minProperties": 1

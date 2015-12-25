@@ -82,8 +82,12 @@ instance ToParamSchema Integer where
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int16  where toParamSchema = toParamSchemaBoundedIntegral
-instance ToParamSchema Int32  where toParamSchema = toParamSchemaBoundedIntegral
-instance ToParamSchema Int64  where toParamSchema = toParamSchemaBoundedIntegral
+
+instance ToParamSchema Int32 where
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & schemaFormat ?~ "int32"
+
+instance ToParamSchema Int64 where
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & schemaFormat ?~ "int64"
 
 instance ToParamSchema Word   where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word8  where toParamSchema = toParamSchemaBoundedIntegral
@@ -111,21 +115,23 @@ instance ToParamSchema Scientific where
   toParamSchema _ = mempty & schemaType .~ SwaggerNumber
 
 instance ToParamSchema Double where
-  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty
+    & schemaType   .~ SwaggerNumber
+    & schemaFormat ?~ "double"
 
 instance ToParamSchema Float where
-  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty
+    & schemaType   .~ SwaggerNumber
+    & schemaFormat ?~ "float"
 
 timeParamSchema :: String -> ParamSchema t
 timeParamSchema format = mempty
   & schemaType      .~ SwaggerString
   & schemaFormat    ?~ T.pack format
 
--- |
--- >>> toParamSchema (Proxy :: Proxy Day) ^. schemaFormat
--- Just "yyyy-mm-dd"
+-- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToParamSchema Day where
-  toParamSchema _ = timeParamSchema "yyyy-mm-dd"
+  toParamSchema _ = timeParamSchema "date"
 
 -- |
 -- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
