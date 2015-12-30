@@ -1,5 +1,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
@@ -124,6 +125,10 @@ class SwaggerMonoid m where
 
 instance SwaggerMonoid [a]
 instance Ord k => SwaggerMonoid (Map k v)
+
+instance {-# OVERLAPPABLE #-} (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where
+  swaggerMempty = mempty
+  swaggerMappend = HashMap.unionWith (\_old new -> new)
 
 instance SwaggerMonoid Text where
   swaggerMempty = mempty

@@ -784,42 +784,14 @@ instance SwaggerMonoid ParamLocation where
   swaggerMempty = ParamQuery
   swaggerMappend _ y = y
 
-instance SwaggerMonoid (HashMap Text Schema) where
+instance SwaggerMonoid (HashMap FilePath PathItem) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
-
-instance SwaggerMonoid (HashMap Text (Referenced Schema)) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = HashMap.unionWith swaggerMappend
 
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
   swaggerMappend (Inline x) (Inline y) = Inline (x <> y)
   swaggerMappend _ y = y
-
-instance SwaggerMonoid (HashMap Text Param) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = HashMap.unionWith mappend
-
-instance SwaggerMonoid (HashMap Text Response) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = flip HashMap.union
-
-instance SwaggerMonoid (HashMap Text SecurityScheme) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = flip HashMap.union
-
-instance SwaggerMonoid (HashMap FilePath PathItem) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = HashMap.unionWith mappend
-
-instance SwaggerMonoid (HashMap HeaderName Header) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = flip HashMap.union
-
-instance SwaggerMonoid (HashMap HttpStatusCode (Referenced Response)) where
-  swaggerMempty = HashMap.empty
-  swaggerMappend = flip HashMap.union
 
 instance SwaggerMonoid ParamAnySchema where
   swaggerMempty = ParamOther swaggerMempty
