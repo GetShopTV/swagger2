@@ -439,7 +439,7 @@ data CollectionFormat t where
   -- Corresponds to multiple parameter instances
   -- instead of multiple values for a single instance @foo=bar&foo=baz@.
   -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
-  CollectionMulti :: CollectionFormat Param
+  CollectionMulti :: CollectionFormat ParamOtherSchema
 
 deriving instance Eq (CollectionFormat t)
 deriving instance Show (CollectionFormat t)
@@ -460,7 +460,7 @@ instance {-# OVERLAPPABLE #-} Data t => Data (CollectionFormat t) where
   toConstr = collectionFormatConstr
   dataTypeOf _ = collectionFormatDataType
 
-deriving instance {-# OVERLAPPING #-} Data (CollectionFormat Param)
+deriving instance {-# OVERLAPPING #-} Data (CollectionFormat ParamOtherSchema)
 
 type ParamName = Text
 
@@ -1144,7 +1144,7 @@ instance {-# OVERLAPPABLE #-} FromJSON (SwaggerType t) where
 instance {-# OVERLAPPABLE #-} FromJSON (CollectionFormat t) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
-instance FromJSON (CollectionFormat Param) where
+instance FromJSON (CollectionFormat ParamOtherSchema) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes, CollectionMulti]
 
 -- NOTE: The constraints @FromJSON (SwaggerType t)@ and
