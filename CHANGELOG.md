@@ -1,3 +1,9 @@
+1.1.1
+---
+* Fixes:
+    * `CollectionFormat Param` -> `CollectionFormat ParamOtherSchema`;
+      this change was necessary after putting `CollectionFormat` to `SwaggerItems`.
+
 1.1
 ---
 * Major changes:
