@@ -1,3 +1,17 @@
+1.1
+---
+* Major changes:
+    * Put `CollectionFormat` in one place (see [`3cc860d`](https://github.com/GetShopTV/swagger2/commit/3cc860dd3f002ab984f4d0e4ce1d1799f985832e)).
+
+* Minor changes:
+    * Use Swagger formats for `Int32`, `Int64`, `Float`, `Double`, `Day` and `ZonedTime` (see [#32](https://github.com/GetShopTV/swagger2/pull/32));
+    * Export `HeaderName`, `TagName`, `HttpStatusCode` type synonyms;
+    * Add `ToParamSchema` instances for `[a]`, `Set a` and `HashSet a`;
+    * Add `Monoid` instances for `Header` and `Example`.
+
+* Fixes:
+    * Use overwrite strategy for `HashMap` `SwaggerMonoid` instances by default.
+
 1.0
 ---
 * Major changes:
