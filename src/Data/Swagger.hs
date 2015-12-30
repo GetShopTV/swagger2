@@ -38,8 +38,9 @@ module Data.Swagger (
   PathItem(..),
 
   -- ** Operations
-  Tag(..),
   Operation(..),
+  Tag(..),
+  TagName,
 
   -- ** Types and formats
   SwaggerType(..),
@@ -52,8 +53,8 @@ module Data.Swagger (
   ParamOtherSchema(..),
   ParamLocation(..),
   ParamName,
-  Items(..),
   Header(..),
+  HeaderName,
   Example(..),
 
   -- ** Schemas
@@ -65,6 +66,7 @@ module Data.Swagger (
   -- ** Responses
   Responses(..),
   Response(..),
+  HttpStatusCode,
 
   -- ** Security
   SecurityScheme(..),
