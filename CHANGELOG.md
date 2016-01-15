@@ -1,3 +1,7 @@
+* Change default `ToSchema` instance for unit data types (i.e. types with one nullable constructor like `data Unit = Unit`):
+    * Now these types are treated like sum types with only one alternative;
+* Add generic `ToParamSchema` instance for unit data types.
+
 1.1.1
 ---
 * Fixes:
