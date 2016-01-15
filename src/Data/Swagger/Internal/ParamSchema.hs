@@ -206,6 +206,9 @@ class GToParamSchema (f :: * -> *) where
 instance GToParamSchema f => GToParamSchema (D1 d f) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
 
+instance Constructor c => GToParamSchema (C1 c U1) where
+  gtoParamSchema = genumParamSchema
+
 instance GToParamSchema f => GToParamSchema (C1 c (S1 s f)) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
 

@@ -23,6 +23,7 @@ checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema Param) <=> js
 spec :: Spec
 spec = do
   describe "Generic ToParamSchema" $ do
+    context "Unit" $ checkToParamSchema (Proxy :: Proxy Unit) unitSchemaJSON
     context "Color (bounded enum)" $ checkToParamSchema (Proxy :: Proxy Color) colorSchemaJSON
     context "Status (constructorTagModifier)" $ checkToParamSchema (Proxy :: Proxy Status) statusSchemaJSON
     context "Unary records" $ do
@@ -31,6 +32,20 @@ spec = do
 
 main :: IO ()
 main = hspec spec
+
+-- ========================================================================
+-- Unit type
+-- ========================================================================
+
+data Unit = Unit deriving (Generic, ToParamSchema)
+
+unitSchemaJSON :: Value
+unitSchemaJSON = [aesonQQ|
+{
+  "type": "string",
+  "enum": ["Unit"]
+}
+|]
 
 -- ========================================================================
 -- Color (enum)
