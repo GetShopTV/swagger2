@@ -292,7 +292,9 @@ instance ToSchema a => ToSchema (Maybe a) where
 
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
-instance ToSchema ()
+instance ToSchema () where
+  declareNamedSchema _ = pure (Nothing, nullarySchema)
+
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, d)
@@ -425,9 +427,6 @@ gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare Definitions Schema
 gdeclareSchema opts proxy = snd <$> gdeclareNamedSchema opts proxy mempty
 
-instance GToSchema U1 where
-  gdeclareNamedSchema _ _ _ = plain nullarySchema
-
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gdeclareNamedSchema opts _ schema = do
     (_, gschema) <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
@@ -440,6 +439,9 @@ instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
 
 instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
   gdeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy f)
+
+instance {-# OVERLAPPING #-} Constructor c => GToSchema (C1 c U1) where
+  gdeclareNamedSchema = gdeclareNamedSumSchema
 
 -- | Single field constructor.
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
@@ -511,16 +513,19 @@ instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
-  gdeclareNamedSchema opts _ s
-    | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchema)
-    | otherwise = (unnamed . fst) <$> runWriterT declareSumSchema
-    where
-      declareSumSchema = gsumToSchema opts (Proxy :: Proxy (f :+: g)) s
-      (sumSchema, All allNullary) = undeclare (runWriterT declareSumSchema)
+  gdeclareNamedSchema = gdeclareNamedSumSchema
 
-      toStringTag schema = mempty
-        & schemaType .~ SwaggerString
-        & schemaEnum ?~ map toJSON (schema ^.. schemaProperties.ifolded.asIndex)
+gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
+gdeclareNamedSumSchema opts proxy s
+  | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchema)
+  | otherwise = (unnamed . fst) <$> runWriterT declareSumSchema
+  where
+    declareSumSchema = gsumToSchema opts proxy s
+    (sumSchema, All allNullary) = undeclare (runWriterT declareSumSchema)
+
+    toStringTag schema = mempty
+      & schemaType .~ SwaggerString
+      & schemaEnum ?~ map toJSON (schema ^.. schemaProperties.ifolded.asIndex)
 
 type AllNullary = All
 
