@@ -906,7 +906,10 @@ instance ToJSON SecurityScheme where
   toJSON = genericToJSONWithSub "type" (jsonPrefix "securityScheme")
 
 instance ToJSON Schema where
-  toJSON = omitEmpties . genericToJSONWithSub "paramSchema" (jsonPrefix "schema")
+  toJSON = omitEmptiesExcept f . genericToJSONWithSub "paramSchema" (jsonPrefix "schema")
+    where
+      f "items" (Array _) = True
+      f _ _ = False
 
 instance ToJSON Header where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "header")
@@ -985,7 +988,10 @@ instance ToJSON (CollectionFormat t) where
   toJSON CollectionMulti = "multi"
 
 instance ToJSON (ParamSchema t) where
-  toJSON = omitEmpties . genericToJSONWithSub "items" (jsonPrefix "paramSchema")
+  toJSON = omitEmptiesExcept f . genericToJSONWithSub "items" (jsonPrefix "paramSchema")
+    where
+      f "items" (Array _) = True
+      f _ _ = False
 
 -- =======================================================================
 -- Manual FromJSON instances

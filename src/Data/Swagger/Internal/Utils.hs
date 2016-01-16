@@ -58,11 +58,14 @@ parseOneOf xs js =
   where
     ys = zip (map toJSON xs) xs
 
-omitEmpties :: Value -> Value
-omitEmpties (Object o) = Object (HashMap.filter nonEmpty o)
+omitEmptiesExcept :: (Text -> Value -> Bool) -> Value -> Value
+omitEmptiesExcept f (Object o) = Object (HashMap.filterWithKey nonEmpty o)
   where
-    nonEmpty js = (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
-omitEmpties js = js
+    nonEmpty k js = f k js || (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
+omitEmptiesExcept _ js = js
+
+omitEmpties :: Value -> Value
+omitEmpties = omitEmptiesExcept (\_ _ -> False)
 
 genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> Value
 genericToJSONWithSub sub opts x =
