@@ -1,6 +1,11 @@
-* Change default `ToSchema` instance for unit data types (i.e. types with one nullable constructor like `data Unit = Unit`):
-    * Now these types are treated like sum types with only one alternative;
-* Add generic `ToParamSchema` instance for unit data types.
+* Minor changes:
+  * Change default `ToSchema` instance for unit data types (i.e. types with one nullable constructor like `data Unit = Unit`):
+    now these types are treated like sum types with only one alternative;
+  * Add generic `ToParamSchema` instance for unit data types;
+  * Add `items: []` to schema for `()` (making it a valid schema).
+
+* Fixes:
+    * `items: []` is not omitted from `Schema` JSON.
 
 1.1.1
 ---
