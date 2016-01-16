@@ -420,6 +420,7 @@ nullarySchema :: Schema
 nullarySchema = mempty
   & schemaType .~ SwaggerArray
   & schemaEnum ?~ [ toJSON () ]
+  & schemaItems ?~ SwaggerItemsArray []
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
