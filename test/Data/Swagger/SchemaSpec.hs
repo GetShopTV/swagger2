@@ -83,6 +83,7 @@ spec = do
     context "Character" $ checkDefs (Proxy :: Proxy Character) ["Player", "Point"]
     context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
     context "[Set (Unit, Maybe Color)]" $ checkDefs (Proxy :: Proxy [Set (Unit, Maybe Color)]) ["Unit", "Color"]
+    context "ResourceId" $ checkDefs (Proxy :: Proxy ResourceId) []
   describe "Inlining Schemas" $ do
     context "Paint" $ checkInlinedSchema (Proxy :: Proxy Paint) paintInlinedSchemaJSON
     context "Character" $ checkInlinedSchema (Proxy :: Proxy Character) characterInlinedSchemaJSON
@@ -573,3 +574,10 @@ lightInlinedSchemaJSON = [aesonQQ|
 }
 |]
 
+-- ========================================================================
+-- ResourceId (series of newtypes)
+-- ========================================================================
+
+newtype Id = Id String deriving (Generic, ToSchema)
+
+newtype ResourceId = ResourceId Id deriving (Generic, ToSchema)
