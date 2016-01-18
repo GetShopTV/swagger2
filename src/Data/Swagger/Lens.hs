@@ -2,6 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.Swagger.Lens where
 
@@ -42,8 +43,26 @@ makeLenses ''ParamOtherSchema
 makeLenses ''Header
 -- ** 'Schema' lenses
 makeLenses ''Schema
+
 -- ** 'SwaggerItems' prisms
-makePrisms ''SwaggerItems
+
+_SwaggerItemsArray :: forall t. (t ~ Schema) => Review (SwaggerItems t) [Referenced Schema]
+_SwaggerItemsArray
+  = prism (\x -> SwaggerItemsArray x) $ \x -> case x of
+      SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
+      SwaggerItemsObject o      -> Left (SwaggerItemsObject o)
+      SwaggerItemsArray a       -> Right a
+
+_SwaggerItemsObject :: forall t. (t ~ Schema) => Review (SwaggerItems t) (Referenced Schema)
+_SwaggerItemsObject
+  = prism (\x -> SwaggerItemsObject x) $ \x -> case x of
+      SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
+      SwaggerItemsObject o      -> Right o
+      SwaggerItemsArray a       -> Left (SwaggerItemsArray a)
+
+_SwaggerItemsPrimitive :: forall t p f. (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
+_SwaggerItemsPrimitive = unto (\(c, p) -> SwaggerItemsPrimitive c p)
+
 -- ** 'ParamSchema' lenses
 makeLenses ''ParamSchema
 -- ** 'Xml' lenses
