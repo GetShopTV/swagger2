@@ -404,8 +404,8 @@ data Unit = Unit deriving (Generic, ToSchema)
 unitSchemaJSON :: Value
 unitSchemaJSON = [aesonQQ|
 {
-  "type": "array",
-  "enum": [[]]
+  "type": "string",
+  "enum": ["Unit"]
 }
 |]
 
