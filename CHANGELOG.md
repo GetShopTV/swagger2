@@ -1,3 +1,5 @@
+1.2
+---
 * Minor changes (see [#36](https://github.com/GetShopTV/swagger2/pull/36)):
   * Change default `ToSchema` instance for unit data types (i.e. types with one nullable constructor like `data Unit = Unit`):
     now these types are treated like sum types with only one alternative;
