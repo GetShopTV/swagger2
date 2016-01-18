@@ -448,12 +448,14 @@ instance {-# OVERLAPPING #-} Constructor c => GToSchema (C1 c U1) where
 instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
   gdeclareNamedSchema opts _ s
     | unwrapUnaryRecords opts = fieldSchema
-    | otherwise = do
-        (_, schema) <- recordSchema
+    | otherwise =
         case schema ^. schemaItems of
           Just (SwaggerItemsArray [_]) -> fieldSchema
-          _ -> pure (unnamed schema)
+          _ -> do
+            declare defs
+            return (unnamed schema)
     where
+      (defs, (_, schema)) = runDeclare recordSchema mempty
       recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
       fieldSchema  = gdeclareNamedSchema opts (Proxy :: Proxy f) s
 
