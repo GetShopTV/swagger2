@@ -1,3 +1,12 @@
+1.2.1
+---
+
+* Minor change:
+    * Change `_SwaggerItemsPrimitive` type from a `Prism'` to a more restrictive `Review`-like `Optic'`.
+
+* Fixes:
+    * Fix build for GHC 8.0-rc1.
+
 1.2
 ---
 * Minor changes (see [#36](https://github.com/GetShopTV/swagger2/pull/36)):
