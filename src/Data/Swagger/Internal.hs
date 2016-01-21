@@ -485,6 +485,13 @@ data Schema = Schema
   , _schemaParamSchema :: ParamSchema Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | A @'Schema'@ with an optional name.
+-- This name can be used in references.
+data NamedSchema = NamedSchema
+  { _namedSchemaName :: Maybe Text
+  , _namedSchemaSchema :: Schema
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
 data ParamSchema t = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@

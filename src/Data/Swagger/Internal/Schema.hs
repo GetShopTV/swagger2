@@ -45,10 +45,6 @@ import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
--- | A @'Schema'@ with an optional name.
--- This name can be used in references.
-type NamedSchema = (Maybe T.Text, Schema)
-
 -- | Schema definitions, a mapping from schema name to @'Schema'@.
 type Definitions = HashMap T.Text Schema
 
