@@ -166,8 +166,7 @@ import Data.Swagger.Internal
 -- encode $ (mempty :: Swagger) & paths .~
 --   [ ("/user", mempty & get ?~ (mempty
 --       & produces ?~ MimeList ["application/json"]
---       & responses .~ (mempty
---         & responses . at 200 ?~ Inline (mempty & schema ?~ Ref (Reference "#/definitions/User")))))]
+--       & at 200 ?~ Inline (mempty & schema ?~ Ref (Reference "#/definitions/User")))) ]
 -- :}
 -- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}}"
 --
