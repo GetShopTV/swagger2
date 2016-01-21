@@ -45,27 +45,20 @@ import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
--- | A @'Schema'@ with an optional name.
--- This name can be used in references.
-type NamedSchema = (Maybe T.Text, Schema)
-
--- | Schema definitions, a mapping from schema name to @'Schema'@.
-type Definitions = HashMap T.Text Schema
-
 unnamed :: Schema -> NamedSchema
-unnamed schema = (Nothing, schema)
+unnamed schema = NamedSchema Nothing schema
 
 named :: T.Text -> Schema -> NamedSchema
-named name schema = (Just name, schema)
+named name schema = NamedSchema (Just name) schema
 
-plain :: Schema -> Declare Definitions NamedSchema
+plain :: Schema -> Declare (Definitions Schema) NamedSchema
 plain = pure . unnamed
 
 unname :: NamedSchema -> NamedSchema
-unname (_, schema) = (Nothing, schema)
+unname (NamedSchema _ schema) = unnamed schema
 
 rename :: Maybe T.Text -> NamedSchema -> NamedSchema
-rename name (_, schema) = (name, schema)
+rename name (NamedSchema _ schema) = NamedSchema name schema
 
 -- | Convert a type into @'Schema'@.
 --
@@ -114,21 +107,25 @@ class ToSchema a where
   -- together with all used definitions.
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
-  declareNamedSchema :: proxy a -> Declare Definitions NamedSchema
-  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare Definitions NamedSchema
+  declareNamedSchema :: proxy a -> Declare (Definitions Schema) NamedSchema
+  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 -- | Convert a type into a schema and declare all used schema definitions.
-declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
-declareSchema = fmap snd . declareNamedSchema
+declareSchema :: ToSchema a => proxy a -> Declare (Definitions Schema) Schema
+declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
 --
--- >>> encode <$> toNamedSchema (Proxy :: Proxy String)
--- (Nothing,"{\"type\":\"string\"}")
+-- >>> toNamedSchema (Proxy :: Proxy String) ^. namedSchemaName
+-- Nothing
+-- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. namedSchemaSchema)
+-- "{\"type\":\"string\"}"
 --
--- >>> encode <$> toNamedSchema (Proxy :: Proxy Day)
--- (Just "Day","{\"format\":\"date\",\"type\":\"string\"}")
+-- >>> toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaName
+-- Just "Day"
+-- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaSchema)
+-- "{\"format\":\"date\",\"type\":\"string\"}"
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
@@ -140,7 +137,7 @@ toNamedSchema = undeclare . declareNamedSchema
 -- >>> schemaName (Proxy :: Proxy UTCTime)
 -- Just "UTCTime"
 schemaName :: ToSchema a => proxy a -> Maybe T.Text
-schemaName = fst . toNamedSchema
+schemaName = _namedSchemaName . toNamedSchema
 
 -- | Convert a type into a schema.
 --
@@ -150,7 +147,7 @@ schemaName = fst . toNamedSchema
 -- >>> encode $ toSchema (Proxy :: Proxy [Day])
 -- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
 toSchema :: ToSchema a => proxy a -> Schema
-toSchema = snd . toNamedSchema
+toSchema = _namedSchemaSchema . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
@@ -170,10 +167,10 @@ toSchemaRef = undeclare . declareSchemaRef
 -- Schema definitions are typically declared for every referenced schema.
 -- If @'declareSchemaRef'@ returns a reference, a corresponding schema
 -- will be declared (regardless of whether it is recusive or not).
-declareSchemaRef :: ToSchema a => proxy a -> Declare Definitions (Referenced Schema)
+declareSchemaRef :: ToSchema a => proxy a -> Declare (Definitions Schema) (Referenced Schema)
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
-    (Just name, schema) -> do
+    NamedSchema (Just name) schema -> do
       -- This check is very important as it allows generically
       -- derive used definitions for recursive schemas.
       -- Lazy Declare monad allows toNamedSchema to ignore
@@ -196,7 +193,7 @@ declareSchemaRef proxy = do
 --
 -- __WARNING:__ @'inlineSchemasWhen'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineSchemasWhen :: Data s => (T.Text -> Bool) -> Definitions -> s -> s
+inlineSchemasWhen :: Data s => (T.Text -> Bool) -> (Definitions Schema) -> s -> s
 inlineSchemasWhen p defs = template %~ deref
   where
     deref r@(Ref (Reference name))
@@ -214,7 +211,7 @@ inlineSchemasWhen p defs = template %~ deref
 --
 -- __WARNING:__ @'inlineSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineSchemas :: Data s => [T.Text] -> Definitions -> s -> s
+inlineSchemas :: Data s => [T.Text] -> (Definitions Schema) -> s -> s
 inlineSchemas names = inlineSchemasWhen (`elem` names)
 
 -- | Inline all schema references for which the definition
@@ -222,7 +219,7 @@ inlineSchemas names = inlineSchemasWhen (`elem` names)
 --
 -- __WARNING:__ @'inlineAllSchemas'@ will produce infinite schemas
 -- when inlining recursive schemas.
-inlineAllSchemas :: Data s => Definitions -> s -> s
+inlineAllSchemas :: Data s => (Definitions Schema) -> s -> s
 inlineAllSchemas = inlineSchemasWhen (const True)
 
 -- | Convert a type into a schema without references.
@@ -239,7 +236,7 @@ toInlinedSchema proxy = inlineAllSchemas defs schema
 
 -- | Inline all /non-recursive/ schemas for which the definition
 -- can be found in @'Definitions'@.
-inlineNonRecursiveSchemas :: Data s => Definitions -> s -> s
+inlineNonRecursiveSchemas :: Data s => (Definitions Schema) -> s -> s
 inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
   where
     nonRecursive name =
@@ -259,7 +256,7 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
       Inline subschema -> usedNames subschema
 
 class GToSchema (f :: * -> *) where
-  gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
+  gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
 instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
@@ -293,7 +290,7 @@ instance ToSchema a => ToSchema (Maybe a) where
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
 instance ToSchema () where
-  declareNamedSchema _ = pure (Nothing, nullarySchema)
+  declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
 
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
@@ -386,17 +383,17 @@ genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
   , Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchemaBoundedIntegral opts proxy
-  = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
+  = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (toSchemaBoundedIntegral proxy)
 
 -- | A configurable generic @'Schema'@ creator.
-genericDeclareSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions Schema
-genericDeclareSchema opts proxy = snd <$> genericDeclareNamedSchema opts proxy
+genericDeclareSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare (Definitions Schema) Schema
+genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
 
 -- | A configurable generic @'NamedSchema'@ creator.
 -- This function applied to @'defaultSchemaOptions'@
 -- is used as the default for @'declareNamedSchema'@
 -- when the type is an instance of @'Generic'@.
-genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions NamedSchema
+genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare (Definitions Schema) NamedSchema
 genericDeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe T.Text
@@ -410,7 +407,7 @@ gdatatypeSchemaName opts _ = case name of
 paramSchemaToNamedSchema :: forall a d f proxy.
   (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
-paramSchemaToNamedSchema opts proxy = (gdatatypeSchemaName opts (Proxy :: Proxy d), paramSchemaToSchema proxy)
+paramSchemaToNamedSchema opts proxy = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (paramSchemaToSchema proxy)
 
 -- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
 paramSchemaToSchema :: forall a proxy. ToParamSchema a => proxy a -> Schema
@@ -425,12 +422,12 @@ nullarySchema = mempty
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 
-gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare Definitions Schema
-gdeclareSchema opts proxy = snd <$> gdeclareNamedSchema opts proxy mempty
+gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare (Definitions Schema) Schema
+gdeclareSchema opts proxy = _namedSchemaSchema <$> gdeclareNamedSchema opts proxy mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gdeclareNamedSchema opts _ schema = do
-    (_, gschema) <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
+    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
     gdeclareNamedSchema opts (Proxy :: Proxy f) gschema
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
@@ -455,14 +452,14 @@ instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
             declare defs
             return (unnamed schema)
     where
-      (defs, (_, schema)) = runDeclare recordSchema mempty
+      (defs, NamedSchema _ schema) = runDeclare recordSchema mempty
       recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
       fieldSchema  = gdeclareNamedSchema opts (Proxy :: Proxy f) s
 
-gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare Definitions (Referenced Schema)
+gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare (Definitions Schema) (Referenced Schema)
 gdeclareSchemaRef opts proxy = do
   case gtoNamedSchema opts proxy of
-    (Just name, schema) -> do
+    NamedSchema (Just name) schema -> do
       -- This check is very important as it allows generically
       -- derive used definitions for recursive schemas.
       -- Lazy Declare monad allows toNamedSchema to ignore
@@ -484,7 +481,7 @@ appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (x:xs))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
 
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
-  SchemaOptions -> proxy s f -> Bool -> Schema -> Declare Definitions Schema
+  SchemaOptions -> proxy s f -> Bool -> Schema -> Declare (Definitions Schema) Schema
 withFieldSchema opts _ isRequiredField schema = do
   ref <- gdeclareSchemaRef opts (Proxy :: Proxy f)
   return $
@@ -518,7 +515,7 @@ instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
-gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> proxy f -> Schema -> Declare Definitions NamedSchema
+gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 gdeclareNamedSumSchema opts proxy s
   | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchema)
   | otherwise = (unnamed . fst) <$> runWriterT declareSumSchema
@@ -533,13 +530,13 @@ gdeclareNamedSumSchema opts proxy s
 type AllNullary = All
 
 class GSumToSchema f where
-  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare Definitions) Schema
+  gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
   gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <=< gsumToSchema opts (Proxy :: Proxy g)
 
 gsumConToSchema :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
-  SchemaOptions -> proxy (C1 c f) -> Schema -> Declare Definitions Schema
+  SchemaOptions -> proxy (C1 c f) -> Schema -> Declare (Definitions Schema) Schema
 gsumConToSchema opts _ schema = do
   ref <- gdeclareSchemaRef opts (Proxy :: Proxy (C1 c f))
   return $ schema

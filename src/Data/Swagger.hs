@@ -45,6 +45,7 @@ module Data.Swagger (
   -- ** Types and formats
   SwaggerType(..),
   Format,
+  Definitions,
   CollectionFormat(..),
 
   -- ** Parameters
@@ -60,6 +61,7 @@ module Data.Swagger (
   -- ** Schemas
   ParamSchema(..),
   Schema(..),
+  NamedSchema(..),
   SwaggerItems(..),
   Xml(..),
 

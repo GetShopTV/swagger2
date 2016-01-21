@@ -345,7 +345,7 @@ newtype Inlined a = Inlined { getInlined :: a }
 instance ToSchema a => ToSchema (Inlined a) where
   declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
     where
-      unname (_, schema) = (Nothing, schema)
+      unname (NamedSchema _ schema) = NamedSchema Nothing schema
 
 newtype Players = Players [Inlined Player]
   deriving (Generic, ToSchema)

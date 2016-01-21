@@ -33,6 +33,9 @@ import           Text.Read                (readMaybe)
 
 import Data.Swagger.Internal.Utils
 
+-- | A list of definitions that can be used in references.
+type Definitions = HashMap Text
+
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
   { -- | Provides metadata about the API.
@@ -57,25 +60,25 @@ data Swagger = Swagger
   , _consumes :: MimeList
 
     -- | A list of MIME types the APIs can produce.
-    -- This is global to all APIs but can be overridden on specific API calls. 
+    -- This is global to all APIs but can be overridden on specific API calls.
   , _produces :: MimeList
 
     -- | The available paths and operations for the API.
   , _paths :: Paths
 
     -- | An object to hold data types produced and consumed by operations.
-  , _definitions :: HashMap Text Schema
+  , _definitions :: Definitions Schema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , _parameters :: HashMap Text Param
+  , _parameters :: Definitions Param
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , _responses :: HashMap Text Response
+  , _responses :: Definitions Response
 
     -- | Security scheme definitions that can be used across the specification.
-  , _securityDefinitions :: HashMap Text SecurityScheme
+  , _securityDefinitions :: Definitions SecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
@@ -483,6 +486,13 @@ data Schema = Schema
   , _schemaMinProperties :: Maybe Integer
 
   , _schemaParamSchema :: ParamSchema Schema
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | A @'Schema'@ with an optional name.
+-- This name can be used in references.
+data NamedSchema = NamedSchema
+  { _namedSchemaName :: Maybe Text
+  , _namedSchemaSchema :: Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data ParamSchema t = ParamSchema
@@ -1032,10 +1042,10 @@ instance FromJSON Swagger where
                      , "produces" .= (mempty :: MimeList)
                      , "security" .= ([] :: [SecurityRequirement])
                      , "tags" .= ([] :: [Tag])
-                     , "definitions" .= (mempty :: HashMap Text Schema)
-                     , "parameters" .= (mempty :: HashMap Text Param)
-                     , "responses" .= (mempty :: HashMap Text Response)
-                     , "securityDefinitions" .= (mempty :: HashMap Text SecurityScheme)
+                     , "definitions" .= (mempty :: Definitions Schema)
+                     , "parameters" .= (mempty :: Definitions Param)
+                     , "responses" .= (mempty :: Definitions Response)
+                     , "securityDefinitions" .= (mempty :: Definitions SecurityScheme)
                      ] ) js
   parseJSON _ = empty
 
