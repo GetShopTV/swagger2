@@ -43,6 +43,8 @@ makeLenses ''ParamOtherSchema
 makeLenses ''Header
 -- ** 'Schema' lenses
 makeLenses ''Schema
+-- ** 'NamedSchema' lenses
+makeLenses ''NamedSchema
 
 -- ** 'SwaggerItems' prisms
 
@@ -105,6 +107,7 @@ instance HasParamSchema Schema Schema where parameterSchema = schemaParamSchema
 instance HasParamSchema ParamOtherSchema ParamOtherSchema where parameterSchema = paramOtherSchemaParamSchema
 instance HasParamSchema Header Header where parameterSchema = headerParamSchema
 instance HasParamSchema (ParamSchema t) t where parameterSchema = id
+instance HasParamSchema NamedSchema Schema where parameterSchema = namedSchemaSchema.parameterSchema
 
 schemaType :: HasParamSchema s t => Lens' s (SwaggerType t)
 schemaType = parameterSchema.paramSchemaType
