@@ -33,8 +33,7 @@ module Data.Swagger (
   Contact(..),
   License(..),
 
-  -- ** Paths
-  Paths(..),
+  -- ** PathItem
   PathItem(..),
 
   -- ** Operations
@@ -164,13 +163,13 @@ import Data.Swagger.Internal
 -- also make it fairly simple to construct/modify any part of the specification:
 --
 -- >>> :{
--- encode $ mempty & pathsMap .~
---   [ ("/user", mempty & pathItemGet ?~ (mempty
---       & operationProduces ?~ MimeList ["application/json"]
---       & operationResponses .~ (mempty
---         & responsesResponses . at 200 ?~ Inline (mempty & responseSchema ?~ Ref (Reference "#/definitions/User")))))]
+-- encode $ (mempty :: Swagger) & paths .~
+--   [ ("/user", mempty & get ?~ (mempty
+--       & produces ?~ MimeList ["application/json"]
+--       & responses .~ (mempty
+--         & responses . at 200 ?~ Inline (mempty & schema ?~ Ref (Reference "#/definitions/User")))))]
 -- :}
--- "{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}}"
 --
 -- In the snippet above we declare API paths with a single path @/user@ providing method @GET@
 -- which produces @application/json@ output and should respond with code @200@ and body specified
@@ -181,10 +180,10 @@ import Data.Swagger.Internal
 -- and allow them to be used by any type that has a @'ParamSchema'@:
 --
 -- >>> :{
--- encode $ mempty
---   & schemaTitle   ?~ "Email"
---   & schemaType    .~ SwaggerString
---   & schemaFormat  ?~ "email"
+-- encode $ (mempty :: Schema)
+--   & title  ?~ "Email"
+--   & type_  .~ SwaggerString
+--   & format ?~ "email"
 -- :}
 -- "{\"format\":\"email\",\"title\":\"Email\",\"type\":\"string\"}"
 

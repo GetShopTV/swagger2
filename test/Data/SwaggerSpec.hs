@@ -151,9 +151,9 @@ operationExample = mempty
       ]
 
     stringSchema :: ParamLocation -> ParamOtherSchema
-    stringSchema i = mempty
-      & paramOtherSchemaIn .~ i
-      & schemaType .~ SwaggerString
+    stringSchema loc = mempty
+      & in_ .~ loc
+      & type_ .~ SwaggerString
 
 operationExampleJSON :: Value
 operationExampleJSON = [aesonQQ|
@@ -219,8 +219,8 @@ operationExampleJSON = [aesonQQ|
 
 schemaPrimitiveExample :: Schema
 schemaPrimitiveExample = mempty
-  & schemaType    .~ SwaggerString
-  & schemaFormat  ?~ "email"
+  & type_  .~ SwaggerString
+  & format ?~ "email"
 
 schemaPrimitiveExampleJSON :: Value
 schemaPrimitiveExampleJSON = [aesonQQ|
@@ -232,15 +232,15 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 
 schemaSimpleModelExample :: Schema
 schemaSimpleModelExample = mempty
-  & schemaType .~ SwaggerObject
-  & schemaRequired .~ [ "name" ]
-  & schemaProperties .~
-      [ ("name", Inline (mempty & schemaType .~ SwaggerString))
+  & type_ .~ SwaggerObject
+  & required .~ [ "name" ]
+  & properties .~
+      [ ("name", Inline (mempty & type_ .~ SwaggerString))
       , ("address", Ref (Reference "Address"))
       , ("age", Inline $ mempty
-            & schemaMinimum ?~ 0
-            & schemaType    .~ SwaggerInteger
-            & schemaFormat  ?~ "int32" ) ]
+            & minimum_ ?~ 0
+            & type_    .~ SwaggerInteger
+            & format   ?~ "int32" ) ]
 
 schemaSimpleModelExampleJSON :: Value
 schemaSimpleModelExampleJSON = [aesonQQ|
@@ -267,8 +267,8 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
-  & schemaType .~ SwaggerObject
-  & schemaAdditionalProperties ?~ (mempty & schemaType .~ SwaggerString)
+  & type_ .~ SwaggerObject
+  & additionalProperties ?~ (mempty & type_ .~ SwaggerString)
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -281,12 +281,12 @@ schemaModelDictExampleJSON = [aesonQQ|
 |]
 
 schemaWithExampleExample :: Schema
-schemaWithExampleExample = (mempty & schemaType .~ SwaggerObject)
+schemaWithExampleExample = (mempty & type_ .~ SwaggerObject)
   { _schemaProperties =
       [ ("id", Inline $ mempty
-            & schemaType .~ SwaggerInteger
-            & schemaFormat ?~ "int64" )
-      , ("name", Inline (mempty & schemaType .~ SwaggerString)) ]
+            & type_  .~ SwaggerInteger
+            & format ?~ "int64" )
+      , ("name", Inline (mempty & type_ .~ SwaggerString)) ]
   , _schemaRequired = [ "name" ]
   , _schemaExample = Just [aesonQQ|
       {
@@ -325,19 +325,19 @@ schemaWithExampleExampleJSON = [aesonQQ|
 definitionsExample :: HashMap Text Schema
 definitionsExample =
   [ ("Category", mempty
-      & schemaType .~ SwaggerObject
-      & schemaProperties .~
+      & type_ .~ SwaggerObject
+      & properties .~
           [ ("id", Inline $ mempty
-              & schemaType   .~ SwaggerInteger
-              & schemaFormat ?~ "int64")
-          , ("name", Inline (mempty & schemaType .~ SwaggerString)) ] )
+              & type_  .~ SwaggerInteger
+              & format ?~ "int64")
+          , ("name", Inline (mempty & type_ .~ SwaggerString)) ] )
   , ("Tag", mempty
-      & schemaType .~ SwaggerObject
-      & schemaProperties .~
+      & type_ .~ SwaggerObject
+      & properties .~
           [ ("id", Inline $ mempty
-              & schemaType   .~ SwaggerInteger
-              & schemaFormat ?~ "int64")
-          , ("name", Inline (mempty & schemaType .~ SwaggerString)) ] ) ]
+              & type_  .~ SwaggerInteger
+              & format ?~ "int64")
+          , ("name", Inline (mempty & type_ .~ SwaggerString)) ] ) ]
 
 definitionsExampleJSON :: Value
 definitionsExampleJSON = [aesonQQ|
@@ -380,17 +380,17 @@ paramsDefinitionExample =
       , _paramDescription = Just "number of items to skip"
       , _paramRequired = Just True
       , _paramSchema = ParamOther $ mempty
-          & paramOtherSchemaIn .~ ParamQuery
-          & schemaType .~ SwaggerInteger
-          & schemaFormat ?~ "int32" })
+          & in_    .~ ParamQuery
+          & type_  .~ SwaggerInteger
+          & format ?~ "int32" })
   , ("limitParam", mempty
       { _paramName = "limit"
       , _paramDescription = Just "max records to return"
       , _paramRequired = Just True
       , _paramSchema = ParamOther $ mempty
-          & paramOtherSchemaIn .~ ParamQuery
-          & schemaType .~ SwaggerInteger
-          & schemaFormat ?~ "int32" }) ]
+          & in_    .~ ParamQuery
+          & type_  .~ SwaggerInteger
+          & format ?~ "int32" }) ]
 
 paramsDefinitionExampleJSON :: Value
 paramsDefinitionExampleJSON = [aesonQQ|
@@ -478,45 +478,44 @@ securityDefinitionsExampleJSON = [aesonQQ|
 
 swaggerExample :: Swagger
 swaggerExample = mempty
-  { _basePath = Just "/"
-  , _schemes = Just [Http]
-  , _info = mempty
+  { _swaggerBasePath = Just "/"
+  , _swaggerSchemes = Just [Http]
+  , _swaggerInfo = mempty
       { _infoVersion = "1.0"
       , _infoTitle = "Todo API"
       , _infoLicense = Just License
           { _licenseName = "MIT"
           , _licenseUrl = Just (URL "http://mit.com") }
       , _infoDescription = Just "This is a an API that tests servant-swagger support for a Todo API" }
-  , _paths = mempty
-      { _pathsMap =
-          [ ("/todo/{id}", mempty
-              { _pathItemGet = Just mempty
-                  { _operationResponses = mempty
-                      { _responsesResponses =
-                          [ (200, Inline mempty
-                              { _responseSchema = Just $ Inline (mempty & schemaType .~ SwaggerObject)
-                                { _schemaExample = Just [aesonQQ|
-                                    {
-                                      "created": 100,
-                                      "description": "get milk"
-                                    } |]
-                                , _schemaDescription = Just "This is some real Todo right here"
-                                , _schemaProperties =
-                                    [ ("created", Inline $ mempty
-                                        & schemaType   .~ SwaggerInteger
-                                        & schemaFormat ?~ "int32")
-                                    , ("description", Inline (mempty & schemaType .~ SwaggerString)) ] }
-                              , _responseDescription = "OK" }) ] }
-                  , _operationProduces = Just (MimeList [ "application/json" ])
-                  , _operationParameters =
-                      [ Inline mempty
-                          { _paramRequired = Just True
-                          , _paramName = "id"
-                          , _paramDescription = Just "TodoId param"
-                          , _paramSchema = ParamOther $ mempty
-                              & paramOtherSchemaIn .~ ParamPath
-                              & schemaType .~ SwaggerString } ]
-                  , _operationTags = [ "todo" ] } }) ] } }
+  , _swaggerPaths =
+      [ ("/todo/{id}", mempty
+          { _pathItemGet = Just mempty
+              { _operationResponses = mempty
+                  { _responsesResponses =
+                      [ (200, Inline mempty
+                          { _responseSchema = Just $ Inline (mempty & type_ .~ SwaggerObject)
+                            { _schemaExample = Just [aesonQQ|
+                                {
+                                  "created": 100,
+                                  "description": "get milk"
+                                } |]
+                            , _schemaDescription = Just "This is some real Todo right here"
+                            , _schemaProperties =
+                                [ ("created", Inline $ mempty
+                                    & type_  .~ SwaggerInteger
+                                    & format ?~ "int32")
+                                , ("description", Inline (mempty & type_ .~ SwaggerString)) ] }
+                          , _responseDescription = "OK" }) ] }
+              , _operationProduces = Just (MimeList [ "application/json" ])
+              , _operationParameters =
+                  [ Inline mempty
+                      { _paramRequired = Just True
+                      , _paramName = "id"
+                      , _paramDescription = Just "TodoId param"
+                      , _paramSchema = ParamOther $ mempty
+                          & in_ .~ ParamPath
+                          & type_ .~ SwaggerString } ]
+              , _operationTags = [ "todo" ] } }) ] }
 
 swaggerExampleJSON :: Value
 swaggerExampleJSON = [aesonQQ|

@@ -42,8 +42,8 @@ import Data.Swagger.SchemaOptions
 --
 -- instance ToParamSchema Direction where
 --   toParamSchema = mempty
---      & schemaType .~ SwaggerString
---      & schemaEnum .~ [ \"Up\", \"Down\" ]
+--      & type_ .~ SwaggerString
+--      & enum_ .~ [ \"Up\", \"Down\" ]
 -- @
 --
 -- Instead of manually writing your @'ToParamSchema'@ instance you can
@@ -74,23 +74,23 @@ class ToParamSchema a where
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
 instance {-# OVERLAPPING #-} ToParamSchema String where
-  toParamSchema _ = mempty & schemaType .~ SwaggerString
+  toParamSchema _ = mempty & type_ .~ SwaggerString
 
 instance ToParamSchema Bool where
-  toParamSchema _ = mempty & schemaType .~ SwaggerBoolean
+  toParamSchema _ = mempty & type_ .~ SwaggerBoolean
 
 instance ToParamSchema Integer where
-  toParamSchema _ = mempty & schemaType .~ SwaggerInteger
+  toParamSchema _ = mempty & type_ .~ SwaggerInteger
 
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int16  where toParamSchema = toParamSchemaBoundedIntegral
 
 instance ToParamSchema Int32 where
-  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & schemaFormat ?~ "int32"
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & format ?~ "int32"
 
 instance ToParamSchema Int64 where
-  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & schemaFormat ?~ "int64"
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & format ?~ "int64"
 
 instance ToParamSchema Word   where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word8  where toParamSchema = toParamSchemaBoundedIntegral
@@ -104,52 +104,52 @@ instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
 -- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
 toParamSchemaBoundedIntegral :: forall proxy a t. (Bounded a, Integral a) => proxy a -> ParamSchema t
 toParamSchemaBoundedIntegral _ = mempty
-  & schemaType .~ SwaggerInteger
-  & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
-  & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
+  & type_ .~ SwaggerInteger
+  & minimum_ ?~ fromInteger (toInteger (minBound :: a))
+  & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
 
 instance ToParamSchema Char where
   toParamSchema _ = mempty
-    & schemaType .~ SwaggerString
-    & schemaMaxLength ?~ 1
-    & schemaMinLength ?~ 1
+    & type_ .~ SwaggerString
+    & maxLength ?~ 1
+    & minLength ?~ 1
 
 instance ToParamSchema Scientific where
-  toParamSchema _ = mempty & schemaType .~ SwaggerNumber
+  toParamSchema _ = mempty & type_ .~ SwaggerNumber
 
 instance ToParamSchema Double where
   toParamSchema _ = mempty
-    & schemaType   .~ SwaggerNumber
-    & schemaFormat ?~ "double"
+    & type_  .~ SwaggerNumber
+    & format ?~ "double"
 
 instance ToParamSchema Float where
   toParamSchema _ = mempty
-    & schemaType   .~ SwaggerNumber
-    & schemaFormat ?~ "float"
+    & type_  .~ SwaggerNumber
+    & format ?~ "float"
 
 timeParamSchema :: String -> ParamSchema t
-timeParamSchema format = mempty
-  & schemaType      .~ SwaggerString
-  & schemaFormat    ?~ T.pack format
+timeParamSchema fmt = mempty
+  & type_  .~ SwaggerString
+  & format ?~ T.pack fmt
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "date"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToParamSchema LocalTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy ZonedTime) ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy ZonedTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss+hhMM"
 instance ToParamSchema ZonedTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ss+hhMM"
 
 -- |
--- >>> toParamSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
+-- >>> toParamSchema (Proxy :: Proxy UTCTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToParamSchema UTCTime where
   toParamSchema _ = timeParamSchema "yyyy-mm-ddThh:MM:ssZ"
@@ -173,12 +173,12 @@ instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = to
 
 instance ToParamSchema a => ToParamSchema [a] where
   toParamSchema _ = mempty
-    & schemaType  .~ SwaggerArray
-    & schemaItems ?~ SwaggerItemsPrimitive Nothing (toParamSchema (Proxy :: Proxy a))
+    & type_ .~ SwaggerArray
+    & items ?~ SwaggerItemsPrimitive Nothing (toParamSchema (Proxy :: Proxy a))
 
 instance ToParamSchema a => ToParamSchema (Set a) where
   toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
-    & schemaUniqueItems ?~ True
+    & uniqueItems ?~ True
 
 instance ToParamSchema a => ToParamSchema (HashSet a) where
   toParamSchema _ = toParamSchema (Proxy :: Proxy (Set a))
@@ -188,8 +188,8 @@ instance ToParamSchema a => ToParamSchema (HashSet a) where
 -- "{\"type\":\"string\",\"enum\":[\"_\"]}"
 instance ToParamSchema () where
   toParamSchema _ = mempty
-    & schemaType .~ SwaggerString
-    & schemaEnum ?~ ["_"]
+    & type_ .~ SwaggerString
+    & enum_ ?~ ["_"]
 
 -- | A configurable generic @'ParamSchema'@ creator.
 --
@@ -226,8 +226,8 @@ instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) 
 
 instance Constructor c => GEnumParamSchema (C1 c U1) where
   genumParamSchema opts _ s = s
-    & schemaType .~ SwaggerString
-    & schemaEnum %~ addEnumValue tag
+    & type_ .~ SwaggerString
+    & enum_ %~ addEnumValue tag
     where
       tag = toJSON (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 

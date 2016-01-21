@@ -8,6 +8,8 @@ module Data.Swagger.Internal.Utils where
 
 import Control.Arrow (first)
 import Control.Applicative
+import Control.Lens ((&), (%~))
+import Control.Lens.TH
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Char
@@ -19,7 +21,27 @@ import Data.Map (Map)
 import Data.Monoid
 import Data.Text (Text)
 import GHC.Generics
+import Language.Haskell.TH (mkName)
 import Text.Read (readMaybe)
+
+swaggerFieldRules :: LensRules
+swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer
+  where
+    swaggerFieldNamer namer dname fnames fname =
+      map fixDefName (namer dname fnames fname)
+
+    fixDefName (MethodName cname mname) = MethodName cname (fixName mname)
+    fixDefName (TopName name) = TopName (fixName name)
+
+    fixName = mkName . fixName' . show
+
+    fixName' "in"       = "in_"       -- keyword
+    fixName' "type"     = "type_"     -- keyword
+    fixName' "default"  = "default_"  -- keyword
+    fixName' "minimum"  = "minimum_"  -- Prelude conflict
+    fixName' "maximum"  = "maximum_"  -- Prelude conflict
+    fixName' "enum"     = "enum_"     -- Control.Lens conflict
+    fixName' n = n
 
 gunfoldEnum :: String -> [a] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a
 gunfoldEnum tname xs _k z c = case lookup (constrIndex c) (zip [1..] xs) of
