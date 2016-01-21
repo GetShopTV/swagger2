@@ -45,6 +45,7 @@ module Data.Swagger (
   -- ** Types and formats
   SwaggerType(..),
   Format,
+  Definitions,
   CollectionFormat(..),
 
   -- ** Parameters

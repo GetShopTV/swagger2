@@ -9,7 +9,6 @@
 module Data.Swagger.Schema (
   -- * Encoding
   ToSchema(..),
-  Definitions,
   declareSchema,
   declareSchemaRef,
   toSchema,
