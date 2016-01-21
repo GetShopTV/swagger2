@@ -49,19 +49,19 @@ import Data.Swagger.SchemaOptions
 type Definitions = HashMap T.Text Schema
 
 unnamed :: Schema -> NamedSchema
-unnamed schema = (Nothing, schema)
+unnamed schema = NamedSchema Nothing schema
 
 named :: T.Text -> Schema -> NamedSchema
-named name schema = (Just name, schema)
+named name schema = NamedSchema (Just name) schema
 
 plain :: Schema -> Declare Definitions NamedSchema
 plain = pure . unnamed
 
 unname :: NamedSchema -> NamedSchema
-unname (_, schema) = (Nothing, schema)
+unname (NamedSchema _ schema) = unnamed schema
 
 rename :: Maybe T.Text -> NamedSchema -> NamedSchema
-rename name (_, schema) = (name, schema)
+rename name (NamedSchema _ schema) = NamedSchema name schema
 
 -- | Convert a type into @'Schema'@.
 --
@@ -116,7 +116,7 @@ class ToSchema a where
 
 -- | Convert a type into a schema and declare all used schema definitions.
 declareSchema :: ToSchema a => proxy a -> Declare Definitions Schema
-declareSchema = fmap snd . declareNamedSchema
+declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
 --
@@ -136,7 +136,7 @@ toNamedSchema = undeclare . declareNamedSchema
 -- >>> schemaName (Proxy :: Proxy UTCTime)
 -- Just "UTCTime"
 schemaName :: ToSchema a => proxy a -> Maybe T.Text
-schemaName = fst . toNamedSchema
+schemaName = _namedSchemaName . toNamedSchema
 
 -- | Convert a type into a schema.
 --
@@ -146,7 +146,7 @@ schemaName = fst . toNamedSchema
 -- >>> encode $ toSchema (Proxy :: Proxy [Day])
 -- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
 toSchema :: ToSchema a => proxy a -> Schema
-toSchema = snd . toNamedSchema
+toSchema = _namedSchemaSchema . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
@@ -169,7 +169,7 @@ toSchemaRef = undeclare . declareSchemaRef
 declareSchemaRef :: ToSchema a => proxy a -> Declare Definitions (Referenced Schema)
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
-    (Just name, schema) -> do
+    NamedSchema (Just name) schema -> do
       -- This check is very important as it allows generically
       -- derive used definitions for recursive schemas.
       -- Lazy Declare monad allows toNamedSchema to ignore
@@ -289,7 +289,7 @@ instance ToSchema a => ToSchema (Maybe a) where
 instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
 instance ToSchema () where
-  declareNamedSchema _ = pure (Nothing, nullarySchema)
+  declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
 
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
@@ -382,11 +382,11 @@ genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
   , Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchemaBoundedIntegral opts proxy
-  = (gdatatypeSchemaName opts (Proxy :: Proxy d), toSchemaBoundedIntegral proxy)
+  = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (toSchemaBoundedIntegral proxy)
 
 -- | A configurable generic @'Schema'@ creator.
 genericDeclareSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare Definitions Schema
-genericDeclareSchema opts proxy = snd <$> genericDeclareNamedSchema opts proxy
+genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
 
 -- | A configurable generic @'NamedSchema'@ creator.
 -- This function applied to @'defaultSchemaOptions'@
@@ -406,7 +406,7 @@ gdatatypeSchemaName opts _ = case name of
 paramSchemaToNamedSchema :: forall a d f proxy.
   (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
-paramSchemaToNamedSchema opts proxy = (gdatatypeSchemaName opts (Proxy :: Proxy d), paramSchemaToSchema proxy)
+paramSchemaToNamedSchema opts proxy = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (paramSchemaToSchema proxy)
 
 -- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
 paramSchemaToSchema :: forall a proxy. ToParamSchema a => proxy a -> Schema
@@ -422,11 +422,11 @@ gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
 
 gdeclareSchema :: GToSchema f => SchemaOptions -> proxy f -> Declare Definitions Schema
-gdeclareSchema opts proxy = snd <$> gdeclareNamedSchema opts proxy mempty
+gdeclareSchema opts proxy = _namedSchemaSchema <$> gdeclareNamedSchema opts proxy mempty
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gdeclareNamedSchema opts _ schema = do
-    (_, gschema) <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
+    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
     gdeclareNamedSchema opts (Proxy :: Proxy f) gschema
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
@@ -451,14 +451,14 @@ instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
             declare defs
             return (unnamed schema)
     where
-      (defs, (_, schema)) = runDeclare recordSchema mempty
+      (defs, NamedSchema _ schema) = runDeclare recordSchema mempty
       recordSchema = gdeclareNamedSchema opts (Proxy :: Proxy (S1 s f)) s
       fieldSchema  = gdeclareNamedSchema opts (Proxy :: Proxy f) s
 
 gdeclareSchemaRef :: GToSchema a => SchemaOptions -> proxy a -> Declare Definitions (Referenced Schema)
 gdeclareSchemaRef opts proxy = do
   case gtoNamedSchema opts proxy of
-    (Just name, schema) -> do
+    NamedSchema (Just name) schema -> do
       -- This check is very important as it allows generically
       -- derive used definitions for recursive schemas.
       -- Lazy Declare monad allows toNamedSchema to ignore

@@ -60,6 +60,7 @@ module Data.Swagger (
   -- ** Schemas
   ParamSchema(..),
   Schema(..),
+  NamedSchema(..),
   SwaggerItems(..),
   Xml(..),
 
