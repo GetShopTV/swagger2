@@ -120,11 +120,15 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
 --
--- >>> encode <$> toNamedSchema (Proxy :: Proxy String)
--- (Nothing,"{\"type\":\"string\"}")
+-- >>> toNamedSchema (Proxy :: Proxy String) ^. namedSchemaName
+-- Nothing
+-- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. namedSchemaSchema)
+-- "{\"type\":\"string\"}"
 --
--- >>> encode <$> toNamedSchema (Proxy :: Proxy Day)
--- (Just "Day","{\"format\":\"date\",\"type\":\"string\"}")
+-- >>> toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaName
+-- Just "Day"
+-- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaSchema)
+-- "{\"format\":\"date\",\"type\":\"string\"}"
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
