@@ -714,6 +714,10 @@ instance Monoid Info where
   mempty = genericMempty
   mappend = genericMappend
 
+instance Monoid Contact where
+  mempty = genericMempty
+  mappend = genericMappend
+
 instance Monoid PathItem where
   mempty = genericMempty
   mappend = genericMappend
