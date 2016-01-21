@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Lens where
 
@@ -87,6 +88,18 @@ makeFields ''ExternalDocs
 
 -- =============================================================
 -- More helpful instances for easier access to schema properties
+
+type instance Index Responses = HttpStatusCode
+type instance Index Operation = HttpStatusCode
+
+type instance IxValue Responses = Referenced Response
+type instance IxValue Operation = Referenced Response
+
+instance Ixed Responses where ix n = responses . ix n
+instance At   Responses where at n = responses . at n
+
+instance Ixed Operation where ix n = responses . ix n
+instance At   Operation where at n = responses . at n
 
 -- HasType instances
 instance HasType Header (SwaggerType Header) where type_ = paramSchema.type_
