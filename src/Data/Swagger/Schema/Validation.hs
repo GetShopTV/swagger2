@@ -19,7 +19,6 @@ import Control.Monad.Reader
 
 import Data.Aeson
 import Data.Foldable (traverse_, for_, sequenceA_)
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.Scientific (isInteger)
@@ -52,8 +51,27 @@ instance Monad ValidationResult where
   ValidationPassed x   >>= f = f x
   ValidationFailed msg >>= _ = ValidationFailed msg
 
-newtype Validation a = Validation { runValidation :: ReaderT (HashMap Text Schema) ValidationResult a }
-  deriving (Functor, Applicative, Alternative, Monad, MonadReader (HashMap Text Schema))
+data ValidationConfig = ValidationConfig
+  { validationPatternChecker :: Pattern -> Text -> Bool
+  , validationDefinitions    :: Definitions Schema
+  }
+
+-- | Default @'ValidationConfig'@:
+--
+-- @
+-- defaultValidationConfig = 'ValidationConfig'
+--   { 'validationPatternChecker' = \_pattern _str -> True
+--   , 'validationDefinitions'    = mempty
+--   }
+-- @
+defaultValidationConfig :: ValidationConfig
+defaultValidationConfig = ValidationConfig
+  { validationPatternChecker = \_pattern _str -> True
+  , validationDefinitions    = mempty
+  }
+
+newtype Validation a = Validation { runValidation :: ReaderT ValidationConfig ValidationResult a }
+  deriving (Functor, Applicative, Alternative, Monad, MonadReader ValidationConfig)
 
 invalid :: String -> Validation a
 invalid msg = Validation (ReaderT (const (ValidationFailed [msg])))
@@ -63,7 +81,7 @@ valid = pure ()
 
 unref :: Reference -> Validation Schema
 unref (Reference ref) = do
-  ms <- asks (HashMap.lookup ref)
+  ms <- asks (HashMap.lookup ref . validationDefinitions)
   case ms of
     Nothing -> invalid $ "unknown schema " ++ show ref
     Just s  -> pure s
@@ -118,12 +136,17 @@ validateWithSchema schema value
      *> when' (not . isInteger . (n /)) multipleOf
           (\k -> invalid $ "expected a multiple of " ++ show k ++ " but got " ++ show n)
 
-    -- TODO: validate schemaPattern
     validateString s
       = when' (fromIntegral (Text.length s) >) maxLength
           (\n -> invalid $ "string exceeds maximum length (should be <=" ++ show n ++ "): " ++ show s)
      *> when' (fromIntegral (Text.length s) <) minLength
           (\n -> invalid $ "string is too short (length should be >=" ++ show n ++ "): " ++ show s)
+     *> validatePattern
+      where
+        validatePattern = do
+          check <- asks validationPatternChecker
+          when' (`check` s) pattern
+            (\regex -> invalid $ "string does not match pattern " ++ show regex)
 
     validateArray xs
       = when' (fromIntegral (Vector.length xs) >) maxItems
