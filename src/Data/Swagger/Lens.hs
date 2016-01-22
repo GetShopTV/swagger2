@@ -16,37 +16,35 @@ import Data.Swagger.Internal
 import Data.Swagger.Internal.Utils
 import Data.Text (Text)
 
--- =======================================================================
--- * TH derived lenses
+-- * Classy lenses
 
--- ** 'Swagger' lenses
 makeFields ''Swagger
--- ** 'Host' lenses
 makeFields ''Host
--- ** 'Info' lenses
 makeFields ''Info
--- ** 'Contact' lenses
 makeFields ''Contact
--- ** 'License' lenses
 makeFields ''License
--- ** 'PathItem' lenses
 makeFields ''PathItem
--- ** 'Tag' lenses
 makeFields ''Tag
--- ** 'Operation' lenses
 makeFields ''Operation
--- ** 'Param' lenses
 makeFields ''Param
+makeLensesWith swaggerFieldRules ''ParamOtherSchema
+makeFields ''Header
+makeFields ''Schema
+makeFields ''NamedSchema
+makeLensesWith swaggerFieldRules ''ParamSchema
+makeFields ''Xml
+makeLensesWith swaggerFieldRules ''Responses
+makeFields ''Response
+makeLensesWith swaggerFieldRules ''SecurityScheme
+makeFields ''ApiKeyParams
+makeFields ''OAuth2Params
+makeFields ''ExternalDocs
+
+-- * Prisms
 -- ** 'ParamAnySchema' prisms
 makePrisms ''ParamAnySchema
--- ** 'ParamOtherSchema' lenses
-makeLensesWith swaggerFieldRules ''ParamOtherSchema
--- ** 'Header' lenses
-makeFields ''Header
--- ** 'Schema' lenses
-makeFields ''Schema
--- ** 'NamedSchema' lenses
-makeFields ''NamedSchema
+-- ** 'SecuritySchemeType' prisms
+makePrisms ''SecuritySchemeType
 
 -- ** 'SwaggerItems' prisms
 
@@ -66,25 +64,6 @@ _SwaggerItemsObject
 
 _SwaggerItemsPrimitive :: forall t p f. (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
 _SwaggerItemsPrimitive = unto (\(c, p) -> SwaggerItemsPrimitive c p)
-
--- ** 'ParamSchema' lenses
-makeLensesWith swaggerFieldRules ''ParamSchema
--- ** 'Xml' lenses
-makeFields ''Xml
--- ** 'Responses' lenses
-makeLensesWith swaggerFieldRules ''Responses
--- ** 'Response' lenses
-makeFields ''Response
--- ** 'SecurityScheme' lenses
-makeLensesWith swaggerFieldRules ''SecurityScheme
--- ** 'SecuritySchemeType' prisms
-makePrisms ''SecuritySchemeType
--- ** 'ApiKeyParams' lenses
-makeFields ''ApiKeyParams
--- ** 'OAuth2Params' lenses
-makeFields ''OAuth2Params
--- ** 'ExternalDocs' lenses
-makeFields ''ExternalDocs
 
 -- =============================================================
 -- More helpful instances for easier access to schema properties
