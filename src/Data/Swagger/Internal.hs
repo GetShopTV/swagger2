@@ -40,61 +40,63 @@ type Definitions = HashMap Text
 data Swagger = Swagger
   { -- | Provides metadata about the API.
     -- The metadata can be used by the clients if needed.
-    _info :: Info
+    _swaggerInfo :: Info
 
     -- | The host (name or ip) serving the API. It MAY include a port.
     -- If the host is not included, the host serving the documentation is to be used (including the port).
-  , _host :: Maybe Host
+  , _swaggerHost :: Maybe Host
 
     -- | The base path on which the API is served, which is relative to the host.
     -- If it is not included, the API is served directly under the host.
     -- The value MUST start with a leading slash (/).
-  , _basePath :: Maybe FilePath
+  , _swaggerBasePath :: Maybe FilePath
 
     -- | The transfer protocol of the API.
     -- If the schemes is not included, the default scheme to be used is the one used to access the Swagger definition itself.
-  , _schemes :: Maybe [Scheme]
+  , _swaggerSchemes :: Maybe [Scheme]
 
     -- | A list of MIME types the APIs can consume.
     -- This is global to all APIs but can be overridden on specific API calls.
-  , _consumes :: MimeList
+  , _swaggerConsumes :: MimeList
 
     -- | A list of MIME types the APIs can produce.
     -- This is global to all APIs but can be overridden on specific API calls.
-  , _produces :: MimeList
+  , _swaggerProduces :: MimeList
 
     -- | The available paths and operations for the API.
-  , _paths :: Paths
+    -- Holds the relative paths to the individual endpoints.
+    -- The path is appended to the @'basePath'@ in order to construct the full URL.
+  , _swaggerPaths :: HashMap FilePath PathItem
 
     -- | An object to hold data types produced and consumed by operations.
-  , _definitions :: Definitions Schema
+  , _swaggerDefinitions :: Definitions Schema
 
     -- | An object to hold parameters that can be used across operations.
     -- This property does not define global parameters for all operations.
-  , _parameters :: Definitions Param
+  , _swaggerParameters :: Definitions Param
 
     -- | An object to hold responses that can be used across operations.
     -- This property does not define global responses for all operations.
-  , _responses :: Definitions Response
+  , _swaggerResponses :: Definitions Response
 
     -- | Security scheme definitions that can be used across the specification.
-  , _securityDefinitions :: Definitions SecurityScheme
+  , _swaggerSecurityDefinitions :: Definitions SecurityScheme
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
     -- (that is, there is a logical OR between the security requirements).
     -- Individual operations can override this definition.
-  , _security :: [SecurityRequirement]
+  , _swaggerSecurity :: [SecurityRequirement]
 
     -- | A list of tags used by the specification with additional metadata.
     -- The order of the tags can be used to reflect on their order by the parsing tools.
     -- Not all tags that are used by the Operation Object must be declared.
     -- The tags that are not declared may be organized randomly or based on the tools' logic.
     -- Each tag name in the list MUST be unique.
-  , _tags :: [Tag]
+  , _swaggerTags :: [Tag]
 
     -- | Additional external documentation.
-  , _externalDocs :: Maybe ExternalDocs
+  , _swaggerExternalDocs :: Maybe ExternalDocs
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The object provides metadata about the API.
@@ -169,13 +171,6 @@ data Scheme
   | Ws
   | Wss
   deriving (Eq, Show, Generic, Data, Typeable)
-
--- | The available paths and operations for the API.
-data Paths = Paths
-  { -- | Holds the relative paths to the individual endpoints.
-    -- The path is appended to the @'basePath'@ in order to construct the full URL.
-    _pathsMap         :: HashMap FilePath PathItem
-  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes the operations available on a single path.
 -- A @'PathItem'@ may be empty, due to ACL constraints.
@@ -719,7 +714,7 @@ instance Monoid Info where
   mempty = genericMempty
   mappend = genericMappend
 
-instance Monoid Paths where
+instance Monoid Contact where
   mempty = genericMempty
   mappend = genericMappend
 
@@ -772,7 +767,6 @@ instance Monoid Example where
 -- =======================================================================
 
 instance SwaggerMonoid Info
-instance SwaggerMonoid Paths
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
 instance SwaggerMonoid (ParamSchema t)
@@ -907,7 +901,7 @@ instance ToJSON SecuritySchemeType where
     <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
-  toJSON = omitEmpties . addVersion . genericToJSON (jsonPrefix "")
+  toJSON = omitEmpties . addVersion . genericToJSON (jsonPrefix "swagger")
     where
       addVersion (Object o) = Object (HashMap.insert "swagger" "2.0" o)
       addVersion _ = error "impossible"
@@ -936,9 +930,6 @@ instance ToJSON Host where
     case mport of
       Nothing -> host
       Just port -> host ++ ":" ++ show port
-
-instance ToJSON Paths where
-  toJSON (Paths m) = toJSON m
 
 instance ToJSON MimeList where
   toJSON (MimeList xs) = toJSON (map show xs)
@@ -1037,7 +1028,7 @@ instance FromJSON Swagger where
   parseJSON js@(Object o) = do
     (version :: Text) <- o .: "swagger"
     when (version /= "2.0") empty
-    (genericParseJSON (jsonPrefix "")
+    (genericParseJSON (jsonPrefix "swagger")
       `withDefaults` [ "consumes" .= (mempty :: MimeList)
                      , "produces" .= (mempty :: MimeList)
                      , "security" .= ([] :: [SecurityRequirement])
@@ -1079,9 +1070,6 @@ instance FromJSON Host where
       (hostText, portText) = Text.breakOn ":" s
       [host, portStr] = map Text.unpack [hostText, portText]
   parseJSON _ = empty
-
-instance FromJSON Paths where
-  parseJSON js = Paths <$> parseJSON js
 
 instance FromJSON MimeList where
   parseJSON js = (MimeList . map fromString) <$> parseJSON js

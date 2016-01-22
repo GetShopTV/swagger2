@@ -33,8 +33,7 @@ module Data.Swagger (
   Contact(..),
   License(..),
 
-  -- ** Paths
-  Paths(..),
+  -- ** PathItem
   PathItem(..),
 
   -- ** Operations
@@ -160,33 +159,61 @@ import Data.Swagger.Internal
 -- $lens
 --
 -- Since @'Swagger'@ has a fairly complex structure, lenses and prisms are used
--- to modify this structure. In combination with @'Monoid'@ instances, lenses
--- also make it fairly simple to construct/modify any part of the specification:
+-- to work comfortly with it. In combination with @'Monoid'@ instances, lenses
+-- make it fairly simple to construct/modify any part of the specification:
 --
 -- >>> :{
--- encode $ mempty & pathsMap .~
---   [ ("/user", mempty & pathItemGet ?~ (mempty
---       & operationProduces ?~ MimeList ["application/json"]
---       & operationResponses .~ (mempty
---         & responsesResponses . at 200 ?~ Inline (mempty & responseSchema ?~ Ref (Reference "#/definitions/User")))))]
+-- encode $ (mempty :: Swagger)
+--   & definitions .~ [ ("User", mempty & type_ .~ SwaggerString) ]
+--   & paths .~
+--     [ ("/user", mempty & get ?~ (mempty
+--         & produces ?~ MimeList ["application/json"]
+--         & at 200 ?~ Inline (mempty & schema ?~ Ref (Reference "User")))) ]
 -- :}
--- "{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"User\":{\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}}"
 --
--- In the snippet above we declare API paths with a single path @/user@ providing method @GET@
+-- In the snippet above we declare API with a single path @/user@ providing method @GET@
 -- which produces @application/json@ output and should respond with code @200@ and body specified
--- by schema @User@ (which should be defined in @definitions@ property of swagger specification).
+-- by schema @User@ which is defined in @'definitions'@ property of swagger specification.
 --
--- Since @'ParamSchema'@ is basically the /base schema specification/, a special
--- @'HasParamSchema'@ class has been introduced to generalize @'ParamSchema'@ lenses
--- and allow them to be used by any type that has a @'ParamSchema'@:
+-- For convenience, @swagger2@ uses /classy field lenses/. It means that
+-- field accessor names can be overloaded for different types. One such
+-- common field is @'description'@. Many components of Swagger specification
+-- can have descriptions, and you can use the same name for them:
+--
+-- >>> encode $ (mempty :: Response) & description .~ "No content"
+-- "{\"description\":\"No content\"}"
+-- >>> :{
+-- encode $ (mempty :: Schema)
+--   & type_       .~ SwaggerBoolean
+--   & description ?~ "To be or not to be"
+-- :}
+-- "{\"type\":\"boolean\",\"description\":\"To be or not to be\"}"
+--
+-- @'ParamSchema'@ is basically the /base schema specification/ and many types contain it (see @'HasParamSchema'@).
+-- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
+-- For example, you can use @'type_'@ to access @'SwaggerType'@ of @'Header'@ schema without having to use @'paramSchema'@:
+--
+-- >>> encode $ (mempty :: Header) & type_ .~ SwaggerNumber
+-- "{\"type\":\"number\"}"
+--
+-- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
+-- have direct access to it via @'at' code@. Example:
 --
 -- >>> :{
--- encode $ mempty
---   & schemaTitle   ?~ "Email"
---   & schemaType    .~ SwaggerString
---   & schemaFormat  ?~ "email"
+-- encode $ (mempty :: Operation)
+--   & at 404 ?~ Inline (mempty & description .~ "Not found")
 -- :}
--- "{\"format\":\"email\",\"title\":\"Email\",\"type\":\"string\"}"
+-- "{\"responses\":{\"404\":{\"description\":\"Not found\"}}}"
+--
+-- You might've noticed that @'type_'@ has an extra underscore in its name
+-- compared to, say, @'description'@ field accessor.
+-- This is because @type@ is a keyword in Haskell.
+-- A few other field accessors are modified in this way:
+--
+--    - @'in_'@, @'type_'@, @'default_'@ (as keywords);
+--    - @'maximum_'@ and @'minimum_'@ (as conflicting with @Prelude@);
+--    - @'enum_'@ (as conflicting with @Control.Lens@).
 
 -- $schema
 --
@@ -199,8 +226,8 @@ import Data.Swagger.Internal
 -- with properties in addition to what @'ParamSchema'@ provides.
 --
 -- In most cases you will have a Haskell data type for which you would like to
--- define a corresponding schema. To facilitate thise use case
--- this library provides two classes for schema encoding.
+-- define a corresponding schema. To facilitate this use case
+-- @swagger2@ provides two classes for schema encoding.
 -- Both these classes provide means to encode /types/ as Swagger /schemas/.
 --
 -- @'ToParamSchema'@ is intended to be used for primitive API endpoint parameters,

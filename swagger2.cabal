@@ -40,6 +40,7 @@ library
                      , mtl
                      , network
                      , text
+                     , template-haskell
                      , time
                      , unordered-containers
                      , lens

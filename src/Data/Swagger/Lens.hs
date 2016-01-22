@@ -1,50 +1,50 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Lens where
 
 import Control.Lens
 import Data.Aeson (Value)
 import Data.Scientific (Scientific)
 import Data.Swagger.Internal
+import Data.Swagger.Internal.Utils
 import Data.Text (Text)
 
--- =======================================================================
--- * TH derived lenses
+-- * Classy lenses
 
--- ** 'Swagger' lenses
-makeLenses ''Swagger
--- ** 'Host' lenses
-makeLenses ''Host
--- ** 'Info' lenses
-makeLenses ''Info
--- ** 'Contact' lenses
-makeLenses ''Contact
--- ** 'License' lenses
-makeLenses ''License
--- ** 'Paths' lenses
-makeLenses ''Paths
--- ** 'PathItem' lenses
-makeLenses ''PathItem
--- ** 'Tag' lenses
-makeLenses ''Tag
--- ** 'Operation' lenses
-makeLenses ''Operation
--- ** 'Param' lenses
-makeLenses ''Param
+makeFields ''Swagger
+makeFields ''Host
+makeFields ''Info
+makeFields ''Contact
+makeFields ''License
+makeFields ''PathItem
+makeFields ''Tag
+makeFields ''Operation
+makeFields ''Param
+makeLensesWith swaggerFieldRules ''ParamOtherSchema
+makeFields ''Header
+makeFields ''Schema
+makeFields ''NamedSchema
+makeLensesWith swaggerFieldRules ''ParamSchema
+makeFields ''Xml
+makeLensesWith swaggerFieldRules ''Responses
+makeFields ''Response
+makeLensesWith swaggerFieldRules ''SecurityScheme
+makeFields ''ApiKeyParams
+makeFields ''OAuth2Params
+makeFields ''ExternalDocs
+
+-- * Prisms
 -- ** 'ParamAnySchema' prisms
 makePrisms ''ParamAnySchema
--- ** 'ParamOtherSchema' lenses
-makeLenses ''ParamOtherSchema
--- ** 'Header' lenses
-makeLenses ''Header
--- ** 'Schema' lenses
-makeLenses ''Schema
--- ** 'NamedSchema' lenses
-makeLenses ''NamedSchema
+-- ** 'SecuritySchemeType' prisms
+makePrisms ''SecuritySchemeType
 
 -- ** 'SwaggerItems' prisms
 
@@ -65,95 +65,86 @@ _SwaggerItemsObject
 _SwaggerItemsPrimitive :: forall t p f. (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
 _SwaggerItemsPrimitive = unto (\(c, p) -> SwaggerItemsPrimitive c p)
 
--- ** 'ParamSchema' lenses
-makeLenses ''ParamSchema
--- ** 'Xml' lenses
-makeLenses ''Xml
--- ** 'Responses' lenses
-makeLenses ''Responses
--- ** 'Response' lenses
-makeLenses ''Response
--- ** 'SecurityScheme' lenses
-makeLenses ''SecurityScheme
--- ** 'SecuritySchemeType' prisms
-makePrisms ''SecuritySchemeType
--- ** 'ApiKeyParams' lenses
-makeLenses ''ApiKeyParams
--- ** 'OAuth2Params' lenses
-makeLenses ''OAuth2Params
--- ** 'ExternalDocs' lenses
-makeLenses ''ExternalDocs
+-- =============================================================
+-- More helpful instances for easier access to schema properties
 
--- =======================================================================
--- * Helper classy lenses
+type instance Index Responses = HttpStatusCode
+type instance Index Operation = HttpStatusCode
 
-class HasDescription s d | s -> d where
-  description :: Lens' s d
+type instance IxValue Responses = Referenced Response
+type instance IxValue Operation = Referenced Response
 
-instance HasDescription Response       Text where description = responseDescription
-instance HasDescription Info           (Maybe Text) where description = infoDescription
-instance HasDescription Tag            (Maybe Text) where description = tagDescription
-instance HasDescription Operation      (Maybe Text) where description = operationDescription
-instance HasDescription Param          (Maybe Text) where description = paramDescription
-instance HasDescription Header         (Maybe Text) where description = headerDescription
-instance HasDescription Schema         (Maybe Text) where description = schemaDescription
-instance HasDescription SecurityScheme (Maybe Text) where description = securitySchemeDescription
-instance HasDescription ExternalDocs   (Maybe Text) where description = externalDocsDescription
+instance Ixed Responses where ix n = responses . ix n
+instance At   Responses where at n = responses . at n
 
-class HasParamSchema s t | s -> t where
-  parameterSchema :: Lens' s (ParamSchema t)
+instance Ixed Operation where ix n = responses . ix n
+instance At   Operation where at n = responses . at n
 
-instance HasParamSchema Schema Schema where parameterSchema = schemaParamSchema
-instance HasParamSchema ParamOtherSchema ParamOtherSchema where parameterSchema = paramOtherSchemaParamSchema
-instance HasParamSchema Header Header where parameterSchema = headerParamSchema
-instance HasParamSchema (ParamSchema t) t where parameterSchema = id
-instance HasParamSchema NamedSchema Schema where parameterSchema = namedSchemaSchema.parameterSchema
+-- HasType instances
+instance HasType Header (SwaggerType Header) where type_ = paramSchema.type_
+instance HasType Schema (SwaggerType Schema) where type_ = paramSchema.type_
+instance HasType NamedSchema (SwaggerType Schema) where type_ = schema.paramSchema.type_
+instance HasType ParamOtherSchema (SwaggerType ParamOtherSchema) where type_ = paramSchema.type_
 
-schemaType :: HasParamSchema s t => Lens' s (SwaggerType t)
-schemaType = parameterSchema.paramSchemaType
+-- HasDefault instances
+instance HasDefault Header (Maybe Value) where default_ = paramSchema.default_
+instance HasDefault Schema (Maybe Value) where default_ = paramSchema.default_
+instance HasDefault ParamOtherSchema (Maybe Value) where default_ = paramSchema.default_
 
-schemaFormat :: HasParamSchema s t => Lens' s (Maybe Format)
-schemaFormat = parameterSchema.paramSchemaFormat
+-- OVERLAPPABLE instances
 
-schemaItems :: HasParamSchema s t => Lens' s (Maybe (SwaggerItems t))
-schemaItems = parameterSchema.paramSchemaItems
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasFormat s (Maybe Format) where
+  format = paramSchema.format
 
-schemaDefault :: HasParamSchema s t => Lens' s (Maybe Value)
-schemaDefault = parameterSchema.paramSchemaDefault
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasItems s (Maybe (SwaggerItems t)) where
+  items = paramSchema.items
 
-schemaMaximum :: HasParamSchema s t => Lens' s (Maybe Scientific)
-schemaMaximum = parameterSchema.paramSchemaMaximum
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMaximum s (Maybe Scientific) where
+  maximum_ = paramSchema.maximum_
 
-schemaExclusiveMaximum :: HasParamSchema s t => Lens' s (Maybe Bool)
-schemaExclusiveMaximum = parameterSchema.paramSchemaExclusiveMaximum
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasExclusiveMaximum s (Maybe Bool) where
+  exclusiveMaximum = paramSchema.exclusiveMaximum
 
-schemaMinimum :: HasParamSchema s t => Lens' s (Maybe Scientific)
-schemaMinimum = parameterSchema.paramSchemaMinimum
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMinimum s (Maybe Scientific) where
+  minimum_ = paramSchema.minimum_
 
-schemaExclusiveMinimum :: HasParamSchema s t => Lens' s (Maybe Bool)
-schemaExclusiveMinimum = parameterSchema.paramSchemaExclusiveMinimum
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasExclusiveMinimum s (Maybe Bool) where
+  exclusiveMinimum = paramSchema.exclusiveMinimum
 
-schemaMaxLength :: HasParamSchema s t => Lens' s (Maybe Integer)
-schemaMaxLength = parameterSchema.paramSchemaMaxLength
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMaxLength s (Maybe Integer) where
+  maxLength = paramSchema.maxLength
 
-schemaMinLength :: HasParamSchema s t => Lens' s (Maybe Integer)
-schemaMinLength = parameterSchema.paramSchemaMinLength
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMinLength s (Maybe Integer) where
+  minLength = paramSchema.minLength
 
-schemaPattern :: HasParamSchema s t => Lens' s (Maybe Text)
-schemaPattern = parameterSchema.paramSchemaPattern
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasPattern s (Maybe Text) where
+  pattern = paramSchema.pattern
 
-schemaMaxItems :: HasParamSchema s t => Lens' s (Maybe Integer)
-schemaMaxItems = parameterSchema.paramSchemaMaxItems
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMaxItems s (Maybe Integer) where
+  maxItems = paramSchema.maxItems
 
-schemaMinItems :: HasParamSchema s t => Lens' s (Maybe Integer)
-schemaMinItems = parameterSchema.paramSchemaMinItems
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMinItems s (Maybe Integer) where
+  minItems = paramSchema.minItems
 
-schemaUniqueItems :: HasParamSchema s t => Lens' s (Maybe Bool)
-schemaUniqueItems = parameterSchema.paramSchemaUniqueItems
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasUniqueItems s (Maybe Bool) where
+  uniqueItems = paramSchema.uniqueItems
 
-schemaEnum :: HasParamSchema s t => Lens' s (Maybe [Value])
-schemaEnum = parameterSchema.paramSchemaEnum
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasEnum s (Maybe [Value]) where
+  enum_ = paramSchema.enum_
 
-schemaMultipleOf :: HasParamSchema s t => Lens' s (Maybe Scientific)
-schemaMultipleOf = parameterSchema.paramSchemaMultipleOf
-
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+  => HasMultipleOf s (Maybe Scientific) where
+  multipleOf = paramSchema.multipleOf

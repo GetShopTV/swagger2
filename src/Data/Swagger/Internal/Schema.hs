@@ -76,12 +76,12 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 --   declareNamedSchema = pure (Just \"Coord\", schema)
 --    where
 --      schema = mempty
---        & schemaType .~ SwaggerObject
---        & schemaProperties .~
+--        & type_ .~ SwaggerObject
+--        & properties .~
 --            [ (\"x\", toSchemaRef (Proxy :: Proxy Double))
 --            , (\"y\", toSchemaRef (Proxy :: Proxy Double))
 --            ]
---        & schemaRequired .~ [ \"x\", \"y\" ]
+--        & required .~ [ \"x\", \"y\" ]
 -- @
 --
 -- Instead of manually writing your @'ToSchema'@ instance you can
@@ -117,14 +117,14 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 
 -- | Convert a type into an optionally named schema.
 --
--- >>> toNamedSchema (Proxy :: Proxy String) ^. namedSchemaName
+-- >>> toNamedSchema (Proxy :: Proxy String) ^. name
 -- Nothing
--- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. namedSchemaSchema)
+-- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. schema)
 -- "{\"type\":\"string\"}"
 --
--- >>> toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaName
+-- >>> toNamedSchema (Proxy :: Proxy Day) ^. name
 -- Just "Day"
--- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. namedSchemaSchema)
+-- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
 -- "{\"format\":\"date\",\"type\":\"string\"}"
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
@@ -262,8 +262,8 @@ instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
-      & schemaType  .~ SwaggerArray
-      & schemaItems ?~ SwaggerItemsObject ref
+      & type_ .~ SwaggerArray
+      & items ?~ SwaggerItemsObject ref
 
 instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
@@ -300,16 +300,16 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f, ToSchema g) => ToSchema (a, b, c, d, e, f, g)
 
 timeSchema :: T.Text -> Schema
-timeSchema format = mempty
-  & schemaType .~ SwaggerString
-  & schemaFormat ?~ format
+timeSchema fmt = mempty
+  & type_ .~ SwaggerString
+  & format ?~ fmt
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToSchema Day where
   declareNamedSchema _ = pure $ named "Day" (timeSchema "date")
 
 -- |
--- >>> toSchema (Proxy :: Proxy LocalTime) ^. schemaFormat
+-- >>> toSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToSchema LocalTime where
   declareNamedSchema _ = pure $ named "LocalTime" (timeSchema "yyyy-mm-ddThh:MM:ss")
@@ -322,7 +322,7 @@ instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
 
 -- |
--- >>> toSchema (Proxy :: Proxy UTCTime) ^. schemaFormat
+-- >>> toSchema (Proxy :: Proxy UTCTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToSchema UTCTime where
   declareNamedSchema _ = pure $ named "UTCTime" (timeSchema "yyyy-mm-ddThh:MM:ssZ")
@@ -340,8 +340,8 @@ instance ToSchema a => ToSchema (Map String a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy a)
     return $ unnamed $ mempty
-      & schemaType  .~ SwaggerObject
-      & schemaAdditionalProperties ?~ schema
+      & type_ .~ SwaggerObject
+      & additionalProperties ?~ schema
 
 instance ToSchema a => ToSchema (Map T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 instance ToSchema a => ToSchema (Map TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
@@ -354,7 +354,7 @@ instance ToSchema a => ToSchema (Set a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])
     return $ unnamed $ schema
-      & schemaUniqueItems ?~ True
+      & uniqueItems ?~ True
 
 instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
 
@@ -373,9 +373,9 @@ instance ToSchema a => ToSchema (Dual a)    where declareNamedSchema _ = unname 
 -- "{\"maximum\":32767,\"minimum\":-32768,\"type\":\"integer\"}"
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
-  & schemaType .~ SwaggerInteger
-  & schemaMinimum ?~ fromInteger (toInteger (minBound :: a))
-  & schemaMaximum ?~ fromInteger (toInteger (maxBound :: a))
+  & type_ .~ SwaggerInteger
+  & minimum_ ?~ fromInteger (toInteger (minBound :: a))
+  & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
 
 -- | Default generic named schema for @'Bounded'@, @'Integral'@ types.
 genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
@@ -411,13 +411,13 @@ paramSchemaToNamedSchema opts proxy = NamedSchema (gdatatypeSchemaName opts (Pro
 
 -- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
 paramSchemaToSchema :: forall a proxy. ToParamSchema a => proxy a -> Schema
-paramSchemaToSchema _ = mempty & schemaParamSchema .~ toParamSchema (Proxy :: Proxy a)
+paramSchemaToSchema _ = mempty & paramSchema .~ toParamSchema (Proxy :: Proxy a)
 
 nullarySchema :: Schema
 nullarySchema = mempty
-  & schemaType .~ SwaggerArray
-  & schemaEnum ?~ [ toJSON () ]
-  & schemaItems ?~ SwaggerItemsArray []
+  & type_ .~ SwaggerArray
+  & enum_ ?~ [ toJSON () ]
+  & items ?~ SwaggerItemsArray []
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
 gtoNamedSchema opts proxy = undeclare $ gdeclareNamedSchema opts proxy mempty
@@ -446,7 +446,7 @@ instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
   gdeclareNamedSchema opts _ s
     | unwrapUnaryRecords opts = fieldSchema
     | otherwise =
-        case schema ^. schemaItems of
+        case schema ^. items of
           Just (SwaggerItemsArray [_]) -> fieldSchema
           _ -> do
             declare defs
@@ -487,13 +487,13 @@ withFieldSchema opts _ isRequiredField schema = do
   return $
     if T.null fname
       then schema
-        & schemaType .~ SwaggerArray
-        & schemaItems %~ appendItem ref
+        & type_ .~ SwaggerArray
+        & items %~ appendItem ref
       else schema
-        & schemaType .~ SwaggerObject
-        & schemaProperties . at fname ?~ ref
+        & type_ .~ SwaggerObject
+        & properties . at fname ?~ ref
         & if isRequiredField
-            then schemaRequired %~ (fname :)
+            then required %~ (fname :)
             else id
   where
     fname = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
@@ -524,8 +524,8 @@ gdeclareNamedSumSchema opts proxy s
     (sumSchema, All allNullary) = undeclare (runWriterT declareSumSchema)
 
     toStringTag schema = mempty
-      & schemaType .~ SwaggerString
-      & schemaEnum ?~ map toJSON (schema ^.. schemaProperties.ifolded.asIndex)
+      & type_ .~ SwaggerString
+      & enum_ ?~ map toJSON (schema ^.. properties.ifolded.asIndex)
 
 type AllNullary = All
 
@@ -540,10 +540,10 @@ gsumConToSchema :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
 gsumConToSchema opts _ schema = do
   ref <- gdeclareSchemaRef opts (Proxy :: Proxy (C1 c f))
   return $ schema
-    & schemaType .~ SwaggerObject
-    & schemaProperties . at tag ?~ ref
-    & schemaMaxProperties ?~ 1
-    & schemaMinProperties ?~ 1
+    & type_ .~ SwaggerObject
+    & properties . at tag ?~ ref
+    & maxProperties ?~ 1
+    & minProperties ?~ 1
   where
     tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
 
