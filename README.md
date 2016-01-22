@@ -2,6 +2,8 @@
 
 [![Hackage](https://img.shields.io/hackage/v/swagger2.svg)](http://hackage.haskell.org/package/swagger2)
 [![Build Status](https://travis-ci.org/GetShopTV/swagger2.svg?branch=master)](https://travis-ci.org/GetShopTV/swagger2)
+[![Stackage LTS](http://stackage.org/package/swagger2/badge/lts)](http://stackage.org/lts/package/swagger2)
+[![Stackage Nightly](http://stackage.org/package/swagger2/badge/nightly)](http://stackage.org/nightly/package/swagger2)
 
 Swagger 2.0 data model.
 
