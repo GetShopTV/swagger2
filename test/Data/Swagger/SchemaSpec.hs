@@ -531,7 +531,8 @@ characterInlinedPlayerSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 data Light
-  = LightFreq Double
+  = NoLight
+  | LightFreq Double
   | LightColor Color
   | LightWaveLength { waveLength :: Double }
   deriving (Generic)
@@ -546,6 +547,7 @@ lightSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
+      "NoLight": { "type": "array", "items": [] },
       "LightFreq": { "type": "number", "format": "double" },
       "LightColor": { "$ref": "#/definitions/Color" },
       "LightWaveLength": { "type": "number", "format": "double" }
@@ -561,6 +563,7 @@ lightInlinedSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
+      "NoLight": { "type": "array", "items": [] },
       "LightFreq": { "type": "number", "format": "double" },
       "LightColor":
         {
