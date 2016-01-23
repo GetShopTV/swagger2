@@ -416,7 +416,6 @@ paramSchemaToSchema _ = mempty & paramSchema .~ toParamSchema (Proxy :: Proxy a)
 nullarySchema :: Schema
 nullarySchema = mempty
   & type_ .~ SwaggerArray
-  & enum_ ?~ [ toJSON () ]
   & items ?~ SwaggerItemsArray []
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
@@ -535,17 +534,21 @@ class GSumToSchema f where
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
   gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <=< gsumToSchema opts (Proxy :: Proxy g)
 
-gsumConToSchema :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
-  SchemaOptions -> proxy (C1 c f) -> Schema -> Declare (Definitions Schema) Schema
-gsumConToSchema opts _ schema = do
-  ref <- gdeclareSchemaRef opts (Proxy :: Proxy (C1 c f))
-  return $ schema
-    & type_ .~ SwaggerObject
-    & properties . at tag ?~ ref
-    & maxProperties ?~ 1
-    & minProperties ?~ 1
+gsumConToSchemaWith :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
+  Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema
+gsumConToSchemaWith ref opts _ schema = schema
+  & type_ .~ SwaggerObject
+  & properties . at tag ?~ ref
+  & maxProperties ?~ 1
+  & minProperties ?~ 1
   where
     tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
+
+gsumConToSchema :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
+  SchemaOptions -> proxy (C1 c f) -> Schema -> Declare (Definitions Schema) Schema
+gsumConToSchema opts proxy schema = do
+  ref <- gdeclareSchemaRef opts proxy
+  return $ gsumConToSchemaWith ref opts proxy schema
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
   gsumToSchema opts proxy schema = do
@@ -558,7 +561,7 @@ instance (Constructor c, Selector s, GToSchema f) => GSumToSchema (C1 c (S1 s f)
     lift $ gsumConToSchema opts proxy schema
 
 instance Constructor c => GSumToSchema (C1 c U1) where
-  gsumToSchema opts proxy = lift . gsumConToSchema opts proxy
+  gsumToSchema opts proxy = pure . gsumConToSchemaWith (Inline nullarySchema) opts proxy
 
 data Proxy2 a b = Proxy2
 
