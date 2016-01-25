@@ -16,6 +16,7 @@ extra-source-files:
   , CHANGELOG.md
   , examples/*.hs
 cabal-version:       >=1.10
+tested-with:         GHC==7.10.3
 
 library
   hs-source-dirs:      src
@@ -32,7 +33,7 @@ library
     Data.Swagger.Internal.Schema
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
-  build-depends:       base == 4.*
+  build-depends:       base >=4.8 && <4.10
                      , aeson
                      , containers
                      , hashable
