@@ -2,7 +2,6 @@
 module Data.Swagger.Schema.ValidationSpec where
 
 import Control.Applicative
-import Control.Monad.Reader
 import Data.Aeson
 import Data.Int
 import Data.IntMap (IntMap)
@@ -32,10 +31,9 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
-shouldValidate proxy x = res == ValidationPassed ()
+shouldValidate proxy x = res == Passed ()
   where
-    res = flip runReaderT defaultValidationConfig . runValidation $ do
-      validateWithSchema (toSchema proxy) (toJSON x)
+    res = runValidation (validateWithSchema (toJSON x)) defaultConfig (toSchema proxy)
 
 spec :: Spec
 spec = do
