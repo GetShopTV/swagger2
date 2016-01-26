@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE PackageImports #-}
 module Data.Swagger.Schema.ValidationSpec where
 
@@ -79,18 +80,20 @@ spec = do
 main :: IO ()
 main = hspec spec
 
-
+#if MIN_VERSION_QuickCheck(2,8,2)
+#else
 instance (Ord k, Arbitrary k, Arbitrary v) => Arbitrary (Map k v) where
   arbitrary = Map.fromList <$> arbitrary
-
-instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
-  arbitrary = HashMap.fromList <$> arbitrary
 
 instance Arbitrary a => Arbitrary (IntMap a) where
   arbitrary = IntMap.fromList <$> arbitrary
 
 instance (Ord a, Arbitrary a) => Arbitrary (Set a) where
   arbitrary = Set.fromList <$> arbitrary
+#endif
+
+instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
+  arbitrary = HashMap.fromList <$> arbitrary
 
 instance (Eq a, Hashable a, Arbitrary a) => Arbitrary (HashSet a) where
   arbitrary = HashSet.fromList <$> arbitrary
