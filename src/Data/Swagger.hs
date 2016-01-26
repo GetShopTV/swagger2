@@ -168,9 +168,10 @@ import Data.Swagger.Internal
 --   & paths .~
 --     [ ("/user", mempty & get ?~ (mempty
 --         & produces ?~ MimeList ["application/json"]
---         & at 200 ?~ Inline (mempty & schema ?~ Ref (Reference "User")))) ]
+--         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
+--         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"User\":{\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"\"}},\"produces\":[\"application/json\"]}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"User\":{\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}},\"produces\":[\"application/json\"]}}}}"
 --
 -- In the snippet above we declare API with a single path @/user@ providing method @GET@
 -- which produces @application/json@ output and should respond with code @200@ and body specified
@@ -202,7 +203,7 @@ import Data.Swagger.Internal
 --
 -- >>> :{
 -- encode $ (mempty :: Operation)
---   & at 404 ?~ Inline (mempty & description .~ "Not found")
+--   & at 404 ?~ "Not found"
 -- :}
 -- "{\"responses\":{\"404\":{\"description\":\"Not found\"}}}"
 --

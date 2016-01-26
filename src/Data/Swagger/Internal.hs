@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -23,7 +24,7 @@ import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Monoid
 import           Data.Scientific          (Scientific)
-import           Data.String              (fromString)
+import           Data.String              (IsString(..))
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           GHC.Generics             (Generic)
@@ -145,11 +146,17 @@ data License = License
   , _licenseUrl :: Maybe URL
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+instance IsString License where
+  fromString s = License (fromString s) Nothing
+
 -- | The host (name or ip) serving the API. It MAY include a port.
 data Host = Host
   { _hostName :: HostName         -- ^ Host name.
   , _hostPort :: Maybe PortNumber -- ^ Optional port.
   } deriving (Eq, Show, Generic, Typeable)
+
+instance IsString Host where
+  fromString s = Host s Nothing
 
 hostConstr :: Constr
 hostConstr = mkConstr hostDataType "Host" [] Prefix
@@ -582,6 +589,9 @@ data Response = Response
   , _responseExamples :: Maybe Example
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+instance IsString Response where
+  fromString s = Response (fromString s) Nothing mempty Nothing
+
 type HeaderName = Text
 
 data Header = Header
@@ -680,6 +690,9 @@ data Tag = Tag
   , _tagExternalDocs :: Maybe ExternalDocs
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+instance IsString Tag where
+  fromString s = Tag (fromString s) Nothing Nothing
+
 -- | Allows referencing an external resource for extended documentation.
 data ExternalDocs = ExternalDocs
   { -- | A short description of the target documentation.
@@ -698,7 +711,10 @@ newtype Reference = Reference { getReference :: Text }
 data Referenced a
   = Ref Reference
   | Inline a
-  deriving (Eq, Show, Data, Typeable)
+  deriving (Eq, Show, Functor, Data, Typeable)
+
+instance IsString a => IsString (Referenced a) where
+  fromString = Inline . fromString
 
 newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON, Data, Typeable)
 
