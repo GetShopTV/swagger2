@@ -21,15 +21,18 @@ import Prelude.Compat
 import Control.Lens
 import Data.Data.Lens (template)
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
+import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import "unordered-containers" Data.HashSet (HashSet)
+import           "unordered-containers" Data.HashSet (HashSet)
+import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
@@ -285,6 +288,105 @@ passwordSchema :: Schema
 passwordSchema = mempty
   & type_ .~ SwaggerString
   & format ?~ "password"
+
+-- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
+-- Produced schema can be used for further refinement.
+--
+-- >>> encode $ sketchSchema "hello"
+-- "{\"example\":\"hello\",\"type\":\"string\"}"
+--
+-- >>> encode $ sketchSchema (1, 2, 3)
+-- "{\"example\":[1,2,3],\"items\":{\"type\":\"number\"},\"type\":\"array\"}"
+--
+-- >>> encode $ sketchSchema ("Jack", 25)
+-- "{\"example\":[\"Jack\",25],\"items\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"type\":\"array\"}"
+--
+-- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
+-- >>> instance ToJSON Person
+-- >>> encode $ sketchSchema (Person "Jack" 25)
+-- "{\"example\":{\"age\":25,\"name\":\"Jack\"},\"required\":[\"age\",\"name\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}}}"
+sketchSchema :: ToJSON a => a -> Schema
+sketchSchema = sketch . toJSON
+  where
+    sketch Null = go Null
+    sketch js@(Bool _) = go js
+    sketch js = go js & example ?~ js
+
+    go Null          = mempty & type_ .~ SwaggerNull
+    go js@(Bool _)   = mempty & type_ .~ SwaggerBoolean
+    go js@(String s) = mempty & type_   .~ SwaggerString
+    go js@(Number n) = mempty & type_ .~ SwaggerNumber
+    go js@(Array xs) = mempty
+      & type_   .~ SwaggerArray
+      & items ?~ case ischema of
+          Just s -> SwaggerItemsObject (Inline s)
+          _      -> SwaggerItemsArray (map Inline ys)
+      where
+        ys = map go (V.toList xs)
+        allSame = and ((zipWith (==)) ys (tail ys))
+
+        ischema = case ys of
+          (z:zs) | allSame -> Just z
+          _ -> Nothing
+    go js@(Object o) = mempty
+      & type_         .~ SwaggerObject
+      & required      .~ HashMap.keys o
+      & properties    .~ fmap (Inline . go) o
+
+-- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
+-- Produced schema uses as much constraints as possible.
+--
+-- >>> encode $ sketchStrictSchema "hello"
+-- "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+--
+-- >>> encode $ sketchStrictSchema (1, 2, 3)
+-- "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+--
+-- >>> encode $ sketchStrictSchema ("Jack", 25)
+-- "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+--
+-- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
+-- >>> instance ToJSON Person
+-- >>> encode $ sketchStrictSchema (Person "Jack" 25)
+-- "{\"minProperties\":2,\"required\":[\"age\",\"name\"],\"maxProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}}}"
+sketchStrictSchema :: ToJSON a => a -> Schema
+sketchStrictSchema = go . toJSON
+  where
+    go Null       = mempty & type_ .~ SwaggerNull
+    go js@(Bool _) = mempty
+      & type_ .~ SwaggerBoolean
+      & enum_ ?~ [js]
+    go js@(String s) = mempty
+      & type_ .~ SwaggerString
+      & maxLength ?~ fromIntegral (T.length s)
+      & minLength ?~ fromIntegral (T.length s)
+      & pattern   ?~ s
+      & enum_     ?~ [js]
+    go js@(Number n) = mempty
+      & type_       .~ SwaggerNumber
+      & maximum_    ?~ n
+      & minimum_    ?~ n
+      & multipleOf  ?~ n
+      & enum_       ?~ [js]
+    go js@(Array xs) = mempty
+      & type_       .~ SwaggerArray
+      & maxItems    ?~ fromIntegral sz
+      & minItems    ?~ fromIntegral sz
+      & items       ?~ SwaggerItemsArray (map (Inline . go) (V.toList xs))
+      & uniqueItems ?~ allUnique
+      & enum_       ?~ [js]
+      where
+        sz = length xs
+        allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
+    go js@(Object o) = mempty
+      & type_         .~ SwaggerObject
+      & required      .~ names
+      & properties    .~ fmap (Inline . go) o
+      & maxProperties ?~ fromIntegral (length names)
+      & minProperties ?~ fromIntegral (length names)
+      & enum_         ?~ [js]
+      where
+        names = HashMap.keys o
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema

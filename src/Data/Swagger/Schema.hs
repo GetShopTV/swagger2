@@ -29,6 +29,10 @@ module Data.Swagger.Schema (
   binarySchema,
   byteSchema,
 
+  -- * Sketching @'Schema'@s using @'ToJSON'@
+  sketchSchema,
+  sketchStrictSchema,
+
   -- * Inlining @'Schema'@s
   inlineNonRecursiveSchemas,
   inlineAllSchemas,
