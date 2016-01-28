@@ -105,7 +105,7 @@ instance Arbitrary TL.Text where
   arbitrary = TL.pack <$> arbitrary
 
 instance Arbitrary Day where
-  arbitrary = liftA3 fromGregorian (fmap abs arbitrary) arbitrary arbitrary
+  arbitrary = liftA3 fromGregorian (fmap ((+ 1) . abs) arbitrary) arbitrary arbitrary
 
 instance Arbitrary LocalTime where
   arbitrary = LocalTime
