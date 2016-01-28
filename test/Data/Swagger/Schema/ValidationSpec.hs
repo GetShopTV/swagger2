@@ -37,10 +37,7 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
-shouldValidate proxy x = res == Passed ()
-  where
-    res = runValidation (validateWithSchema (toJSON x)) defaultConfig { configDefinitions = defs } schema
-    (defs, schema) = runDeclare (declareSchema proxy) mempty
+shouldValidate _ x = validateToJSON x == []
 
 spec :: Spec
 spec = do

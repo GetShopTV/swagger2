@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- |
@@ -30,19 +31,35 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.Monoid
+import Data.Proxy
 import Data.Scientific (Scientific, isInteger)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 
+import Data.Swagger.Declare
 import Data.Swagger.Internal
+import Data.Swagger.Internal.Schema
 import Data.Swagger.Lens
 
+-- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value.
+-- This can be used with QuickCheck to ensure those instances are coherent:
+--
+-- prop> validateToJSON (x :: Int) == []
+validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [String]
+validateToJSON x = case runValidation (validateWithSchema js) cfg schema of
+    Failed xs -> xs
+    Passed _  -> mempty
+  where
+    js = toJSON x
+    cfg = defaultConfig { configDefinitions = defs }
+    (defs, schema) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
 
+-- | Validation result type.
 data Result a
-  = Failed [String]
-  | Passed a
+  = Failed [String]   -- ^ Validation failed with a list of error messages.
+  | Passed a          -- ^ Validation passed.
   deriving (Eq, Show, Functor)
 
 instance Applicative Result where
@@ -62,8 +79,11 @@ instance Monad Result where
   Passed x >>=  f = f x
   Failed xs >>= f = Failed xs
 
+-- | Validation configuration.
 data Config = Config
-  { configPatternChecker :: Pattern -> Text -> Bool
+  { -- | Pattern checker for @'_paramSchemaPattern'@ validation.
+    configPatternChecker :: Pattern -> Text -> Bool
+    -- | Schema definitions in scope to resolve references.
   , configDefinitions    :: Definitions Schema
   }
 
@@ -71,7 +91,7 @@ data Config = Config
 --
 -- @
 -- defaultConfig = 'Config'
---   { 'configPatternChecker' = \_pattern _str -> True
+--   { 'configPatternChecker' = \\_pattern _str -> True
 --   , 'configDefinitions'    = mempty
 --   }
 -- @
@@ -81,6 +101,7 @@ defaultConfig = Config
   , configDefinitions    = mempty
   }
 
+-- | Value validation.
 newtype Validation s a = Validation { runValidation :: Config -> s -> Result a }
   deriving (Functor)
 
@@ -110,24 +131,31 @@ withConfig f = Validation (\c -> runValidation (f c) c)
 withSchema :: (s -> Validation s a) -> Validation s a
 withSchema f = Validation (\c s -> runValidation (f s) c s)
 
+-- | Issue an error message.
 invalid :: String -> Validation schema a
 invalid msg = Validation (\_ _ -> Failed [msg])
 
+-- | Validation passed.
 valid :: Validation schema ()
 valid = pure ()
 
+-- | Validate schema's property given a lens into that property
+-- and property checker.
 check :: Lens' s (Maybe a) -> (a -> Validation s ()) -> Validation s ()
 check l g = withSchema $ \schema ->
   case schema ^. l of
     Nothing -> valid
     Just x  -> g x
 
+-- | Validate same value with different schema.
 sub :: t -> Validation t a -> Validation s a
 sub = lmap . const
 
+-- | Validate same value with a part of the original schema.
 sub_ :: Getting a s a -> Validation a r -> Validation s r
 sub_ = lmap . view
 
+-- | Validate value against a schema given schema reference and validation function.
 withRef :: Reference -> (Schema -> Validation s a) -> Validation s a
 withRef (Reference ref) f = withConfig $ \cfg ->
   case HashMap.lookup ref (configDefinitions cfg) of
@@ -138,11 +166,13 @@ validateWithSchemaRef :: Referenced Schema -> Value -> Validation s ()
 validateWithSchemaRef (Ref ref)  js = withRef ref $ \schema -> sub schema (validateWithSchema js)
 validateWithSchemaRef (Inline s) js = sub s (validateWithSchema js)
 
+-- | Validate JSON @'Value'@ with Swagger @'Schema'@.
 validateWithSchema :: Value -> Validation Schema ()
 validateWithSchema value = do
   validateSchemaType value
   sub_ paramSchema $ validateEnum value
 
+-- | Validate JSON @'Value'@ with Swagger @'ParamSchema'@.
 validateWithParamSchema :: Value -> Validation (ParamSchema t) ()
 validateWithParamSchema value = do
   validateParamSchemaType value
@@ -151,7 +181,7 @@ validateWithParamSchema value = do
 validateInteger :: Scientific -> Validation (ParamSchema t) ()
 validateInteger n = do
   when (not (isInteger n)) $
-    invalid ("not an integer: " ++ show n)
+    invalid ("not an integer")
   validateNumber n
 
 validateNumber :: Scientific -> Validation (ParamSchema t) ()
@@ -175,16 +205,16 @@ validateString :: Text -> Validation (ParamSchema t) ()
 validateString s = do
   check maxLength $ \n ->
     when (len > fromInteger n) $
-      invalid ("string is too long (length should be <=" ++ show n ++ "): " ++ show s)
+      invalid ("string is too long (length should be <=" ++ show n ++ ")")
 
   check minLength $ \n ->
     when (len < fromInteger n) $
-      invalid ("string is too short (length should be >=" ++ show n ++ "): " ++ show s)
+      invalid ("string is too short (length should be >=" ++ show n ++ ")")
 
   check pattern $ \regex -> do
     withConfig $ \cfg -> do
       when (not (configPatternChecker cfg regex s)) $
-        invalid ("string does not match pattern " ++ show regex ++ ": " ++ show s)
+        invalid ("string does not match pattern " ++ show regex)
   where
     len = Text.length s
 
@@ -192,23 +222,23 @@ validateArray :: Vector Value -> Validation (ParamSchema t) ()
 validateArray xs = do
   check maxItems $ \n ->
     when (len > fromInteger n) $
-      invalid ("array exceeds maximum size (should be <=" ++ show n ++ "): " ++ show (encode xs))
+      invalid ("array exceeds maximum size (should be <=" ++ show n ++ ")")
 
   check minItems $ \n ->
     when (len < fromInteger n) $
-      invalid ("array is too short (size should be >=" ++ show n ++ "): " ++ show (encode xs))
+      invalid ("array is too short (size should be >=" ++ show n ++ ")")
 
   check items $ \case
     SwaggerItemsPrimitive _ itemSchema -> sub itemSchema $ traverse_ validateWithParamSchema xs
     SwaggerItemsObject itemSchema      -> traverse_ (validateWithSchemaRef itemSchema) xs
     SwaggerItemsArray itemSchemas -> do
       when (len /= length itemSchemas) $
-        invalid ("array size is invalid (should be exactly " ++ show (length itemSchemas) ++ "): " ++ show (encode xs))
+        invalid ("array size is invalid (should be exactly " ++ show (length itemSchemas) ++ ")")
       sequenceA_ (zipWith validateWithSchemaRef itemSchemas (Vector.toList xs))
 
   check uniqueItems $ \unique ->
     when (unique && not allUnique) $
-      invalid ("array is expected to contain unique items, but it does not: " ++ show (encode xs))
+      invalid ("array is expected to contain unique items, but it does not")
   where
     len = Vector.length xs
     allUnique = len == HashSet.size (HashSet.fromList (Vector.toList xs))
@@ -219,15 +249,15 @@ validateObject o = withSchema $ \schema ->
     Just pname -> case fromJSON <$> HashMap.lookup pname o of
       Just (Success ref) -> validateWithSchemaRef ref (Object o)
       Just (Error msg)   -> invalid ("failed to parse discriminator property " ++ show pname ++ ": " ++ show msg)
-      Nothing            -> invalid ("discriminator property " ++ show pname ++ "is missing: " ++ show (encode o))
+      Nothing            -> invalid ("discriminator property " ++ show pname ++ "is missing")
     Nothing -> do
       check maxProperties $ \n ->
         when (size > n) $
-          invalid ("object size exceeds maximum (total number of properties should be <=" ++ show n ++ "): " ++ show (encode o))
+          invalid ("object size exceeds maximum (total number of properties should be <=" ++ show n ++ ")")
 
       check minProperties $ \n ->
         when (size < n) $
-          invalid ("object size is too small (total number of properties should be >=" ++ show n ++ "): " ++ show (encode o))
+          invalid ("object size is too small (total number of properties should be >=" ++ show n ++ ")")
 
       validateRequired
       validateProps
@@ -264,7 +294,7 @@ validateSchemaType value = withSchema $ \schema ->
     (SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
     (SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
     (SwaggerObject,  Object o)   -> validateObject o
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t ++ ": " ++ show (encode value)
+    (t, _) -> invalid $ "expected JSON value of type " ++ show t
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \schema ->
@@ -274,5 +304,5 @@ validateParamSchemaType value = withSchema $ \schema ->
     (SwaggerNumber,  Number n)   -> validateNumber n
     (SwaggerString,  String s)   -> validateString s
     (SwaggerArray,   Array xs)   -> validateArray xs
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t ++ ": " ++ show (encode value)
+    (t, _) -> invalid $ "expected JSON value of type " ++ show t
 
