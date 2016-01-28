@@ -1,9 +1,12 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PackageImports #-}
 module Data.Swagger.Schema.ValidationSpec where
 
 import Control.Applicative
 import Data.Aeson
+import Data.Aeson.Types
 import Data.Int
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
@@ -22,8 +25,10 @@ import qualified Data.Text.Lazy as TL
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Word
+import GHC.Generics
 
 import Data.Swagger
+import Data.Swagger.Declare
 import Data.Swagger.Schema.Validation
 
 import SpecCommon
@@ -34,7 +39,8 @@ import Test.QuickCheck
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate proxy x = res == Passed ()
   where
-    res = runValidation (validateWithSchema (toJSON x)) defaultConfig (toSchema proxy)
+    res = runValidation (validateWithSchema (toJSON x)) defaultConfig { configDefinitions = defs } schema
+    (defs, schema) = runDeclare (declareSchema proxy) mempty
 
 spec :: Spec
 spec = do
@@ -76,9 +82,78 @@ spec = do
     prop "(Int, String, Double)" $ shouldValidate (Proxy :: Proxy (Int, String, Double))
     prop "(Int, String, Double, [Int])" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int]))
     prop "(Int, String, Double, [Int], Int)" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int], Int))
+    prop "Person" $ shouldValidate (Proxy :: Proxy Person)
+    prop "Color" $ shouldValidate (Proxy :: Proxy Color)
+    prop "Paint" $ shouldValidate (Proxy :: Proxy Paint)
+    prop "MyRoseTree" $ shouldValidate (Proxy :: Proxy MyRoseTree)
+    prop "Light" $ shouldValidate (Proxy :: Proxy Light)
 
 main :: IO ()
 main = hspec spec
+
+-- ========================================================================
+-- Person (simple record with optional fields)
+-- ========================================================================
+data Person = Person { name  :: String , phone :: Integer , email :: Maybe String } deriving (Show, Generic, ToSchema, ToJSON)
+
+instance Arbitrary Person where
+  arbitrary = Person <$> arbitrary <*> arbitrary <*> arbitrary
+
+-- ========================================================================
+-- Color (enum)
+-- ========================================================================
+data Color = Red | Green | Blue deriving (Show, Generic, ToSchema, ToJSON, Bounded, Enum)
+
+instance Arbitrary Color where
+  arbitrary = arbitraryBoundedEnum
+
+-- ========================================================================
+-- Paint (record with bounded enum property)
+-- ========================================================================
+
+newtype Paint = Paint { color :: Color }
+  deriving (Show, Generic, ToSchema, ToJSON)
+
+instance Arbitrary Paint where
+  arbitrary = Paint <$> arbitrary
+
+-- ========================================================================
+-- MyRoseTree (custom datatypeNameModifier)
+-- ========================================================================
+
+data MyRoseTree = MyRoseTree
+  { root  :: String
+  , trees :: [MyRoseTree]
+  } deriving (Show, Generic, ToJSON)
+
+instance ToSchema MyRoseTree where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+    { datatypeNameModifier = drop (length "My") }
+
+instance Arbitrary MyRoseTree where
+  arbitrary = fmap (cut limit) $ MyRoseTree <$> arbitrary <*> (take limit <$> arbitrary)
+    where
+      limit = 4
+      cut 0 (MyRoseTree x _ ) = MyRoseTree x []
+      cut n (MyRoseTree x xs) = MyRoseTree x (map (cut (n - 1)) xs)
+
+-- ========================================================================
+-- Light (sum type)
+-- ========================================================================
+
+data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic, ToSchema)
+
+instance ToJSON Light where
+  toJSON = genericToJSON defaultOptions { sumEncoding = ObjectWithSingleField }
+
+instance Arbitrary Light where
+  arbitrary = oneof
+    [ return NoLight
+    , LightFreq <$> arbitrary
+    , LightColor <$> arbitrary
+    ]
+
+-- Arbitrary instances for common types
 
 #if MIN_VERSION_QuickCheck(2,8,2)
 #else
