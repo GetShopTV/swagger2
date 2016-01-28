@@ -47,19 +47,35 @@ import Data.Swagger.Lens
 -- This can be used with QuickCheck to ensure those instances are coherent:
 --
 -- prop> validateToJSON (x :: Int) == []
-validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [String]
-validateToJSON x = case runValidation (validateWithSchema js) cfg schema of
+--
+-- /NOTE:/ @'validateToJSON'@ does not perform string pattern validation.
+-- See @'validateToJSONWithPatternChecker'@.
+validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [ValidationError]
+validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
+
+-- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value and pattern checker.
+-- This can be used with QuickCheck to ensure those instances are coherent.
+--
+-- For validation without patterns see @'validateToJSON'@.
+validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) =>
+  (Pattern -> Text -> Bool) -> a -> [ValidationError]
+validateToJSONWithPatternChecker checker x = case runValidation (validateWithSchema js) cfg schema of
     Failed xs -> xs
     Passed _  -> mempty
   where
-    js = toJSON x
-    cfg = defaultConfig { configDefinitions = defs }
     (defs, schema) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
+    js = toJSON x
+    cfg = defaultConfig
+            { configPatternChecker = checker
+            , configDefinitions = defs }
+
+-- | Validation error message.
+type ValidationError = String
 
 -- | Validation result type.
 data Result a
-  = Failed [String]   -- ^ Validation failed with a list of error messages.
-  | Passed a          -- ^ Validation passed.
+  = Failed [ValidationError]  -- ^ Validation failed with a list of error messages.
+  | Passed a                  -- ^ Validation passed.
   deriving (Eq, Show, Functor)
 
 instance Applicative Result where
