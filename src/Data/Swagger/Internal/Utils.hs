@@ -6,6 +6,9 @@
 {-# LANGUAGE TypeOperators #-}
 module Data.Swagger.Internal.Utils where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Arrow (first)
 import Control.Applicative
 import Control.Lens ((&), (%~))
@@ -151,7 +154,7 @@ class SwaggerMonoid m where
 instance SwaggerMonoid [a]
 instance Ord k => SwaggerMonoid (Map k v)
 
-instance {-# OVERLAPPABLE #-} (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where
+instance (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where
   swaggerMempty = mempty
   swaggerMappend = HashMap.unionWith (\_old new -> new)
 

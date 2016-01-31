@@ -1,9 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Data.Swagger.SchemaSpec where
+
+import Prelude ()
+import Prelude.Compat
 
 import Data.Aeson
 import Data.Aeson.QQ
@@ -12,7 +14,6 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Proxy
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Text (Text)
 import qualified Data.Text as Text
 import GHC.Generics
 
@@ -41,14 +42,14 @@ checkInlinedSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkInlinedSchema proxy js = toInlinedSchema proxy <=> js
 
 checkInlinedSchemas :: ToSchema a => [String] -> Proxy a -> Value -> Spec
-checkInlinedSchemas names proxy js = inlineSchemas (map Text.pack names) defs schema <=> js
+checkInlinedSchemas names proxy js = inlineSchemas (map Text.pack names) defs s <=> js
   where
-    (defs, schema) = runDeclare (declareSchema proxy) mempty
+    (defs, s) = runDeclare (declareSchema proxy) mempty
 
 checkInlinedRecSchema :: ToSchema a => Proxy a -> Value -> Spec
-checkInlinedRecSchema proxy js = inlineNonRecursiveSchemas defs schema <=> js
+checkInlinedRecSchema proxy js = inlineNonRecursiveSchemas defs s <=> js
   where
-    (defs, schema) = runDeclare (declareSchema proxy) mempty
+    (defs, s) = runDeclare (declareSchema proxy) mempty
 
 spec :: Spec
 spec = do
@@ -101,7 +102,9 @@ data Person = Person
   { name  :: String
   , phone :: Integer
   , email :: Maybe String
-  } deriving (Generic, ToSchema)
+  } deriving (Generic)
+
+instance ToSchema Person
 
 personSchemaJSON :: Value
 personSchemaJSON = [aesonQQ|
@@ -121,7 +124,9 @@ personSchemaJSON = [aesonQQ|
 -- ISPair (non-record product data type)
 -- ========================================================================
 data ISPair = ISPair Integer String
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+
+instance ToSchema ISPair
 
 ispairSchemaJSON :: Value
 ispairSchemaJSON = [aesonQQ|
@@ -168,7 +173,8 @@ data Color
   = Red
   | Green
   | Blue
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+instance ToSchema Color
 
 colorSchemaJSON :: Value
 colorSchemaJSON = [aesonQQ|
@@ -182,7 +188,8 @@ colorSchemaJSON = [aesonQQ|
 -- Shade (paramSchemaToNamedSchema)
 -- ========================================================================
 
-data Shade = Dim | Bright deriving (Generic, ToParamSchema)
+data Shade = Dim | Bright deriving (Generic)
+instance ToParamSchema Shade
 
 instance ToSchema Shade where declareNamedSchema = pure . paramSchemaToNamedSchema defaultSchemaOptions
 
@@ -199,7 +206,8 @@ shadeSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype Paint = Paint { color :: Color }
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+instance ToSchema Paint
 
 paintSchemaJSON :: Value
 paintSchemaJSON = [aesonQQ|
@@ -255,7 +263,8 @@ emailSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype UserId = UserId Integer
-  deriving (Eq, Ord, Generic, ToSchema)
+  deriving (Eq, Ord, Generic)
+instance ToSchema UserId
 
 userIdSchemaJSON :: Value
 userIdSchemaJSON = [aesonQQ|
@@ -269,7 +278,8 @@ userIdSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype UserGroup = UserGroup (Set UserId)
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+instance ToSchema UserGroup
 
 userGroupSchemaJSON :: Value
 userGroupSchemaJSON = [aesonQQ|
@@ -286,7 +296,8 @@ userGroupSchemaJSON = [aesonQQ|
 
 newtype Player = Player
   { position :: Point
-  } deriving (Generic, ToSchema)
+  } deriving (Generic)
+instance ToSchema Player
 
 playerSchemaJSON :: Value
 playerSchemaJSON = [aesonQQ|
@@ -345,10 +356,11 @@ newtype Inlined a = Inlined { getInlined :: a }
 instance ToSchema a => ToSchema (Inlined a) where
   declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
     where
-      unname (NamedSchema _ schema) = NamedSchema Nothing schema
+      unname (NamedSchema _ s) = NamedSchema Nothing s
 
 newtype Players = Players [Inlined Player]
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+instance ToSchema Players
 
 playersSchemaJSON :: Value
 playersSchemaJSON = [aesonQQ|
@@ -400,7 +412,8 @@ statusSchemaJSON = [aesonQQ|
 -- Unit type
 -- ========================================================================
 
-data Unit = Unit deriving (Generic, ToSchema)
+data Unit = Unit deriving (Generic)
+instance ToSchema Unit
 
 unitSchemaJSON :: Value
 unitSchemaJSON = [aesonQQ|
@@ -418,7 +431,8 @@ unitSchemaJSON = [aesonQQ|
 data Character
   = PC Player
   | NPC { npcName :: String, npcPosition :: Point }
-  deriving (Generic, ToSchema)
+  deriving (Generic)
+instance ToSchema Character
 
 characterSchemaJSON :: Value
 characterSchemaJSON = [aesonQQ|
@@ -581,6 +595,8 @@ lightInlinedSchemaJSON = [aesonQQ|
 -- ResourceId (series of newtypes)
 -- ========================================================================
 
-newtype Id = Id String deriving (Generic, ToSchema)
+newtype Id = Id String deriving (Generic)
+instance ToSchema Id
 
-newtype ResourceId = ResourceId Id deriving (Generic, ToSchema)
+newtype ResourceId = ResourceId Id deriving (Generic)
+instance ToSchema ResourceId

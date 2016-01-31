@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -11,7 +12,11 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+#include "overlapping-compat.h"
 module Data.Swagger.Internal.Schema where
+
+import Prelude ()
+import Prelude.Compat
 
 import Control.Lens
 import Data.Data.Lens (template)
@@ -29,7 +34,6 @@ import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
 import Data.Map (Map)
-import Data.Monoid
 import Data.Proxy
 import Data.Scientific (Scientific)
 import Data.Set (Set)
@@ -42,8 +46,12 @@ import GHC.Generics
 import Data.Swagger.Declare
 import Data.Swagger.Internal
 import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
-import Data.Swagger.Lens
+import Data.Swagger.Lens hiding (name, schema)
 import Data.Swagger.SchemaOptions
+
+#ifdef __DOCTEST__
+import Data.Swagger.Lens (name, schema)
+#endif
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -258,14 +266,14 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
-instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
+instance OVERLAPPABLE_ ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & type_ .~ SwaggerArray
       & items ?~ SwaggerItemsObject ref
 
-instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
+instance OVERLAPPING_ ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Integer where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Int     where declareNamedSchema = plain . paramSchemaToSchema
@@ -434,10 +442,10 @@ instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
     where
       name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
-instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
+instance OVERLAPPABLE_ GToSchema f => GToSchema (C1 c f) where
   gdeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy f)
 
-instance {-# OVERLAPPING #-} Constructor c => GToSchema (C1 c U1) where
+instance OVERLAPPING_ Constructor c => GToSchema (C1 c U1) where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
 -- | Single field constructor.
@@ -498,17 +506,17 @@ withFieldSchema opts _ isRequiredField schema = do
     fname = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
 
 -- | Optional record fields.
-instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
+instance OVERLAPPING_ (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
   gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
 
 -- | Record fields.
-instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
+instance OVERLAPPABLE_ (Selector s, GToSchema f) => GToSchema (S1 s f) where
   gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
-instance {-# OVERLAPPING #-} ToSchema c => GToSchema (K1 i (Maybe c)) where
+instance OVERLAPPING_ ToSchema c => GToSchema (K1 i (Maybe c)) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
-instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
+instance OVERLAPPABLE_ ToSchema c => GToSchema (K1 i c) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
 instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
@@ -550,7 +558,7 @@ gsumConToSchema opts proxy schema = do
   ref <- gdeclareSchemaRef opts proxy
   return $ gsumConToSchemaWith ref opts proxy schema
 
-instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
+instance OVERLAPPABLE_ (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
   gsumToSchema opts proxy schema = do
     tell (All False)
     lift $ gsumConToSchema opts proxy schema

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+#include "overlapping-compat.h"
 module Data.Swagger.Internal.ParamSchema where
 
 import Control.Lens
@@ -73,7 +75,7 @@ class ToParamSchema a where
   default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => proxy a -> ParamSchema t
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
-instance {-# OVERLAPPING #-} ToParamSchema String where
+instance OVERLAPPING_ ToParamSchema String where
   toParamSchema _ = mempty & type_ .~ SwaggerString
 
 instance ToParamSchema Bool where
