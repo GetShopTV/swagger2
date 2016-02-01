@@ -9,6 +9,8 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.List
 import Data.Maybe (mapMaybe)
 import Data.Monoid
+import Data.Traversable
+
 import Data.Swagger.Declare
 import Data.Swagger.Internal
 import Data.Swagger.Lens
