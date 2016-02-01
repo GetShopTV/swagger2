@@ -1,16 +1,35 @@
 {-# LANGUAGE RankNTypes #-}
 module Data.Swagger.Operation where
 
+import Control.Applicative
+import Control.Arrow
 import Control.Lens
 import Data.Data.Lens
-
 import qualified Data.HashMap.Strict as HashMap
+import Data.List
 import Data.Maybe (mapMaybe)
 import Data.Monoid
 import Data.Swagger.Declare
 import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
+
+-- | Prepend path piece to all operations of the spec.
+-- Leading and trailing slashes are trimmed/added automatically.
+--
+-- >>> let api = (mempty :: Swagger) & paths .~ [("/info", mempty)]
+-- >>> encode $ prependPath "user/{user_id}" api ^. paths
+-- "{\"/user/{user_id}/info\":{}}"
+prependPath :: FilePath -> Swagger -> Swagger
+prependPath path = paths %~ mapKeys (path </>)
+  where
+    mapKeys f = HashMap.fromList . map (first f) . HashMap.toList
+
+    x </> y = case trim y of
+      "" -> "/" <> trim x
+      y' -> "/" <> trim x <> "/" <> y'
+
+    trim = dropWhile (== '/') . dropWhileEnd (== '/')
 
 -- $setup
 -- >>> import Data.Aeson
