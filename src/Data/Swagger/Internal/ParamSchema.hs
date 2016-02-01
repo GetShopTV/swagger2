@@ -25,6 +25,10 @@ import Data.Scientific
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Time
+import qualified Data.Vector as V
+import qualified Data.Vector.Primitive as VP
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
 import Data.Word
 
 import Data.Swagger.Internal
@@ -177,6 +181,11 @@ instance ToParamSchema a => ToParamSchema [a] where
   toParamSchema _ = mempty
     & type_ .~ SwaggerArray
     & items ?~ SwaggerItemsPrimitive Nothing (toParamSchema (Proxy :: Proxy a))
+
+instance ToParamSchema a => ToParamSchema (V.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
+instance ToParamSchema a => ToParamSchema (VP.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
+instance ToParamSchema a => ToParamSchema (VS.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
+instance ToParamSchema a => ToParamSchema (VU.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
 
 instance ToParamSchema a => ToParamSchema (Set a) where
   toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
