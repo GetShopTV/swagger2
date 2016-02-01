@@ -159,7 +159,7 @@ import Data.Swagger.Internal
 -- $lens
 --
 -- Since @'Swagger'@ has a fairly complex structure, lenses and prisms are used
--- to work comfortly with it. In combination with @'Monoid'@ instances, lenses
+-- to work comfortably with it. In combination with @'Monoid'@ instances, lenses
 -- make it fairly simple to construct/modify any part of the specification:
 --
 -- >>> :{
@@ -173,13 +173,14 @@ import Data.Swagger.Internal
 -- :}
 -- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"User\":{\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}},\"produces\":[\"application/json\"]}}}}"
 --
--- In the snippet above we declare API with a single path @/user@ providing method @GET@
--- which produces @application/json@ output and should respond with code @200@ and body specified
+-- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
+-- which produces @application/json@ output. It should respond with code @200@ and body specified
 -- by schema @User@ which is defined in @'definitions'@ property of swagger specification.
+-- Alternatively it may respond with code @404@ meaning that user info is not found.
 --
 -- For convenience, @swagger2@ uses /classy field lenses/. It means that
 -- field accessor names can be overloaded for different types. One such
--- common field is @'description'@. Many components of Swagger specification
+-- common field is @'description'@. Many components of a Swagger specification
 -- can have descriptions, and you can use the same name for them:
 --
 -- >>> encode $ (mempty :: Response) & description .~ "No content"
