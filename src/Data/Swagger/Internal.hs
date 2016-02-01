@@ -496,6 +496,9 @@ data NamedSchema = NamedSchema
   , _namedSchemaSchema :: Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- | Regex pattern for @string@ type.
+type Pattern = Text
+
 data ParamSchema t = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
@@ -513,7 +516,7 @@ data ParamSchema t = ParamSchema
   , _paramSchemaExclusiveMinimum :: Maybe Bool
   , _paramSchemaMaxLength :: Maybe Integer
   , _paramSchemaMinLength :: Maybe Integer
-  , _paramSchemaPattern :: Maybe Text
+  , _paramSchemaPattern :: Maybe Pattern
   , _paramSchemaMaxItems :: Maybe Integer
   , _paramSchemaMinItems :: Maybe Integer
   , _paramSchemaUniqueItems :: Maybe Bool
