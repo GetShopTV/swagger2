@@ -98,7 +98,8 @@ contactExampleJSON = [aesonQQ|
 -- =======================================================================
 
 licenseExample :: License
-licenseExample = License "Apache 2.0" (Just (URL "http://www.apache.org/licenses/LICENSE-2.0.html"))
+licenseExample = "Apache 2.0"
+  & url ?~ URL "http://www.apache.org/licenses/LICENSE-2.0.html"
 
 licenseExampleJSON :: Value
 licenseExampleJSON = [aesonQQ|
@@ -139,9 +140,8 @@ operationExample = mempty
           & schema .~ ParamOther (stringSchema ParamFormData)
       ]
 
-  & responses .~ (mempty & responses .~
-      [ (200, Inline (mempty & description .~ "Pet updated."))
-      , (405, Inline (mempty & description .~ "Invalid input")) ])
+  & at 200 ?~ "Pet updated."
+  & at 405 ?~ "Invalid input"
   & security .~ [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
   where
     stringSchema :: ParamLocation -> ParamOtherSchema
@@ -479,7 +479,8 @@ swaggerExample = mempty
   & info .~ (mempty
       & version .~ "1.0"
       & title .~ "Todo API"
-      & license ?~ License "MIT" (Just (URL "http://mit.com"))
+      & license ?~ "MIT"
+      & license._Just.url ?~ URL "http://mit.com"
       & description ?~ "This is a an API that tests servant-swagger support for a Todo API")
   & paths.at "/todo/{id}" ?~ (mempty & get ?~ ((mempty :: Operation)
       & at 200 ?~ Inline (mempty

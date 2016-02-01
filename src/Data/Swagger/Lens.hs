@@ -48,6 +48,8 @@ makeFields ''ExternalDocs
 makePrisms ''ParamAnySchema
 -- ** 'SecuritySchemeType' prisms
 makePrisms ''SecuritySchemeType
+-- ** 'Referenced' prisms
+makePrisms ''Referenced
 
 -- ** 'SwaggerItems' prisms
 
