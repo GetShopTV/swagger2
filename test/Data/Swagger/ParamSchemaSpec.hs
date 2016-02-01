@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -9,7 +8,6 @@ import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
 import Data.Proxy
-import Data.Set (Set)
 import GHC.Generics
 
 import Data.Swagger
@@ -37,7 +35,8 @@ main = hspec spec
 -- Unit type
 -- ========================================================================
 
-data Unit = Unit deriving (Generic, ToParamSchema)
+data Unit = Unit deriving (Generic)
+instance ToParamSchema Unit
 
 unitSchemaJSON :: Value
 unitSchemaJSON = [aesonQQ|
@@ -54,7 +53,8 @@ data Color
   = Red
   | Green
   | Blue
-  deriving (Generic, ToParamSchema)
+  deriving (Generic)
+instance ToParamSchema Color
 
 colorSchemaJSON :: Value
 colorSchemaJSON = [aesonQQ|
@@ -87,7 +87,8 @@ statusSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype Email = Email { getEmail :: String }
-  deriving (Generic, ToParamSchema)
+  deriving (Generic)
+instance ToParamSchema Email
 
 emailSchemaJSON :: Value
 emailSchemaJSON = [aesonQQ|
@@ -101,7 +102,8 @@ emailSchemaJSON = [aesonQQ|
 -- ========================================================================
 
 newtype UserId = UserId Integer
-  deriving (Generic, ToParamSchema)
+  deriving (Generic)
+instance ToParamSchema UserId
 
 userIdSchemaJSON :: Value
 userIdSchemaJSON = [aesonQQ|

@@ -4,6 +4,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Data.SwaggerSpec where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Lens
 
 import Data.Aeson
@@ -843,8 +846,7 @@ petstoreExampleJSON = [aesonQQ|
             },
             "security":[  
                {  
-                  "api_key":[  
-                  ]
+                  "api_key": []
                }
             ]
          },
@@ -1009,8 +1011,7 @@ petstoreExampleJSON = [aesonQQ|
             "produces":[  
                "application/json"
             ],
-            "parameters":[  
-            ],
+            "parameters": [],
             "responses":{  
                "200":{  
                   "description":"successful operation",
@@ -1025,8 +1026,7 @@ petstoreExampleJSON = [aesonQQ|
             },
             "security":[  
                {  
-                  "api_key":[  
-                  ]
+                  "api_key": []
                }
             ]
          }
@@ -1298,8 +1298,7 @@ petstoreExampleJSON = [aesonQQ|
                "application/xml",
                "application/json"
             ],
-            "parameters":[  
-            ],
+            "parameters": [],
             "responses":{  
                "default":{  
                   "description":"successful operation"

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -10,7 +11,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
+#include "overlapping-compat.h"
 module Data.Swagger.Internal where
+
+import Prelude ()
+import Prelude.Compat
 
 import           Control.Applicative
 import           Control.Monad
@@ -334,10 +339,11 @@ data SwaggerItems t where
   SwaggerItemsPrimitive :: Maybe (CollectionFormat t) -> ParamSchema t -> SwaggerItems t
   SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems Schema
   SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems Schema
+  deriving (Typeable)
 
 deriving instance Eq (SwaggerItems t)
 deriving instance Show (SwaggerItems t)
-deriving instance Typeable (SwaggerItems t)
+--deriving instance Typeable (SwaggerItems t)
 
 swaggerItemsPrimitiveConstr :: Constr
 swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimitive" [] Prefix
@@ -345,7 +351,7 @@ swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimiti
 swaggerItemsDataType :: DataType
 swaggerItemsDataType = mkDataType "Data.Swagger.SwaggerItems" [swaggerItemsPrimitiveConstr]
 
-instance {-# OVERLAPPABLE #-} Data t => Data (SwaggerItems t) where
+instance OVERLAPPABLE_ Data t => Data (SwaggerItems t) where
   gunfold k z c = case constrIndex c of
     1 -> k (k (z SwaggerItemsPrimitive))
     _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type (SwaggerItems t)."
@@ -363,10 +369,10 @@ data SwaggerType t where
   SwaggerFile     :: SwaggerType ParamOtherSchema
   SwaggerNull     :: SwaggerType Schema
   SwaggerObject   :: SwaggerType Schema
+  deriving (Typeable)
 
 deriving instance Eq (SwaggerType t)
 deriving instance Show (SwaggerType t)
-deriving instance Typeable (SwaggerType t)
 
 swaggerTypeConstr :: Data (SwaggerType t) => SwaggerType t -> Constr
 swaggerTypeConstr t = mkConstr (dataTypeOf t) (show t) [] Prefix
@@ -387,17 +393,17 @@ swaggerTypeConstrs :: [Constr]
 swaggerTypeConstrs = map swaggerTypeConstr (swaggerCommonTypes :: [SwaggerType Schema])
   ++ [swaggerTypeConstr SwaggerFile, swaggerTypeConstr SwaggerNull, swaggerTypeConstr SwaggerObject]
 
-instance {-# OVERLAPPABLE #-} Typeable t => Data (SwaggerType t) where
+instance OVERLAPPABLE_ Typeable t => Data (SwaggerType t) where
   gunfold = gunfoldEnum "SwaggerType" swaggerCommonTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
 
-instance {-# OVERLAPPING #-} Data (SwaggerType ParamOtherSchema) where
+instance OVERLAPPABLE_ Data (SwaggerType ParamOtherSchema) where
   gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" swaggerParamTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
 
-instance {-# OVERLAPPING #-} Data (SwaggerType Schema) where
+instance OVERLAPPABLE_ Data (SwaggerType Schema) where
   gunfold = gunfoldEnum "SwaggerType Schema" swaggerSchemaTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
@@ -438,10 +444,10 @@ data CollectionFormat t where
   -- instead of multiple values for a single instance @foo=bar&foo=baz@.
   -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
   CollectionMulti :: CollectionFormat ParamOtherSchema
+  deriving (Typeable)
 
 deriving instance Eq (CollectionFormat t)
 deriving instance Show (CollectionFormat t)
-deriving instance Typeable (CollectionFormat t)
 
 collectionFormatConstr :: CollectionFormat t -> Constr
 collectionFormatConstr cf = mkConstr collectionFormatDataType (show cf) [] Prefix
@@ -453,12 +459,12 @@ collectionFormatDataType = mkDataType "Data.Swagger.CollectionFormat" $
 collectionCommonFormats :: [CollectionFormat t]
 collectionCommonFormats = [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
 
-instance {-# OVERLAPPABLE #-} Data t => Data (CollectionFormat t) where
+instance OVERLAPPABLE_ Data t => Data (CollectionFormat t) where
   gunfold = gunfoldEnum "CollectionFormat" collectionCommonFormats
   toConstr = collectionFormatConstr
   dataTypeOf _ = collectionFormatDataType
 
-deriving instance {-# OVERLAPPING #-} Data (CollectionFormat ParamOtherSchema)
+deriving instance OVERLAPPABLE_ Data (CollectionFormat ParamOtherSchema)
 
 type ParamName = Text
 
@@ -788,7 +794,7 @@ instance SwaggerMonoid ParamLocation where
   swaggerMempty = ParamQuery
   swaggerMappend _ y = y
 
-instance SwaggerMonoid (HashMap FilePath PathItem) where
+instance OVERLAPPING_ SwaggerMonoid (HashMap FilePath PathItem) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
 
@@ -1051,12 +1057,12 @@ instance FromJSON Schema where
 instance FromJSON Header where
   parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "header")
 
-instance {-# OVERLAPPABLE #-} (FromJSON (CollectionFormat t), FromJSON (ParamSchema t)) => FromJSON (SwaggerItems t) where
-  parseJSON (Object o) = SwaggerItemsPrimitive
+instance OVERLAPPABLE_ (FromJSON (CollectionFormat t), FromJSON (ParamSchema t)) => FromJSON (SwaggerItems t) where
+  parseJSON = withObject "SwaggerItemsPrimitive" $ \o -> SwaggerItemsPrimitive
     <$> o .:? "collectionFormat"
     <*> (o .: "items" >>= parseJSON)
 
-instance {-# OVERLAPPING #-} FromJSON (SwaggerItems Schema) where
+instance OVERLAPPABLE_ FromJSON (SwaggerItems Schema) where
   parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
   parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
   parseJSON _ = empty
@@ -1128,6 +1134,7 @@ referencedParseJSON prefix js@(Object o) = do
       case Text.stripPrefix prefix s of
         Nothing     -> fail $ "expected $ref of the form \"" <> Text.unpack prefix <> "*\", but got " <> show s
         Just suffix -> pure (Reference suffix)
+referencedParseJSON _ _ = fail "referenceParseJSON: not an object"
 
 instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/definitions/"
 instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/parameters/"
@@ -1142,10 +1149,10 @@ instance FromJSON (SwaggerType Schema) where
 instance FromJSON (SwaggerType ParamOtherSchema) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerFile]
 
-instance {-# OVERLAPPABLE #-} FromJSON (SwaggerType t) where
+instance OVERLAPPABLE_ FromJSON (SwaggerType t) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
 
-instance {-# OVERLAPPABLE #-} FromJSON (CollectionFormat t) where
+instance OVERLAPPABLE_ FromJSON (CollectionFormat t) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
 instance FromJSON (CollectionFormat ParamOtherSchema) where

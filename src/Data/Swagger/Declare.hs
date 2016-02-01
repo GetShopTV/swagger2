@@ -4,6 +4,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Data.Swagger.Declare where
 
+import Prelude ()
+import Prelude.Compat
+
 import Control.Monad
 import Control.Monad.Trans
 import Data.Functor.Identity
@@ -24,14 +27,14 @@ import Data.Monoid
 newtype DeclareT d m a = DeclareT { runDeclareT :: d -> m (d, a) }
   deriving (Functor)
 
-instance (Monad m, Monoid d) => Applicative (DeclareT d m) where
+instance (Applicative m, Monad m, Monoid d) => Applicative (DeclareT d m) where
   pure x = DeclareT (\_ -> pure (mempty, x))
   DeclareT df <*> DeclareT dx = DeclareT $ \d -> do
     ~(d',  f) <- df d
     ~(d'', x) <- dx (d <> d')
     return (d' <> d'', f x)
 
-instance (Monad m, Monoid d) => Monad (DeclareT d m) where
+instance (Applicative m, Monad m, Monoid d) => Monad (DeclareT d m) where
   return x = DeclareT (\_ -> pure (mempty, x))
   DeclareT dx >>= f = DeclareT $ \d -> do
     ~(d',  x) <- dx d
@@ -39,7 +42,7 @@ instance (Monad m, Monoid d) => Monad (DeclareT d m) where
     return (d' <> d'', y)
 
 instance Monoid d => MonadTrans (DeclareT d) where
-  lift m = DeclareT (\_ -> (,) mempty <$> m)
+  lift m = DeclareT (\_ -> (,) mempty `liftM` m)
 
 -- |
 -- Definitions of @declare@ and @look@ must satisfy the following laws:
@@ -58,13 +61,13 @@ instance Monoid d => MonadTrans (DeclareT d) where
 -- [/@look@ as left identity/]
 --   @'look' >> m == m@
 --   for every @m@
-class Monad m => MonadDeclare d m | m -> d where
+class (Applicative m, Monad m) => MonadDeclare d m | m -> d where
   -- | @'declare' x@ is an action that produces the output @x@.
   declare :: d -> m ()
   -- | @'look'@ is an action that returns all the output so far.
   look :: m d
 
-instance (Monad m, Monoid d) => MonadDeclare d (DeclareT d m) where
+instance (Applicative m, Monad m, Monoid d) => MonadDeclare d (DeclareT d m) where
   declare d = DeclareT (\_ -> return (d, ()))
   look = DeclareT (\d -> return (mempty, d))
 

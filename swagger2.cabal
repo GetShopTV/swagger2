@@ -15,11 +15,13 @@ extra-source-files:
     README.md
   , CHANGELOG.md
   , examples/*.hs
+  , include/overlapping-compat.h
 cabal-version:       >=1.10
-tested-with:         GHC==7.10.3
+tested-with:         GHC==7.8.4, GHC==7.10.3
 
 library
   hs-source-dirs:      src
+  include-dirs:        include
   exposed-modules:
     Data.Swagger
     Data.Swagger.Declare
@@ -33,7 +35,8 @@ library
     Data.Swagger.Internal.Schema
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
-  build-depends:       base >=4.8 && <4.10
+  build-depends:       base        >=4.7   && <4.10
+                     , base-compat >=0.6.0 && <0.10
                      , aeson
                      , containers
                      , hashable
@@ -43,6 +46,7 @@ library
                      , text
                      , template-haskell
                      , time
+                     , transformers
                      , unordered-containers
                      , lens
                      , scientific
@@ -52,7 +56,8 @@ test-suite spec
   type:             exitcode-stdio-1.0
   hs-source-dirs:   test
   main-is:          Spec.hs
-  build-depends:    base  == 4.*
+  build-depends:    base
+                  , base-compat
                   , swagger2
                   , hspec
                   , HUnit
