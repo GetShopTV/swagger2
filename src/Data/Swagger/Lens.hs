@@ -83,10 +83,12 @@ instance At   Responses where at n = responses . at n
 instance Ixed Operation where ix n = responses . ix n
 instance At   Operation where at n = responses . at n
 
+instance HasParamSchema NamedSchema (ParamSchema Schema) where paramSchema = schema.paramSchema
+
 -- HasType instances
 instance HasType Header (SwaggerType Header) where type_ = paramSchema.type_
 instance HasType Schema (SwaggerType Schema) where type_ = paramSchema.type_
-instance HasType NamedSchema (SwaggerType Schema) where type_ = schema.paramSchema.type_
+instance HasType NamedSchema (SwaggerType Schema) where type_ = paramSchema.type_
 instance HasType ParamOtherSchema (SwaggerType ParamOtherSchema) where type_ = paramSchema.type_
 
 -- HasDefault instances
