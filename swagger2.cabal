@@ -34,6 +34,7 @@ library
     -- internal modules
     Data.Swagger.Internal
     Data.Swagger.Internal.Schema
+    Data.Swagger.Internal.Schema.Validation
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
   build-depends:       base        >=4.7   && <4.10
