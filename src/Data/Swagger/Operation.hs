@@ -31,6 +31,10 @@ prependPath path = paths %~ mapKeys (path </>)
 
     trim = dropWhile (== '/') . dropWhileEnd (== '/')
 
+-- | All operations of a Swagger spec.
+allOperations :: Traversal' Swagger Operation
+allOperations = paths.traverse.template
+
 -- $setup
 -- >>> import Data.Aeson
 -- >>> import Data.Proxy
@@ -66,9 +70,9 @@ operationsOf sub = paths.itraversed.withIndex.subops
 
 -- | Apply tags to a part of Swagger spec and update the global
 -- list of tags.
-applyTagsFor :: Swagger -> [Tag] -> Swagger -> Swagger
-applyTagsFor sub ts swag = swag
-  & operationsOf sub . tags %~ (map _tagName ts ++)
+applyTagsFor :: Traversal' Swagger Operation -> [Tag] -> Swagger -> Swagger
+applyTagsFor ops ts swag = swag
+  & ops . tags %~ (map _tagName ts ++)
   & tags %~ (ts ++)
 
 -- | Construct a response with @'Schema'@ while declaring all
@@ -81,17 +85,17 @@ declareResponse proxy = do
   s <- declareSchemaRef proxy
   return (mempty & schema ?~ s)
 
--- | Set response for all operations of a subspec.
+-- | Set response for specified operations.
 -- This will also update global schema definitions.
 --
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
--- >>> encode $ api & setResponseFor api 200 res
+-- >>> encode $ api & setResponseFor allOperations 200 res
 -- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}}}"
-setResponseFor :: Swagger -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
-setResponseFor sub code dres swag = swag
+setResponseFor :: Traversal' Swagger Operation -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
+setResponseFor ops code dres swag = swag
   & definitions %~ (<> defs)
-  & operationsOf sub . at code ?~ Inline res
+  & ops . at code ?~ Inline res
   where
     (defs, res) = runDeclare dres mempty
 
