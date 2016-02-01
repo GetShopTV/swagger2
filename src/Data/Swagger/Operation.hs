@@ -16,6 +16,11 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
 
+-- $setup
+-- >>> import Data.Aeson
+-- >>> import Data.Proxy
+-- >>> import Data.Time
+
 -- | Prepend path piece to all operations of the spec.
 -- Leading and trailing slashes are trimmed/added automatically.
 --
@@ -36,11 +41,6 @@ prependPath path = paths %~ mapKeys (path </>)
 -- | All operations of a Swagger spec.
 allOperations :: Traversal' Swagger Operation
 allOperations = paths.traverse.template
-
--- $setup
--- >>> import Data.Aeson
--- >>> import Data.Proxy
--- >>> import Data.Time
 
 -- | @'operationsOf' sub@ will traverse only those operations
 -- that are present in @sub@. Note that @'Operation'@ is determined
@@ -90,14 +90,38 @@ declareResponse proxy = do
 -- | Set response for specified operations.
 -- This will also update global schema definitions.
 --
+-- If the response already exists it will be overwritten.
+--
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponseFor allOperations 200 res
 -- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}}}"
+--
+-- See also @'setResponseForWith'@.
 setResponseFor :: Traversal' Swagger Operation -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
 setResponseFor ops code dres swag = swag
   & definitions %~ (<> defs)
   & ops . at code ?~ Inline res
   where
     (defs, res) = runDeclare dres mempty
+
+-- | Set or update response for specified operations.
+-- This will also update global schema definitions.
+--
+-- If the response already exists, but it can't be dereferenced (invalid @\$ref@),
+-- then just the new response is used.
+--
+-- See also @'setResponseFor'@.
+setResponseForWith :: Traversal' Swagger Operation -> (Response -> Response -> Response) -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
+setResponseForWith ops f code dres swag = swag
+  & definitions %~ (<> defs)
+  & ops . at code %~ Just . Inline . combine
+  where
+    (defs, new) = runDeclare dres mempty
+
+    combine (Just (Ref (Reference name))) = case swag ^. responses.at name of
+      Just old -> f old new
+      Nothing  -> new -- response name can't be dereferenced, replacing with new response
+    combine (Just (Inline old)) = f old new
+    combine Nothing = new
 
