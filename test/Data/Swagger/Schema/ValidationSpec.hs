@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PackageImports #-}
 module Data.Swagger.Schema.ValidationSpec where
@@ -91,7 +90,14 @@ main = hspec spec
 -- ========================================================================
 -- Person (simple record with optional fields)
 -- ========================================================================
-data Person = Person { name  :: String , phone :: Integer , email :: Maybe String } deriving (Show, Generic, ToSchema, ToJSON)
+data Person = Person
+  { name  :: String
+  , phone :: Integer
+  , email :: Maybe String
+  } deriving (Show, Generic)
+
+instance ToJSON Person
+instance ToSchema Person
 
 instance Arbitrary Person where
   arbitrary = Person <$> arbitrary <*> arbitrary <*> arbitrary
@@ -99,7 +105,10 @@ instance Arbitrary Person where
 -- ========================================================================
 -- Color (enum)
 -- ========================================================================
-data Color = Red | Green | Blue deriving (Show, Generic, ToSchema, ToJSON, Bounded, Enum)
+data Color = Red | Green | Blue deriving (Show, Generic, Bounded, Enum)
+
+instance ToJSON Color
+instance ToSchema Color
 
 instance Arbitrary Color where
   arbitrary = arbitraryBoundedEnum
@@ -109,7 +118,10 @@ instance Arbitrary Color where
 -- ========================================================================
 
 newtype Paint = Paint { color :: Color }
-  deriving (Show, Generic, ToSchema, ToJSON)
+  deriving (Show, Generic)
+
+instance ToJSON Paint
+instance ToSchema Paint
 
 instance Arbitrary Paint where
   arbitrary = Paint <$> arbitrary
@@ -121,7 +133,9 @@ instance Arbitrary Paint where
 data MyRoseTree = MyRoseTree
   { root  :: String
   , trees :: [MyRoseTree]
-  } deriving (Show, Generic, ToJSON)
+  } deriving (Show, Generic)
+
+instance ToJSON MyRoseTree
 
 instance ToSchema MyRoseTree where
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
@@ -138,7 +152,9 @@ instance Arbitrary MyRoseTree where
 -- Light (sum type)
 -- ========================================================================
 
-data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic, ToSchema)
+data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic)
+
+instance ToSchema Light
 
 instance ToJSON Light where
   toJSON = genericToJSON defaultOptions { sumEncoding = ObjectWithSingleField }
