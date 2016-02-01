@@ -52,12 +52,7 @@ import Data.Swagger.Internal.Schema.Validation
 --
 -- >>> newtype Nat = Nat Integer deriving Generic
 -- >>> instance ToJSON Nat where toJSON (Nat n) = toJSON n
--- >>> :{
---  instance ToSchema Nat where
---    declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
---      & mapped.minimum_ ?~ 0
--- :}
---
+-- >>> instance ToSchema Nat where declareNamedSchema proxy = genericDeclareNamedSchema defaultSchemaOptions proxy & mapped.minimum_ ?~ 0
 -- >>> validateToJSON (Nat 10)
 -- []
 -- >>> validateToJSON (Nat (-5))
