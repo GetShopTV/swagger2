@@ -13,6 +13,7 @@ import GHC.Generics
 import Data.Swagger
 import Data.Swagger.Declare
 import Data.Swagger.Lens
+import Data.Swagger.Operation
 
 type Username = Text
 
@@ -37,32 +38,33 @@ hackageSwagger = spec & definitions .~ defs
   where
     (defs, spec) = runDeclare declareHackageSwagger mempty
 
-declareHackageSwagger :: Declare Definitions Swagger
+declareHackageSwagger :: Declare (Definitions Schema) Swagger
 declareHackageSwagger = do
+  -- param schemas
   let usernameParamSchema = toParamSchema (Proxy :: Proxy Username)
-  userSummarySchemaRef  <- declareSchemaRef (Proxy :: Proxy UserSummary)
-  userDetailedSchemaRef <- declareSchemaRef (Proxy :: Proxy UserDetailed)
-  packagesSchemaRef     <- declareSchemaRef (Proxy :: Proxy [Package])
+
+  -- responses
+  userSummaryResponse   <- declareResponse (Proxy :: Proxy UserSummary)
+  userDetailedResponse  <- declareResponse (Proxy :: Proxy UserDetailed)
+  packagesResponse      <- declareResponse (Proxy :: Proxy [Package])
+
   return $ mempty
-    & paths.pathsMap .~
-        [ ("/users", mempty & pathItemGet ?~ (mempty
-            & operationProduces ?~ MimeList ["application/json"]
-            & operationResponses .~ (mempty
-                & responsesResponses . at 200 ?~ Inline (mempty & responseSchema ?~ userSummarySchemaRef))))
-        , ("/user/{username}", mempty & pathItemGet ?~ (mempty
-            & operationProduces ?~ MimeList ["application/json"]
-            & operationParameters .~ [ Inline $ mempty
-                & paramName .~ "username"
-                & paramRequired ?~ True
-                & paramSchema .~ ParamOther (mempty
-                    & paramOtherSchemaIn .~ ParamPath
-                    & paramOtherSchemaParamSchema .~ usernameParamSchema) ]
-            & operationResponses .~ (mempty
-                & responsesResponses . at 200 ?~ Inline (mempty & responseSchema ?~ userDetailedSchemaRef))))
-        , ("/packages", mempty & pathItemGet ?~ (mempty
-            & operationProduces ?~ MimeList ["application/json"]
-            & operationResponses .~ (mempty
-                & responsesResponses . at 200 ?~ Inline (mempty & responseSchema ?~ packagesSchemaRef))))
+    & paths .~
+        [ ("/users", mempty & get ?~ (mempty
+            & produces ?~ MimeList ["application/json"]
+            & at 200 ?~ Inline userSummaryResponse))
+        , ("/user/{username}", mempty & get ?~ (mempty
+            & produces ?~ MimeList ["application/json"]
+            & parameters .~ [ Inline $ mempty
+                & name .~ "username"
+                & required ?~ True
+                & schema .~ ParamOther (mempty
+                    & in_ .~ ParamPath
+                    & paramSchema .~ usernameParamSchema) ]
+            & at 200 ?~ Inline userDetailedResponse))
+        , ("/packages", mempty & get ?~ (mempty
+            & produces ?~ MimeList ["application/json"]
+            & at 200 ?~ Inline packagesResponse))
         ]
 
 main :: IO ()
