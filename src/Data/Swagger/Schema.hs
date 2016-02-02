@@ -24,6 +24,11 @@ module Data.Swagger.Schema (
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 
+  -- * Schema templates
+  passwordSchema,
+  binarySchema,
+  byteSchema,
+
   -- * Inlining @'Schema'@s
   inlineNonRecursiveSchemas,
   inlineAllSchemas,

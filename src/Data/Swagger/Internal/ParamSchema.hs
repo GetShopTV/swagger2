@@ -35,6 +35,25 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
+-- | Default schema for binary data (any sequence of octets).
+binaryParamSchema :: ParamSchema t
+binaryParamSchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "binary"
+
+-- | Default schema for binary data (base64 encoded).
+byteParamSchema :: ParamSchema t
+byteParamSchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "byte"
+
+-- | Default schema for password string.
+-- @"password"@ format is used to hint UIs the input needs to be obscured.
+passwordParamSchema :: ParamSchema t
+passwordParamSchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "password"
+
 -- | Convert a type into a plain @'ParamSchema'@.
 --
 -- An example type and instance:

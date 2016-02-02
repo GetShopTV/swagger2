@@ -267,6 +267,25 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
           traverse_ usedNames (HashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
+-- | Default schema for binary data (any sequence of octets).
+binarySchema :: Schema
+binarySchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "binary"
+
+-- | Default schema for binary data (base64 encoded).
+byteSchema :: Schema
+byteSchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "byte"
+
+-- | Default schema for password string.
+-- @"password"@ format is used to hint UIs the input needs to be obscured.
+passwordSchema :: Schema
+passwordSchema = mempty
+  & type_ .~ SwaggerString
+  & format ?~ "password"
+
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
