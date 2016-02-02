@@ -12,6 +12,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.HashMap.Strict (HashMap)
+import qualified Data.Set as Set
 import Data.Text (Text)
 
 import Data.Swagger
@@ -116,7 +117,7 @@ licenseExampleJSON = [aesonQQ|
 
 operationExample :: Operation
 operationExample = mempty
-  & tags    .~ ["pet"]
+  & tags    .~ Set.fromList ["pet"]
   & summary ?~ "Updates a pet in the store with form data"
   & description ?~ ""
   & operationId ?~ "updatePetWithForm"
@@ -507,7 +508,7 @@ swaggerExample = mempty
               & schema .~ ParamOther (mempty
                   & in_ .~ ParamPath
                   & type_ .~ SwaggerString ) ]
-      & tags .~ [ "todo" ] ))
+      & tags .~ Set.fromList [ "todo" ] ))
 
 swaggerExampleJSON :: Value
 swaggerExampleJSON = [aesonQQ|
