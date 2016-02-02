@@ -29,6 +29,7 @@ import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Monoid
 import           Data.Scientific          (Scientific)
+import           Data.Set                 (Set)
 import           Data.String              (IsString(..))
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
@@ -99,7 +100,7 @@ data Swagger = Swagger
     -- Not all tags that are used by the Operation Object must be declared.
     -- The tags that are not declared may be organized randomly or based on the tools' logic.
     -- Each tag name in the list MUST be unique.
-  , _swaggerTags :: [Tag]
+  , _swaggerTags :: Set Tag
 
     -- | Additional external documentation.
   , _swaggerExternalDocs :: Maybe ExternalDocs
@@ -221,7 +222,7 @@ data PathItem = PathItem
 data Operation = Operation
   { -- | A list of tags for API documentation control.
     -- Tags can be used for logical grouping of operations by resources or any other qualifier.
-    _operationTags :: [TagName]
+    _operationTags :: Set TagName
 
     -- | A short summary of what the operation does.
     -- For maximum readability in the swagger-ui, this field SHOULD be less than 120 characters.
@@ -697,7 +698,7 @@ data Tag = Tag
 
     -- | Additional external documentation for this tag.
   , _tagExternalDocs :: Maybe ExternalDocs
-  } deriving (Eq, Show, Generic, Data, Typeable)
+  } deriving (Eq, Ord, Show, Generic, Data, Typeable)
 
 instance IsString Tag where
   fromString s = Tag (fromString s) Nothing Nothing
@@ -710,7 +711,7 @@ data ExternalDocs = ExternalDocs
 
     -- | The URL for the target documentation.
   , _externalDocsUrl :: URL
-  } deriving (Eq, Show, Generic, Data, Typeable)
+  } deriving (Eq, Ord, Show, Generic, Data, Typeable)
 
 -- | A simple object to allow referencing other definitions in the specification.
 -- It can be used to reference parameters and responses that are defined at the top level for reuse.
@@ -725,7 +726,7 @@ data Referenced a
 instance IsString a => IsString (Referenced a) where
   fromString = Inline . fromString
 
-newtype URL = URL { getUrl :: Text } deriving (Eq, Show, ToJSON, FromJSON, Data, Typeable)
+newtype URL = URL { getUrl :: Text } deriving (Eq, Ord, Show, ToJSON, FromJSON, Data, Typeable)
 
 -- =======================================================================
 -- Monoid instances

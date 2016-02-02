@@ -22,6 +22,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Map (Map)
 import Data.Monoid
+import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
 import Language.Haskell.TH (mkName)
@@ -152,6 +153,7 @@ class SwaggerMonoid m where
   swaggerMappend = mappend
 
 instance SwaggerMonoid [a]
+instance Ord a => SwaggerMonoid (Set a)
 instance Ord k => SwaggerMonoid (Map k v)
 
 instance (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where

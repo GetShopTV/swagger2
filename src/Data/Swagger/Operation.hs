@@ -40,6 +40,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.List
 import Data.Maybe (mapMaybe)
 import Data.Monoid
+import qualified Data.Set as Set
 import Data.Traversable
 
 import Data.Swagger.Declare
@@ -113,8 +114,8 @@ applyTags = applyTagsFor allOperations
 -- list of tags.
 applyTagsFor :: Traversal' Swagger Operation -> [Tag] -> Swagger -> Swagger
 applyTagsFor ops ts swag = swag
-  & ops . tags %~ (map _tagName ts ++)
-  & tags %~ (ts ++)
+  & ops . tags %~ (<> Set.fromList (map _tagName ts))
+  & tags %~ (<> Set.fromList ts)
 
 -- | Construct a response with @'Schema'@ while declaring all
 -- necessary schema definitions.
