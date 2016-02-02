@@ -79,6 +79,7 @@ test-suite spec
   other-modules:
     SpecCommon
     Data.SwaggerSpec
+    Data.Swagger.ParamSchemaSpec
     Data.Swagger.SchemaSpec
     Data.Swagger.Schema.ValidationSpec
   default-language: Haskell2010
