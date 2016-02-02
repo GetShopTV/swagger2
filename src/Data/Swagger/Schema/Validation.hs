@@ -77,7 +77,7 @@ import Data.Swagger.Internal.Schema.Validation
 -- >>> data Person = Person { name :: String, age :: Maybe Int } deriving Generic
 -- >>> instance ToJSON Person
 -- >>> instance ToSchema Person
--- >>> validateToJSON (Person "John" (Just 25))
+-- >>> validateToJSON (Person "Nick" (Just 24))
 -- []
--- >>> validateToJSON (Person "John" Nothing)
+-- >>> validateToJSON (Person "Nick" Nothing)
 -- []

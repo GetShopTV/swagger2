@@ -26,6 +26,7 @@ library
     Data.Swagger
     Data.Swagger.Declare
     Data.Swagger.Lens
+    Data.Swagger.Operation
     Data.Swagger.ParamSchema
     Data.Swagger.Schema
     Data.Swagger.Schema.Validation
