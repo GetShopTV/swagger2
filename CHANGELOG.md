@@ -1,7 +1,29 @@
+2.0
+---
+
+* Major changes:
+    * GHC 7.8 support (see [#49](https://github.com/GetShopTV/swagger2/pull/49));
+    * Switch to classy field lenses (see [#41](https://github.com/GetShopTV/swagger2/pull/41));
+    * Add `Data.Swagger.Schema.Validation` (see [#18](https://github.com/GetShopTV/swagger2/pull/18));
+    * Add `Data.Swagger.Operation` with helpers (see [#50](https://github.com/GetShopTV/swagger2/pull/50));
+    * Add `IsString` instances for some types (see [#47](https://github.com/GetShopTV/swagger2/pull/47));
+    * Add helpers to sketch `Schema` from JSON (see [#48](https://github.com/GetShopTV/swagger2/pull/48)).
+
+* Minor changes:
+    * Make `NamedSchema` a `data` rather than `type` (see [#42](https://github.com/GetShopTV/swagger2/pull/42));
+    * Change `Definitions` to `Definitions Schema`;
+    * Add schema templates for `"binary"`, `"byte"` and `"password"` formats (see [63ed597](https://github.com/GetShopTV/swagger2/commit/63ed59736dc4f942f0e2a7d668d7cee513fa9eaf));
+    * Add `Monoid` instance for `Contact`;
+    * Change `tags` to be `Set` rather than list.
+
+* Fixes:
+    * Fix schema for `()` and nullary constructors (see [ab65c4a](https://github.com/GetShopTV/swagger2/commit/ab65c4a48253c34f8a88221a53dc97bf5e6e8d29));
+    * Fix `Operation` `FromJSON` instance to allow missing `tags` and `parameters` properties.
+
 1.2.1
 ---
 
-* Minor change:
+* Minor changes:
     * Change `_SwaggerItemsPrimitive` type from a `Prism'` to a more restrictive `Review`-like `Optic'`.
 
 * Fixes:
