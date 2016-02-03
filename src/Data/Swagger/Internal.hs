@@ -1133,7 +1133,9 @@ instance FromJSON Response where
 
 instance FromJSON Operation where
   parseJSON = genericParseJSON (jsonPrefix "operation")
-    `withDefaults` [ "security"   .= ([] :: [SecurityRequirement]) ]
+    `withDefaults` [ "security"   .= ([] :: [SecurityRequirement])
+                   , "tags"       .= ([] :: [Tag])
+                   , "parameters" .= ([] :: [Referenced Param]) ]
 
 instance FromJSON PathItem where
   parseJSON = genericParseJSON (jsonPrefix "pathItem")
