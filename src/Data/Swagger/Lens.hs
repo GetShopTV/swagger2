@@ -26,7 +26,7 @@ makeFields ''Host
 makeFields ''Info
 makeFields ''Contact
 makeFields ''License
-makeFields ''PathItem
+makeLensesWith swaggerFieldRules ''PathItem
 makeFields ''Tag
 makeFields ''Operation
 makeFields ''Param
