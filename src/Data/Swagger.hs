@@ -18,10 +18,18 @@ module Data.Swagger (
   -- ** Schema specification
   -- $schema
 
+  -- ** Manipulation
+  -- $manipulation
+
+  -- ** Validation
+  -- $validation
+
   -- * Re-exports
   module Data.Swagger.Lens,
+  module Data.Swagger.Operation,
   module Data.Swagger.ParamSchema,
   module Data.Swagger.Schema,
+  module Data.Swagger.Schema.Validation,
 
   -- * Swagger specification
   Swagger(..),
@@ -97,8 +105,10 @@ module Data.Swagger (
 ) where
 
 import Data.Swagger.Lens
+import Data.Swagger.Operation
 import Data.Swagger.ParamSchema
 import Data.Swagger.Schema
+import Data.Swagger.Schema.Validation
 
 import Data.Swagger.Internal
 
@@ -214,7 +224,7 @@ import Data.Swagger.Internal
 -- A few other field accessors are modified in this way:
 --
 --    - @'in_'@, @'type_'@, @'default_'@ (as keywords);
---    - @'maximum_'@ and @'minimum_'@ (as conflicting with @Prelude@);
+--    - @'maximum_'@, @'minimum_'@, @'head_'@ (as conflicting with @Prelude@);
 --    - @'enum_'@ (as conflicting with @Control.Lens@).
 
 -- $schema
@@ -257,5 +267,17 @@ import Data.Swagger.Internal
 -- "{\"age\":28,\"name\":\"David\"}"
 -- >>> encode $ toSchema (Proxy :: Proxy Person)
 -- "{\"required\":[\"name\",\"age\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"}}}"
---
 
+-- $manipulation
+-- Sometimes you have to work with an imported or generated @'Swagger'@.
+-- For instance, <servant-swagger http://hackage.haskell.org/package/servant-swagger> generates basic @'Swagger'@
+-- for a type-level servant API.
+--
+-- Lenses and prisms can be used to manipulate such specification to add additional information, tags, extra responses, etc.
+-- To facilitate common needs, @'Data.Swagger.Operation'@ module provides useful helpers.
+
+-- $validation
+-- While @'ToParamSchema'@ and @'ToSchema'@ provide means to easily obtain schemas for Haskell types,
+-- there is no static mechanism to ensure those instances correspond to the @'ToHttpApiData'@ or @'ToJSON'@ instances.
+--
+-- @'Data.Swagger.Schema.Validation'@ addresses @'ToJSON'@/@'ToSchema'@ validation.
