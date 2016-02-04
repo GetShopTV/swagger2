@@ -71,6 +71,7 @@ module Data.Swagger (
   NamedSchema(..),
   SwaggerItems(..),
   Xml(..),
+  Pattern,
 
   -- ** Responses
   Responses(..),
@@ -274,10 +275,10 @@ import Data.Swagger.Internal
 -- for a type-level servant API.
 --
 -- Lenses and prisms can be used to manipulate such specification to add additional information, tags, extra responses, etc.
--- To facilitate common needs, @'Data.Swagger.Operation'@ module provides useful helpers.
+-- To facilitate common needs, @"Data.Swagger.Operation"@ module provides useful helpers.
 
 -- $validation
 -- While @'ToParamSchema'@ and @'ToSchema'@ provide means to easily obtain schemas for Haskell types,
 -- there is no static mechanism to ensure those instances correspond to the @'ToHttpApiData'@ or @'ToJSON'@ instances.
 --
--- @'Data.Swagger.Schema.Validation'@ addresses @'ToJSON'@/@'ToSchema'@ validation.
+-- @"Data.Swagger.Schema.Validation"@ addresses @'ToJSON'@/@'ToSchema'@ validation.
