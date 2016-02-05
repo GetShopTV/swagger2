@@ -10,6 +10,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 #include "overlapping-compat.h"
+-- |
+-- Module:      Data.Swagger.Lens
+-- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Stability:   experimental
+--
+-- Lenses and prisms for Swagger.
 module Data.Swagger.Lens where
 
 import Control.Lens

@@ -2,6 +2,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+-- |
+-- Module:      Data.Swagger.Declare
+-- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Stability:   experimental
+--
+-- Declare monad transformer and associated functions.
 module Data.Swagger.Declare where
 
 import Prelude ()

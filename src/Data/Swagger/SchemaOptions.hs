@@ -1,3 +1,9 @@
+-- |
+-- Module:      Data.Swagger.SchemaOptions
+-- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Stability:   experimental
+--
+-- Generic deriving options for @'ToParamSchema'@ and @'ToSchema'@.
 module Data.Swagger.SchemaOptions where
 
 -- | Options that specify how to encode your type to Swagger schema.

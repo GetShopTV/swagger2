@@ -1,7 +1,5 @@
 -- |
 -- Module:      Data.Swagger.Schema
--- Copyright:   (c) 2015 GetShopTV
--- License:     BSD3
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
 -- Stability:   experimental
 --

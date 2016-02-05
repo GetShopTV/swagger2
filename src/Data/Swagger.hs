@@ -1,4 +1,8 @@
 -- |
+-- Module:      Data.Swagger
+-- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Stability:   experimental
+--
 -- Swagger™ is a project used to describe and document RESTful APIs.
 --
 -- The Swagger specification defines a set of files required to describe such an API.
