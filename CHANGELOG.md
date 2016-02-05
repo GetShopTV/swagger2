@@ -1,3 +1,10 @@
+2.0.1
+---
+
+* Fixes:
+    * Re-export `Pattern` synonym from `Data.Swagger`;
+    * Documentation fixes.
+
 2.0
 ---
 
