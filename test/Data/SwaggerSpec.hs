@@ -21,6 +21,14 @@ import Test.Hspec hiding (example)
 
 spec :: Spec
 spec = do
+  describe "host" $ do
+    it "can decode the host port" $ do
+      let h = Just $ Host "localhost" (Just (fromInteger 8000))
+          swagger :: Swagger
+          swagger = swaggerExample
+            & host .~ h
+          parsed :: Swagger = either error id $ eitherDecode' $ encode swagger
+      parsed ^. host `shouldBe` h
   describe "License Object" $ licenseExample <=> licenseExampleJSON
   describe "Contact Object" $ contactExample <=> contactExampleJSON
   describe "Info Object" $ infoExample <=> infoExampleJSON
