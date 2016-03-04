@@ -7,17 +7,18 @@ module Data.Swagger.SchemaSpec where
 import Prelude ()
 import Prelude.Compat
 
+import Control.Lens ((^.))
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
 import qualified Data.HashMap.Strict as HashMap
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Proxy
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import GHC.Generics
 
-import qualified Data.Swagger.OrdHashMap as OrdHashMap
 import Data.Swagger
 import Data.Swagger.Declare
 
@@ -35,9 +36,16 @@ checkSchemaName sname proxy =
 checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
 checkDefs proxy names =
   it ("uses these definitions " ++ show names) $
-    Set.fromList (OrdHashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
+    InsOrdHashMap.keys defs `shouldBe` map Text.pack names
   where
     defs = execDeclare (declareNamedSchema proxy) mempty
+
+checkProperties :: ToSchema a => Proxy a -> [String] -> Spec
+checkProperties proxy names =
+  it ("has these fields in order " ++ show names) $
+    InsOrdHashMap.keys fields `shouldBe` map Text.pack names
+  where
+    fields = toSchema proxy ^. properties
 
 checkInlinedSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkInlinedSchema proxy js = toInlinedSchema proxy <=> js
@@ -59,6 +67,9 @@ spec = do
     context "Person" $ checkToSchema (Proxy :: Proxy Person) personSchemaJSON
     context "ISPair" $ checkToSchema (Proxy :: Proxy ISPair) ispairSchemaJSON
     context "Point (fieldLabelModifier)" $ checkToSchema (Proxy :: Proxy Point) pointSchemaJSON
+    context "Point5 (many field record)" $ do
+      checkToSchema (Proxy :: Proxy Point5) point5SchemaJSON
+      checkProperties (Proxy :: Proxy Point5) point5Properties
     context "Color (bounded enum)" $ checkToSchema (Proxy :: Proxy Color) colorSchemaJSON
     context "Shade (paramSchemaToNamedSchema)" $ checkToSchema (Proxy :: Proxy Shade) shadeSchemaJSON
     context "Paint (record with bounded enum field)" $ checkToSchema (Proxy :: Proxy Paint) paintSchemaJSON
@@ -144,6 +155,7 @@ ispairSchemaJSON = [aesonQQ|
 -- ========================================================================
 -- Point (record data type with custom fieldLabelModifier)
 -- ========================================================================
+
 data Point = Point
   { pointX :: Double
   , pointY :: Double
@@ -166,6 +178,40 @@ pointSchemaJSON = [aesonQQ|
 }
 |]
 
+-- ========================================================================
+-- Point (record data type with multiple fields)
+-- ========================================================================
+
+data Point5 = Point5
+  { point5X :: Double
+  , point5Y :: Double
+  , point5Z :: Double
+  , point5U :: Double
+  , point5V :: Double -- 5 dimensional!
+  } deriving (Generic)
+
+instance ToSchema Point5 where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+    { fieldLabelModifier = map toLower . drop (length "point5") }
+
+point5SchemaJSON :: Value
+point5SchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "x": { "type": "number", "format": "double" },
+      "y": { "type": "number", "format": "double" },
+      "z": { "type": "number", "format": "double" },
+      "u": { "type": "number", "format": "double" },
+      "v": { "type": "number", "format": "double" }
+    },
+  "required": ["x", "y", "z", "u", "v"]
+}
+|]
+
+point5Properties :: [String]
+point5Properties = ["x", "y", "z", "u", "v"]
 
 -- ========================================================================
 -- Color (enum)

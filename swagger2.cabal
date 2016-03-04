@@ -68,6 +68,7 @@ test-suite spec
                   , containers
                   , hashable
                   , hspec
+                  , insert-ordered-containers
                   , HUnit
                   , mtl
                   , QuickCheck

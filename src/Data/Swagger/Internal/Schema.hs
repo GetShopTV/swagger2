@@ -567,8 +567,8 @@ gdeclareSchema opts proxy = _namedSchemaSchema <$> gdeclareNamedSchema opts prox
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gdeclareNamedSchema opts _ schema = do
-    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
-    gdeclareNamedSchema opts (Proxy :: Proxy f) gschema
+    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy f) schema
+    gdeclareNamedSchema opts (Proxy :: Proxy g) gschema
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
   gdeclareNamedSchema opts _ s = rename name <$> gdeclareNamedSchema opts (Proxy :: Proxy f) s
@@ -617,7 +617,7 @@ gdeclareSchemaRef opts proxy = do
 
 appendItem :: Referenced Schema -> Maybe (SwaggerItems Schema) -> Maybe (SwaggerItems Schema)
 appendItem x Nothing = Just (SwaggerItemsArray [x])
-appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (x:xs))
+appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (xs ++ [x]))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
 
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
@@ -633,7 +633,7 @@ withFieldSchema opts _ isRequiredField schema = do
         & type_ .~ SwaggerObject
         & properties . at fname ?~ ref
         & if isRequiredField
-            then required %~ (fname :)
+            then required %~ (++ [fname])
             else id
   where
     fname = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
@@ -673,7 +673,7 @@ class GSumToSchema f where
   gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
-  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <=< gsumToSchema opts (Proxy :: Proxy g)
+  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) >=> gsumToSchema opts (Proxy :: Proxy g)
 
 gsumConToSchemaWith :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
   Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema
