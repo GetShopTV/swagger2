@@ -1088,13 +1088,12 @@ instance OVERLAPPABLE_ FromJSON (SwaggerItems Schema) where
   parseJSON _ = empty
 
 instance FromJSON Host where
-  parseJSON (String s) =
-    case fromInteger <$> readMaybe portStr of
-      Nothing | not (null portStr) -> fail $ "Invalid port `" ++ portStr ++ "'"
-      mport -> pure $ Host host mport
-    where
-      (hostText, portText) = Text.breakOn ":" s
-      [host, portStr] = map Text.unpack [hostText, portText]
+  parseJSON (String s) = case map Text.unpack $ Text.split (== ':') s of
+    [host] -> return $ Host host Nothing
+    [host, port] -> case readMaybe port of
+      Nothing -> fail $ "Invalid port `" ++ port ++ "'"
+      Just p -> return $ Host host (Just (fromInteger p))
+    _ -> fail $ "Invalid host `" ++ Text.unpack s ++ "'"
   parseJSON _ = empty
 
 instance FromJSON MimeList where
