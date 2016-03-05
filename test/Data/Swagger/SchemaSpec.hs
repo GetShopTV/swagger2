@@ -17,6 +17,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import GHC.Generics
 
+import qualified Data.Swagger.OrdHashMap as OrdHashMap
 import Data.Swagger
 import Data.Swagger.Declare
 
@@ -34,7 +35,7 @@ checkSchemaName sname proxy =
 checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
 checkDefs proxy names =
   it ("uses these definitions " ++ show names) $
-    Set.fromList (HashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
+    Set.fromList (OrdHashMap.keys defs) `shouldBe` Set.fromList (map Text.pack names)
   where
     defs = execDeclare (declareNamedSchema proxy) mempty
 

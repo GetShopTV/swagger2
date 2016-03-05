@@ -46,6 +46,9 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
 
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+
 -- $setup
 -- >>> import Data.Aeson
 -- >>> import Data.Proxy
@@ -58,10 +61,8 @@ import Data.Swagger.Schema
 -- >>> encode $ prependPath "user/{user_id}" api ^. paths
 -- "{\"/user/{user_id}/info\":{}}"
 prependPath :: FilePath -> Swagger -> Swagger
-prependPath path = paths %~ mapKeys (path </>)
+prependPath path = paths %~ InsOrdHashMap.mapKeys (path </>)
   where
-    mapKeys f = HashMap.fromList . map (first f) . HashMap.toList
-
     x </> y = case trim y of
       "" -> "/" <> trim x
       y' -> "/" <> trim x <> "/" <> y'
@@ -88,7 +89,7 @@ operationsOf sub = paths.itraversed.withIndex.subops
   where
     -- | Traverse operations that correspond to paths and methods of the sub API.
     subops :: Traversal' (FilePath, PathItem) Operation
-    subops f (path, item) = case HashMap.lookup path (sub ^. paths) of
+    subops f (path, item) = case InsOrdHashMap.lookup path (sub ^. paths) of
       Just subitem -> (,) path <$> methodsOf subitem f item
       Nothing      -> pure (path, item)
 

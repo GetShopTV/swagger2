@@ -30,6 +30,8 @@ import Data.Foldable (traverse_, for_, sequenceA_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
+import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Monoid
 import Data.Proxy
 import Data.Scientific (Scientific, isInteger)
@@ -174,7 +176,7 @@ sub_ = lmap . view
 -- | Validate value against a schema given schema reference and validation function.
 withRef :: Reference -> (Schema -> Validation s a) -> Validation s a
 withRef (Reference ref) f = withConfig $ \cfg ->
-  case HashMap.lookup ref (configDefinitions cfg) of
+  case InsOrdHashMap.lookup ref (configDefinitions cfg) of
     Nothing -> invalid $ "unknown schema " ++ show ref
     Just s  -> f s
 
@@ -290,7 +292,7 @@ validateObject o = withSchema $ \schema ->
         case v of
           Null | not (k `elem` (schema ^. required)) -> valid  -- null is fine for non-required property
           _ ->
-            case HashMap.lookup k (schema ^. properties) of
+            case InsOrdHashMap.lookup k (schema ^. properties) of
               Nothing -> check additionalProperties $ \s -> validateWithSchemaRef s v
               Just s  -> validateWithSchemaRef s v
 

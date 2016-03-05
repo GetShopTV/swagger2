@@ -25,6 +25,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
+import qualified Data.Aeson.Types as Aeson
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
@@ -33,6 +34,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
+import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
@@ -194,7 +197,7 @@ declareSchemaRef proxy = do
       -- have already declared it.
       -- If we have, we don't need to declare anything for
       -- this schema this time and thus simply return the reference.
-      known <- looks (HashMap.member name)
+      known <- looks (InsOrdHashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
         void $ declareNamedSchema proxy
@@ -213,7 +216,7 @@ inlineSchemasWhen p defs = template %~ deref
   where
     deref r@(Ref (Reference name))
       | p name =
-          case HashMap.lookup name defs of
+          case InsOrdHashMap.lookup name defs of
             Just schema -> Inline (inlineSchemasWhen p defs schema)
             Nothing -> r
       | otherwise = r
@@ -255,7 +258,7 @@ inlineNonRecursiveSchemas :: Data s => (Definitions Schema) -> s -> s
 inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
   where
     nonRecursive name =
-      case HashMap.lookup name defs of
+      case InsOrdHashMap.lookup name defs of
         Just schema -> name `notElem` execDeclare (usedNames schema) mempty
         Nothing     -> False
 
@@ -267,7 +270,7 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
         seen <- looks (name `elem`)
         when (not seen) $ do
           declare [name]
-          traverse_ usedNames (HashMap.lookup name defs)
+          traverse_ usedNames (InsOrdHashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
 -- | Default schema for binary data (any sequence of octets).
@@ -331,7 +334,7 @@ sketchSchema = sketch . toJSON
     go js@(Object o) = mempty
       & type_         .~ SwaggerObject
       & required      .~ HashMap.keys o
-      & properties    .~ fmap (Inline . go) o
+      & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
 
 -- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema uses as much constraints as possible.
@@ -381,7 +384,7 @@ sketchStrictSchema = go . toJSON
     go js@(Object o) = mempty
       & type_         .~ SwaggerObject
       & required      .~ names
-      & properties    .~ fmap (Inline . go) o
+      & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
       & maxProperties ?~ fromIntegral (length names)
       & minProperties ?~ fromIntegral (length names)
       & enum_         ?~ [js]
@@ -605,7 +608,7 @@ gdeclareSchemaRef opts proxy = do
       -- have already declared it.
       -- If we have, we don't need to declare anything for
       -- this schema this time and thus simply return the reference.
-      known <- looks (HashMap.member name)
+      known <- looks (InsOrdHashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
         void $ gdeclareNamedSchema opts proxy mempty
@@ -662,7 +665,7 @@ gdeclareNamedSumSchema opts proxy s
 
     toStringTag schema = mempty
       & type_ .~ SwaggerString
-      & enum_ ?~ map toJSON (schema ^.. properties.ifolded.asIndex)
+      & enum_ ?~ map toJSON  (schema ^.. properties.ifolded.asIndex)
 
 type AllNullary = All
 

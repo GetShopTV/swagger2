@@ -38,10 +38,13 @@ import           Network                  (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
 import           Text.Read                (readMaybe)
 
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+
 import Data.Swagger.Internal.Utils
 
 -- | A list of definitions that can be used in references.
-type Definitions = HashMap Text
+type Definitions = InsOrdHashMap Text
 
 -- | This is the root document object for the API specification.
 data Swagger = Swagger
@@ -73,7 +76,7 @@ data Swagger = Swagger
     -- | The available paths and operations for the API.
     -- Holds the relative paths to the individual endpoints.
     -- The path is appended to the @'basePath'@ in order to construct the full URL.
-  , _swaggerPaths :: HashMap FilePath PathItem
+  , _swaggerPaths :: InsOrdHashMap FilePath PathItem
 
     -- | An object to hold data types produced and consumed by operations.
   , _swaggerDefinitions :: Definitions Schema
@@ -482,7 +485,7 @@ data Schema = Schema
   , _schemaRequired :: [ParamName]
 
   , _schemaAllOf :: Maybe [Schema]
-  , _schemaProperties :: HashMap Text (Referenced Schema)
+  , _schemaProperties :: InsOrdHashMap Text (Referenced Schema)
   , _schemaAdditionalProperties :: Maybe (Referenced Schema)
 
   , _schemaDiscriminator :: Maybe Text
@@ -574,7 +577,7 @@ data Responses = Responses
 
     -- | Any HTTP status code can be used as the property name (one property per HTTP status code).
     -- Describes the expected response for those HTTP status codes.
-  , _responsesResponses :: HashMap HttpStatusCode (Referenced Response)
+  , _responsesResponses :: InsOrdHashMap HttpStatusCode (Referenced Response)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 type HttpStatusCode = Int
@@ -593,7 +596,7 @@ data Response = Response
   , _responseSchema :: Maybe (Referenced Schema)
 
     -- | A list of headers that are sent with the response.
-  , _responseHeaders :: HashMap HeaderName Header
+  , _responseHeaders :: InsOrdHashMap HeaderName Header
 
     -- | An example of the response message.
   , _responseExamples :: Maybe Example
@@ -659,7 +662,7 @@ data OAuth2Params = OAuth2Params
     _oauth2Flow :: OAuth2Flow
 
     -- | The available scopes for the OAuth2 security scheme.
-  , _oauth2Scopes :: HashMap Text Text
+  , _oauth2Scopes :: InsOrdHashMap Text Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecuritySchemeType
@@ -680,7 +683,7 @@ data SecurityScheme = SecurityScheme
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
 newtype SecurityRequirement = SecurityRequirement
-  { getSecurityRequirement :: HashMap Text [Text]
+  { getSecurityRequirement :: InsOrdHashMap Text [Text]
   } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON, Data, Typeable)
 
 -- | Tag name.
@@ -817,6 +820,10 @@ instance SwaggerMonoid ParamLocation where
 instance OVERLAPPING_ SwaggerMonoid (HashMap FilePath PathItem) where
   swaggerMempty = HashMap.empty
   swaggerMappend = HashMap.unionWith mappend
+
+instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
+  swaggerMempty = InsOrdHashMap.empty
+  swaggerMappend = InsOrdHashMap.unionWith mappend
 
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
@@ -972,7 +979,7 @@ instance ToJSON ParamOtherSchema where
 
 instance ToJSON Responses where
   toJSON (Responses def rs) = omitEmpties $
-    toJSON (hashMapMapKeys show rs) <+> object [ "default" .= def ]
+    toJSON (InsOrdHashMap.mapKeys show rs) <+> object [ "default" .= def ]
 
 instance ToJSON Response where
   toJSON = omitEmpties . genericToJSON (jsonPrefix "response")
@@ -1071,7 +1078,7 @@ instance FromJSON SecurityScheme where
 
 instance FromJSON Schema where
   parseJSON = genericParseJSONWithSub "paramSchema" (jsonPrefix "schema")
-    `withDefaults` [ "properties" .= (mempty :: HashMap Text Schema)
+    `withDefaults` [ "properties" .= (mempty :: InsOrdHashMap Text Schema)
                    , "required"   .= ([] :: [ParamName]) ]
 
 instance FromJSON Header where
@@ -1118,7 +1125,7 @@ instance FromJSON ParamOtherSchema where
 instance FromJSON Responses where
   parseJSON (Object o) = Responses
     <$> o .:? "default"
-    <*> (parseJSON (Object (HashMap.delete "default" o)) >>= hashMapReadKeys)
+    <*> (parseJSON (Object (HashMap.delete "default" o)))
   parseJSON _ = empty
 
 instance FromJSON Example where
@@ -1128,7 +1135,7 @@ instance FromJSON Example where
 
 instance FromJSON Response where
   parseJSON = genericParseJSON (jsonPrefix "response")
-    `withDefaults` [ "headers" .= (mempty :: HashMap HeaderName Header) ]
+    `withDefaults` [ "headers" .= (mempty :: InsOrdHashMap HeaderName Header) ]
 
 instance FromJSON Operation where
   parseJSON = genericParseJSON (jsonPrefix "operation")
