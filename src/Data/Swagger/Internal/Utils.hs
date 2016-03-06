@@ -87,23 +87,12 @@ parseOneOf xs js =
   where
     ys = zip (map toJSON xs) xs
 
-omitEmptiesExcept :: (Text -> Value -> Bool) -> Value -> Value
-omitEmptiesExcept f (Object o) = Object (HashMap.filterWithKey nonEmpty o)
-  where
-    nonEmpty k js = f k js || (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
-omitEmptiesExcept _ js = js
-
+{-# DEPRECATED omitEmpties "will be removed" #-}
 omitEmpties :: Value -> Value
-omitEmpties = omitEmptiesExcept (\_ _ -> False)
-
-genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> Value
-genericToJSONWithSub sub opts x =
-  case genericToJSON opts x of
-    Object o ->
-      case HashMap.lookup sub o of
-        Just so -> Object (HashMap.delete sub o) <+> so
-        Nothing -> Object o -- no subjson, leaving object as is
-    _ -> error "genericToJSONWithSub: subjson is not an object"
+omitEmpties (Object o) = Object (HashMap.filter nonEmpty o)
+  where
+    nonEmpty js = (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
+omitEmpties js = js
 
 genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
 genericParseJSONWithSub sub opts js@(Object o)

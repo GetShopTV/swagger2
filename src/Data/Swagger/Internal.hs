@@ -12,12 +12,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
+
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
 #include "overlapping-compat.h"
 module Data.Swagger.Internal where
 
 import Prelude ()
 import Prelude.Compat
 
+import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
 import           Control.Monad
 import           Data.Aeson
@@ -41,6 +46,11 @@ import           Text.Read                (readMaybe)
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 
+import Generics.SOP.TH                  (deriveGeneric)
+import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
+                                        ,mkSwaggerAesonOptions
+                                        ,saoAdditionalPairs
+                                        ,saoSubObject)
 import Data.Swagger.Internal.Utils
 
 -- | A list of definitions that can be used in references.
@@ -921,7 +931,8 @@ instance ToJSON OAuth2Flow where
     , "tokenUrl"         .= tokenUrl ]
 
 instance ToJSON OAuth2Params where
-  toJSON = omitEmpties . genericToJSONWithSub "flow" (jsonPrefix "oauth2")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "oauth2" &
+      saoSubObject ?~ "flow"
 
 instance ToJSON SecuritySchemeType where
   toJSON SecuritySchemeBasic
@@ -934,22 +945,20 @@ instance ToJSON SecuritySchemeType where
     <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
-  toJSON = omitEmpties . addVersion . genericToJSON (jsonPrefix "swagger")
-    where
-      addVersion (Object o) = Object (HashMap.insert "swagger" "2.0" o)
-      addVersion _ = error "impossible"
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "swagger" &
+      saoAdditionalPairs .~ [("swagger", "2.0")]
 
 instance ToJSON SecurityScheme where
-  toJSON = genericToJSONWithSub "type" (jsonPrefix "securityScheme")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "securityScheme" &
+      saoSubObject ?~ "type"
 
 instance ToJSON Schema where
-  toJSON = omitEmptiesExcept f . genericToJSONWithSub "paramSchema" (jsonPrefix "schema")
-    where
-      f "items" (Array _) = True
-      f _ _ = False
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "schema" &
+      saoSubObject ?~ "paramSchema"
 
 instance ToJSON Header where
-  toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "header")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "header" &
+      saoSubObject ?~ "paramSchema"
 
 instance ToJSON (SwaggerItems t) where
   toJSON (SwaggerItemsPrimitive fmt schema) = object
@@ -968,26 +977,29 @@ instance ToJSON MimeList where
   toJSON (MimeList xs) = toJSON (map show xs)
 
 instance ToJSON Param where
-  toJSON = genericToJSONWithSub "schema" (jsonPrefix "param")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "param" &
+      saoSubObject ?~ "schema"
 
 instance ToJSON ParamAnySchema where
   toJSON (ParamBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
   toJSON (ParamOther s) = toJSON s
 
 instance ToJSON ParamOtherSchema where
-  toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "paramOtherSchema")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "paramOtherSchema" &
+      saoSubObject ?~ "paramSchema"
 
 instance ToJSON Responses where
-  toJSON = omitEmpties . genericToJSONWithSub "responses" (jsonPrefix "responses")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "responses" &
+      saoSubObject ?~ "responses"
 
 instance ToJSON Response where
-  toJSON = omitEmpties . genericToJSON (jsonPrefix "response")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "response"
 
 instance ToJSON Operation where
-  toJSON = omitEmpties . genericToJSON (jsonPrefix "operation")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "operation"
 
 instance ToJSON PathItem where
-  toJSON = omitEmpties . genericToJSON (jsonPrefix "pathItem")
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "pathItem"
 
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample
@@ -1021,10 +1033,8 @@ instance ToJSON (CollectionFormat t) where
   toJSON CollectionMulti = "multi"
 
 instance ToJSON (ParamSchema t) where
-  toJSON = omitEmptiesExcept f . genericToJSONWithSub "items" (jsonPrefix "paramSchema")
-    where
-      f "items" (Array _) = True
-      f _ _ = False
+  toJSON = sopSwaggerGenericToJSON $ mkSwaggerAesonOptions "paramSchema" &
+      saoSubObject ?~ "items"
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -1193,3 +1203,19 @@ instance FromJSON (CollectionFormat ParamOtherSchema) where
 instance (FromJSON (SwaggerType t), FromJSON (SwaggerItems t)) => FromJSON (ParamSchema t) where
   parseJSON = genericParseJSONWithSub "items" (jsonPrefix "ParamSchema")
 
+-------------------------------------------------------------------------------
+-- TH splices
+-------------------------------------------------------------------------------
+
+deriveGeneric ''Header
+deriveGeneric ''OAuth2Params
+deriveGeneric ''Operation
+deriveGeneric ''Param
+deriveGeneric ''ParamOtherSchema
+deriveGeneric ''PathItem
+deriveGeneric ''Response
+deriveGeneric ''Responses
+deriveGeneric ''SecurityScheme
+deriveGeneric ''Schema
+deriveGeneric ''ParamSchema
+deriveGeneric ''Swagger

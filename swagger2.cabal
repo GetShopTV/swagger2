@@ -38,11 +38,14 @@ library
     Data.Swagger.Internal.Schema.Validation
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
+    Data.Swagger.Internal.AesonUtils
   build-depends:       base        >=4.7   && <4.10
                      , base-compat >=0.6.0 && <0.10
                      , aeson
                      , containers
                      , hashable
+                     , generics-sop >=0.2 && <0.3
+                     , generics-sop-lens >=0.1.0.0 && <0.2
                      , http-media
                      , insert-ordered-containers >=0.1.0.0 && <0.2
                      , lens
