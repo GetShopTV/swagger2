@@ -81,9 +81,9 @@ allOperations = paths.traverse.template
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ ok & post ?~ ok)]
 -- >>> let sub = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> encode api
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 -- >>> encode $ api & operationsOf sub . at 404 ?~ "Not found"
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 operationsOf :: Swagger -> Traversal' Swagger Operation
 operationsOf sub = paths.itraversed.withIndex.subops
   where
@@ -120,7 +120,7 @@ applyTagsFor ops ts swag = swag
 -- necessary schema definitions.
 --
 -- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
--- "[{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}]"
+-- "[{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
 declareResponse :: ToSchema a => proxy a -> Declare (Definitions Schema) Response
 declareResponse proxy = do
   s <- declareSchemaRef proxy
@@ -140,7 +140,7 @@ declareResponse proxy = do
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponse 200 res
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}}}"
 --
 -- See also @'setResponseWith'@.
 setResponse :: HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger

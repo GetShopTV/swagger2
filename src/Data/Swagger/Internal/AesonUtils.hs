@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -8,6 +9,9 @@ module Data.Swagger.Internal.AesonUtils (
     -- * Generic functions
     AesonDefaultValue(..),
     sopSwaggerGenericToJSON,
+#if MIN_VERSION_aeson(0,10,0)
+    sopSwaggerGenericToEncoding,
+#endif
     sopSwaggerGenericToJSONWithOpts,
     sopSwaggerGenericParseJSON,
     -- * Options
@@ -26,7 +30,7 @@ import Control.Applicative ((<|>))
 import Control.Lens     (makeLenses, (^.))
 import Control.Monad    (unless)
 import Data.Aeson       (ToJSON(..), FromJSON(..), Value(..), Object, object, (.:), (.:?), (.!=), withObject)
-import Data.Aeson.Types (Parser)
+import Data.Aeson.Types (Parser, Pair)
 import Data.Char        (toLower, isUpper)
 import Data.Text        (Text)
 
@@ -36,6 +40,12 @@ import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
+
+#if MIN_VERSION_aeson(0,10,0)
+import Data.Aeson (Encoding, pairs, (.=), Series)
+import Data.Monoid ((<>))
+import Data.Foldable (foldMap)
+#endif
 
 -------------------------------------------------------------------------------
 -- SwaggerAesonOptions
@@ -132,7 +142,7 @@ sopSwaggerGenericToJSON'
     -> SOP I '[xs]
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
-    -> [(Text, Value)]
+    -> [Pair]
 sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
     sopSwaggerGenericToJSON'' opts fields fieldsInfo defs
 
@@ -142,10 +152,10 @@ sopSwaggerGenericToJSON''
     -> NP I xs
     -> NP FieldInfo xs
     -> NP Maybe xs
-    -> [(Text, Value)]
+    -> [Pair]
 sopSwaggerGenericToJSON'' (SwaggerAesonOptions prefix _ sub) = go
   where
-    go :: (All ToJSON ys, All Eq ys) => NP I ys -> NP FieldInfo ys -> NP Maybe ys -> [(Text, Value)]
+    go :: (All ToJSON ys, All Eq ys) => NP I ys -> NP FieldInfo ys -> NP Maybe ys -> [Pair]
     go  Nil Nil Nil = []
     go (I x :* xs) (FieldInfo name :* names) (def :* defs)
         | Just name' == sub = case json of
@@ -240,3 +250,72 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
     modifier = lowerFirstUppers . drop (length prefix)
     lowerFirstUppers s = map toLower x ++ y
       where (x, y) = span isUpper s
+
+-------------------------------------------------------------------------------
+-- ToEncoding
+-------------------------------------------------------------------------------
+
+#if MIN_VERSION_aeson(0,10,0)
+
+sopSwaggerGenericToEncoding
+    :: forall a xs.
+        ( Generic a
+        , HasDatatypeInfo a
+        , HasSwaggerAesonOptions a
+        , All2 ToJSON (Code a)
+        , All2 Eq (Code a)
+        , Code a ~ '[xs]
+        )
+    => a
+    -> Encoding
+sopSwaggerGenericToEncoding x =
+    let ps = sopSwaggerGenericToEncoding' opts (from x) (datatypeInfo proxy) (aesonDefaults proxy)
+    in pairs (pairsToSeries (opts ^. saoAdditionalPairs) <> ps)
+  where
+    proxy = Proxy :: Proxy a
+    opts  = swaggerAesonOptions proxy
+
+pairsToSeries :: [Pair] -> Series
+pairsToSeries = foldMap (\(k, v) -> (k .= v))
+
+sopSwaggerGenericToEncoding'
+    :: (All2 ToJSON '[xs], All2 Eq '[xs])
+    => SwaggerAesonOptions
+    -> SOP I '[xs]
+    -> DatatypeInfo '[xs]
+    -> POP Maybe '[xs]
+    -> Series
+sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
+    sopSwaggerGenericToEncoding'' opts fields fieldsInfo defs
+
+sopSwaggerGenericToEncoding''
+    :: (All ToJSON xs, All Eq xs)
+    => SwaggerAesonOptions
+    -> NP I xs
+    -> NP FieldInfo xs
+    -> NP Maybe xs
+    -> Series
+sopSwaggerGenericToEncoding'' (SwaggerAesonOptions prefix _ sub) = go
+  where
+    go :: (All ToJSON ys, All Eq ys) => NP I ys -> NP FieldInfo ys -> NP Maybe ys -> Series
+    go  Nil Nil Nil = mempty
+    go (I x :* xs) (FieldInfo name :* names) (def :* defs)
+        | Just name' == sub = case toJSON x of
+              Object m -> pairsToSeries (HM.toList m) <> rest
+              Null     -> rest
+              _        -> error $ "sopSwaggerGenericToJSON: subjson is not an object: " ++ show (toJSON x)
+        -- If default value: omit it.
+        | Just x == def =
+            rest
+        | otherwise =
+            (T.pack name' .= x) <> rest
+      where
+        name' = fieldNameModifier name
+        rest  = go xs names defs
+
+    fieldNameModifier = modifier . drop 1
+    modifier = lowerFirstUppers . drop (length prefix)
+    lowerFirstUppers s = map toLower x ++ y
+      where (x, y) = span isUpper s
+
+#endif

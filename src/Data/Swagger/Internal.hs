@@ -58,6 +58,13 @@ import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
                                         ,saoSubObject)
 import Data.Swagger.Internal.Utils
 
+#if MIN_VERSION_aeson(0,10,0)
+import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToEncoding)
+#define DEFINE_TOENCODING toEncoding = sopSwaggerGenericToEncoding
+#else
+#define DEFINE_TOENCODING
+#endif
+
 -- | A list of definitions that can be used in references.
 type Definitions = InsOrdHashMap Text
 
@@ -982,6 +989,7 @@ instance ToJSON OAuth2Flow where
 
 instance ToJSON OAuth2Params where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON SecuritySchemeType where
   toJSON SecuritySchemeBasic
@@ -995,15 +1003,19 @@ instance ToJSON SecuritySchemeType where
 
 instance ToJSON Swagger where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON SecurityScheme where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Schema where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON (ParamSchema t) => ToJSON (SwaggerItems t) where
   toJSON (SwaggerItemsPrimitive fmt schema) = object
@@ -1023,6 +1035,7 @@ instance ToJSON MimeList where
 
 instance ToJSON Param where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON ParamAnySchema where
   toJSON (ParamBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
@@ -1030,18 +1043,23 @@ instance ToJSON ParamAnySchema where
 
 instance ToJSON ParamOtherSchema where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Responses where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Response where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Operation where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON PathItem where
   toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample

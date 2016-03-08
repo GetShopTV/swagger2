@@ -63,10 +63,12 @@ test-suite spec
   type:             exitcode-stdio-1.0
   hs-source-dirs:   test
   main-is:          Spec.hs
+ -- We need aeson's toEncoding for doctests too
   build-depends:    base
                   , base-compat
-                  , aeson
+                  , aeson >=0.10.0.0
                   , aeson-qq
+                  , bytestring
                   , containers
                   , hashable
                   , hspec
