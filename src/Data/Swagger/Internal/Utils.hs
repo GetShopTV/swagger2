@@ -111,7 +111,7 @@ genericParseJSONWithSub sub opts js@(Object o)
   <|> genericParseJSON opts js'   -- try with subjson
   where
     js' = Object (HashMap.insert sub (Object o) o)
-genericParseJSONWithSub _ _ _ = error "genericParseJSONWithSub: given json is not an object"
+genericParseJSONWithSub _ _ _ = fail "genericParseJSONWithSub: given json is not an object"
 
 (<+>) :: Value -> Value -> Value
 Object x <+> Object y = Object (x <> y)

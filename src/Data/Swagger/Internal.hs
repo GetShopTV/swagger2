@@ -978,8 +978,7 @@ instance ToJSON ParamOtherSchema where
   toJSON = genericToJSONWithSub "paramSchema" (jsonPrefix "paramOtherSchema")
 
 instance ToJSON Responses where
-  toJSON (Responses def rs) = omitEmpties $
-    toJSON (InsOrdHashMap.mapKeys show rs) <+> object [ "default" .= def ]
+  toJSON = omitEmpties . genericToJSONWithSub "responses" (jsonPrefix "responses")
 
 instance ToJSON Response where
   toJSON = omitEmpties . genericToJSON (jsonPrefix "response")
