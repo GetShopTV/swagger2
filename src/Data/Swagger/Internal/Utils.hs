@@ -55,17 +55,6 @@ gunfoldEnum tname xs _k z c = case lookup (constrIndex c) (zip [1..] xs) of
   Just x -> z x
   Nothing -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type " ++ tname ++ "."
 
-hashMapMapKeys :: (Eq k', Hashable k') => (k -> k') -> HashMap k v -> HashMap k' v
-hashMapMapKeys f = HashMap.fromList . map (first f) . HashMap.toList
-
-hashMapTraverseKeys :: (Eq k', Hashable k', Applicative f) => (k -> f k') -> HashMap k v -> f (HashMap k' v)
-hashMapTraverseKeys f = fmap HashMap.fromList . traverse g . HashMap.toList
-  where
-    g (x, y) = (\a -> (a, y)) <$> f x
-
-hashMapReadKeys :: (Eq k, Read k, Hashable k, Alternative f) => HashMap String v -> f (HashMap k v)
-hashMapReadKeys = hashMapTraverseKeys (maybe empty pure . readMaybe)
-
 jsonPrefix :: String -> Options
 jsonPrefix prefix = defaultOptions
   { fieldLabelModifier      = modifier . drop 1
@@ -87,28 +76,9 @@ parseOneOf xs js =
   where
     ys = zip (map toJSON xs) xs
 
-{-# DEPRECATED omitEmpties "will be removed" #-}
-omitEmpties :: Value -> Value
-omitEmpties (Object o) = Object (HashMap.filter nonEmpty o)
-  where
-    nonEmpty js = (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
-omitEmpties js = js
-
-genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
-genericParseJSONWithSub sub opts js@(Object o)
-    = genericParseJSON opts js    -- try without subjson
-  <|> genericParseJSON opts js'   -- try with subjson
-  where
-    js' = Object (HashMap.insert sub (Object o) o)
-genericParseJSONWithSub _ _ _ = fail "genericParseJSONWithSub: given json is not an object"
-
 (<+>) :: Value -> Value -> Value
 Object x <+> Object y = Object (x <> y)
 _ <+> _ = error "<+>: merging non-objects"
-
-withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
-withDefaults parser defs js@(Object _) = parser (js <+> object defs)
-withDefaults _ _ _ = empty
 
 genericMempty :: (Generic a, GMonoid (Rep a)) => a
 genericMempty = to gmempty
@@ -165,4 +135,3 @@ instance SwaggerMonoid (Maybe a) where
   swaggerMempty = Nothing
   swaggerMappend x Nothing = x
   swaggerMappend _ y = y
-

@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 #include "overlapping-compat.h"
@@ -59,14 +60,14 @@ makePrisms ''Referenced
 
 -- ** 'SwaggerItems' prisms
 
-_SwaggerItemsArray :: forall t. (t ~ Schema) => Review (SwaggerItems t) [Referenced Schema]
+_SwaggerItemsArray :: Review (SwaggerItems SwaggerKindSchema) [Referenced Schema]
 _SwaggerItemsArray
   = prism (\x -> SwaggerItemsArray x) $ \x -> case x of
       SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
       SwaggerItemsObject o      -> Left (SwaggerItemsObject o)
       SwaggerItemsArray a       -> Right a
 
-_SwaggerItemsObject :: forall t. (t ~ Schema) => Review (SwaggerItems t) (Referenced Schema)
+_SwaggerItemsObject :: Review (SwaggerItems SwaggerKindSchema) (Referenced Schema)
 _SwaggerItemsObject
   = prism (\x -> SwaggerItemsObject x) $ \x -> case x of
       SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
@@ -91,13 +92,13 @@ instance At   Responses where at n = responses . at n
 instance Ixed Operation where ix n = responses . ix n
 instance At   Operation where at n = responses . at n
 
-instance HasParamSchema NamedSchema (ParamSchema Schema) where paramSchema = schema.paramSchema
+instance HasParamSchema NamedSchema (ParamSchema SwaggerKindSchema) where paramSchema = schema.paramSchema
 
 -- HasType instances
-instance HasType Header (SwaggerType Header) where type_ = paramSchema.type_
-instance HasType Schema (SwaggerType Schema) where type_ = paramSchema.type_
-instance HasType NamedSchema (SwaggerType Schema) where type_ = paramSchema.type_
-instance HasType ParamOtherSchema (SwaggerType ParamOtherSchema) where type_ = paramSchema.type_
+instance HasType Header (SwaggerType (SwaggerKindNormal Header)) where type_ = paramSchema.type_
+instance HasType Schema (SwaggerType SwaggerKindSchema) where type_ = paramSchema.type_
+instance HasType NamedSchema (SwaggerType SwaggerKindSchema) where type_ = paramSchema.type_
+instance HasType ParamOtherSchema (SwaggerType SwaggerKindParamOtherSchema) where type_ = paramSchema.type_
 
 -- HasDefault instances
 instance HasDefault Header (Maybe Value) where default_ = paramSchema.default_

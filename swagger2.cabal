@@ -45,7 +45,6 @@ library
                      , containers
                      , hashable
                      , generics-sop >=0.2 && <0.3
-                     , generics-sop-lens >=0.1.0.0 && <0.2
                      , http-media
                      , insert-ordered-containers >=0.1.0.0 && <0.2
                      , lens
