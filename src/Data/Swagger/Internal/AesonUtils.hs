@@ -32,6 +32,7 @@ import Control.Monad    (unless)
 import Data.Aeson       (ToJSON(..), FromJSON(..), Value(..), Object, object, (.:), (.:?), (.!=), withObject)
 import Data.Aeson.Types (Parser, Pair)
 import Data.Char        (toLower, isUpper)
+import Data.Foldable    (traverse_)
 import Data.Text        (Text)
 
 import Generics.SOP
@@ -44,7 +45,6 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrd
 #if MIN_VERSION_aeson(0,10,0)
 import Data.Aeson (Encoding, pairs, (.=), Series)
 import Data.Monoid ((<>))
-import Data.Foldable (foldMap)
 #endif
 
 -------------------------------------------------------------------------------
@@ -145,6 +145,7 @@ sopSwaggerGenericToJSON'
     -> [Pair]
 sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
     sopSwaggerGenericToJSON'' opts fields fieldsInfo defs
+sopSwaggerGenericToJSON' _ _ _ _ = error "sopSwaggerGenericToJSON: unsupported type"
 
 sopSwaggerGenericToJSON''
     :: (All ToJSON xs, All Eq xs)
@@ -171,6 +172,9 @@ sopSwaggerGenericToJSON'' (SwaggerAesonOptions prefix _ sub) = go
         json  = toJSON x
         name' = fieldNameModifier name
         rest  = go xs names defs
+#if __GLASGOW_HASKELL__ < 800
+    go _ _ _ = error "not empty"
+#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)
@@ -195,7 +199,7 @@ sopSwaggerGenericParseJSON
 sopSwaggerGenericParseJSON = withObject "Swagger Record Object" $ \obj ->
     let ps = sopSwaggerGenericParseJSON' opts obj (datatypeInfo proxy) (aesonDefaults proxy)
     in do
-        traverse (parseAdditionalField obj) (opts ^. saoAdditionalPairs)
+        traverse_ (parseAdditionalField obj) (opts ^. saoAdditionalPairs)
         to <$> ps
   where
     proxy = Proxy :: Proxy a
@@ -218,6 +222,7 @@ sopSwaggerGenericParseJSON'
     -> Parser (SOP I '[xs])
 sopSwaggerGenericParseJSON' opts obj (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
     SOP . Z <$> sopSwaggerGenericParseJSON'' opts obj fieldsInfo defs
+sopSwaggerGenericParseJSON' _ _ _ _ = error "sopSwaggerGenericParseJSON: unsupported type"
 
 sopSwaggerGenericParseJSON''
     :: (All FromJSON xs, All Eq xs)
@@ -245,6 +250,9 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
         withDef = case def of
             Just def' -> (<|> pure def')
             Nothing   -> id
+#if __GLASGOW_HASKELL__ < 800
+    go _ _ = error "not empty"
+#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)
@@ -287,6 +295,7 @@ sopSwaggerGenericToEncoding'
     -> Series
 sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
     sopSwaggerGenericToEncoding'' opts fields fieldsInfo defs
+sopSwaggerGenericToEncoding' _ _ _ _ = error "sopSwaggerGenericToEncoding: unsupported type"
 
 sopSwaggerGenericToEncoding''
     :: (All ToJSON xs, All Eq xs)
@@ -312,6 +321,9 @@ sopSwaggerGenericToEncoding'' (SwaggerAesonOptions prefix _ sub) = go
       where
         name' = fieldNameModifier name
         rest  = go xs names defs
+#if __GLASGOW_HASKELL__ < 800
+    go _ _ _ = error "not empty"
+#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)

@@ -9,8 +9,6 @@ module Data.Swagger.Internal.Utils where
 import Prelude ()
 import Prelude.Compat
 
-import Control.Arrow (first)
-import Control.Applicative
 import Control.Lens ((&), (%~))
 import Control.Lens.TH
 import Data.Aeson
@@ -28,7 +26,6 @@ import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
 import Language.Haskell.TH (mkName)
-import Text.Read (readMaybe)
 
 swaggerFieldRules :: LensRules
 swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer

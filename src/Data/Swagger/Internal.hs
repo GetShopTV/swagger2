@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -8,15 +9,15 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
-
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+#if __GLASGOW_HASKELL__ <710
+{-# LANGUAGE PolyKinds #-}
+#endif
 #include "overlapping-compat.h"
 module Data.Swagger.Internal where
 
@@ -25,11 +26,9 @@ import Prelude.Compat
 
 import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
-import           Control.Monad
 import           Data.Aeson
 import qualified Data.Aeson.Types         as JSON
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
-import           Data.HashMap.Strict      (HashMap)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
@@ -355,7 +354,7 @@ data ParamOtherSchema = ParamOtherSchema
     -- Default value is @False@.
   , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
-  , _paramOtherSchemaParamSchema :: ParamSchema SwaggerKindParamOtherSchema
+  , _paramOtherSchemaParamSchema :: ParamSchema 'SwaggerKindParamOtherSchema
   } deriving (Eq, Show, Generic, Typeable, Data)
 
 -- | Items for @'SwaggerArray'@ schemas.
@@ -370,8 +369,8 @@ data ParamOtherSchema = ParamOtherSchema
 -- @'SwaggerItemsArray'@ should be used to specify tuple @'Schema'@s.
 data SwaggerItems t where
   SwaggerItemsPrimitive :: Maybe (CollectionFormat k) -> ParamSchema k-> SwaggerItems k
-  SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems SwaggerKindSchema
-  SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems SwaggerKindSchema
+  SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems 'SwaggerKindSchema
+  SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems 'SwaggerKindSchema
   deriving (Typeable)
 
 deriving instance Eq (SwaggerItems t)
@@ -393,7 +392,7 @@ swaggerItemsDataType = mkDataType "Data.Swagger.SwaggerItems" [swaggerItemsPrimi
 -- Note: unfortunately we have to write these Data instances by hand,
 -- to get better contexts / avoid duplicate name when using standalone deriving
 
-instance Data t => Data (SwaggerItems (SwaggerKindNormal t)) where
+instance Data t => Data (SwaggerItems ('SwaggerKindNormal t)) where
   -- TODO: define gfoldl
   gunfold k z c = case constrIndex c of
     1 -> k (k (z SwaggerItemsPrimitive))
@@ -402,7 +401,7 @@ instance Data t => Data (SwaggerItems (SwaggerKindNormal t)) where
   dataTypeOf _ = swaggerItemsDataType
 
 -- SwaggerItems SwaggerKindParamOtherSchema can be constructed using SwaggerItemsPrimitive only
-instance Data (SwaggerItems SwaggerKindParamOtherSchema) where
+instance Data (SwaggerItems 'SwaggerKindParamOtherSchema) where
   -- TODO: define gfoldl
   gunfold k z c = case constrIndex c of
     1 -> k (k (z SwaggerItemsPrimitive))
@@ -410,18 +409,19 @@ instance Data (SwaggerItems SwaggerKindParamOtherSchema) where
   toConstr _ = swaggerItemsPrimitiveConstr
   dataTypeOf _ = swaggerItemsDataType
 
-instance Data (SwaggerItems SwaggerKindSchema) where
+instance Data (SwaggerItems 'SwaggerKindSchema) where
   gfoldl _ _ (SwaggerItemsPrimitive _ _) = error $ " Data.Data.gfoldl: Constructor SwaggerItemsPrimitive used to construct SwaggerItems SwaggerKindSchema"
   gfoldl k z (SwaggerItemsObject ref)    = z SwaggerItemsObject `k` ref
   gfoldl k z (SwaggerItemsArray ref)     = z SwaggerItemsArray `k` ref
 
   gunfold k z c = case constrIndex c of
-    1 -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type (SwaggerItems SwaggerKindSchema)"
     2 -> k (z SwaggerItemsObject)
     3 -> k (z SwaggerItemsArray)
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type (SwaggerItems SwaggerKindSchema)."
 
-  toConstr (SwaggerItemsObject _) = swaggerItemsObjectConstr
-  toConstr (SwaggerItemsArray _)  = swaggerItemsArrayConstr
+  toConstr (SwaggerItemsPrimitive _ _) = error "Not supported"
+  toConstr (SwaggerItemsObject _)      = swaggerItemsObjectConstr
+  toConstr (SwaggerItemsArray _)       = swaggerItemsArrayConstr
 
   dataTypeOf _ = swaggerItemsDataType
 
@@ -430,17 +430,16 @@ data SwaggerKind t
     = SwaggerKindNormal t
     | SwaggerKindParamOtherSchema
     | SwaggerKindSchema
+    deriving (Typeable)
 
-#if __GLASGLOW_HASKELL__ < 710
 deriving instance Typeable 'SwaggerKindNormal
 deriving instance Typeable 'SwaggerKindParamOtherSchema
 deriving instance Typeable 'SwaggerKindSchema
-#endif
 
 type family SwaggerKindType (k :: SwaggerKind *) :: *
-type instance SwaggerKindType (SwaggerKindNormal t) = t
-type instance SwaggerKindType SwaggerKindSchema = Schema
-type instance SwaggerKindType SwaggerKindParamOtherSchema = ParamOtherSchema
+type instance SwaggerKindType ('SwaggerKindNormal t) = t
+type instance SwaggerKindType 'SwaggerKindSchema = Schema
+type instance SwaggerKindType 'SwaggerKindParamOtherSchema = ParamOtherSchema
 
 data SwaggerType t where
   SwaggerString   :: SwaggerType t
@@ -448,9 +447,9 @@ data SwaggerType t where
   SwaggerInteger  :: SwaggerType t
   SwaggerBoolean  :: SwaggerType t
   SwaggerArray    :: SwaggerType t
-  SwaggerFile     :: SwaggerType SwaggerKindParamOtherSchema
-  SwaggerNull     :: SwaggerType SwaggerKindSchema
-  SwaggerObject   :: SwaggerType SwaggerKindSchema
+  SwaggerFile     :: SwaggerType 'SwaggerKindParamOtherSchema
+  SwaggerNull     :: SwaggerType 'SwaggerKindSchema
+  SwaggerObject   :: SwaggerType 'SwaggerKindSchema
   deriving (Typeable)
 
 deriving instance Eq (SwaggerType t)
@@ -465,27 +464,27 @@ swaggerTypeDataType _ = mkDataType "Data.Swagger.SwaggerType" swaggerTypeConstrs
 swaggerCommonTypes :: [SwaggerType k]
 swaggerCommonTypes = [SwaggerString, SwaggerNumber, SwaggerInteger, SwaggerBoolean, SwaggerArray]
 
-swaggerParamTypes :: [SwaggerType SwaggerKindParamOtherSchema]
+swaggerParamTypes :: [SwaggerType 'SwaggerKindParamOtherSchema]
 swaggerParamTypes = swaggerCommonTypes ++ [SwaggerFile]
 
-swaggerSchemaTypes :: [SwaggerType SwaggerKindSchema]
+swaggerSchemaTypes :: [SwaggerType 'SwaggerKindSchema]
 swaggerSchemaTypes = swaggerCommonTypes ++ [error "SwaggerFile is invalid SwaggerType Schema", SwaggerNull, SwaggerObject]
 
 swaggerTypeConstrs :: [Constr]
-swaggerTypeConstrs = map swaggerTypeConstr (swaggerCommonTypes :: [SwaggerType SwaggerKindSchema])
+swaggerTypeConstrs = map swaggerTypeConstr (swaggerCommonTypes :: [SwaggerType 'SwaggerKindSchema])
   ++ [swaggerTypeConstr SwaggerFile, swaggerTypeConstr SwaggerNull, swaggerTypeConstr SwaggerObject]
 
-instance Typeable t => Data (SwaggerType (SwaggerKindNormal t)) where
+instance Typeable t => Data (SwaggerType ('SwaggerKindNormal t)) where
   gunfold = gunfoldEnum "SwaggerType" swaggerCommonTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
 
-instance Data (SwaggerType SwaggerKindParamOtherSchema) where
+instance Data (SwaggerType 'SwaggerKindParamOtherSchema) where
   gunfold = gunfoldEnum "SwaggerType ParamOtherSchema" swaggerParamTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
 
-instance Data (SwaggerType SwaggerKindSchema) where
+instance Data (SwaggerType 'SwaggerKindSchema) where
   gunfold = gunfoldEnum "SwaggerType Schema" swaggerSchemaTypes
   toConstr = swaggerTypeConstr
   dataTypeOf = swaggerTypeDataType
@@ -525,7 +524,7 @@ data CollectionFormat t where
   -- Corresponds to multiple parameter instances
   -- instead of multiple values for a single instance @foo=bar&foo=baz@.
   -- This is valid only for parameters in @'ParamQuery'@ or @'ParamFormData'@.
-  CollectionMulti :: CollectionFormat SwaggerKindParamOtherSchema
+  CollectionMulti :: CollectionFormat 'SwaggerKindParamOtherSchema
   deriving (Typeable)
 
 deriving instance Eq (CollectionFormat t)
@@ -541,12 +540,12 @@ collectionFormatDataType = mkDataType "Data.Swagger.CollectionFormat" $
 collectionCommonFormats :: [CollectionFormat t]
 collectionCommonFormats = [ CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes ]
 
-instance Data t => Data (CollectionFormat (SwaggerKindNormal t)) where
+instance Data t => Data (CollectionFormat ('SwaggerKindNormal t)) where
   gunfold = gunfoldEnum "CollectionFormat" collectionCommonFormats
   toConstr = collectionFormatConstr
   dataTypeOf _ = collectionFormatDataType
 
-deriving instance Data (CollectionFormat SwaggerKindParamOtherSchema)
+deriving instance Data (CollectionFormat 'SwaggerKindParamOtherSchema)
 
 type ParamName = Text
 
@@ -568,7 +567,7 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaParamSchema :: ParamSchema SwaggerKindSchema
+  , _schemaParamSchema :: ParamSchema 'SwaggerKindSchema
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A @'Schema'@ with an optional name.
@@ -682,7 +681,7 @@ data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe Text
 
-  , _headerParamSchema :: ParamSchema (SwaggerKindNormal Header)
+  , _headerParamSchema :: ParamSchema ('SwaggerKindNormal Header)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Example = Example { getExample :: Map MediaType Value }
@@ -1139,17 +1138,17 @@ instance FromJSON Schema where
 instance FromJSON Header where
   parseJSON = sopSwaggerGenericParseJSON
 
-instance (FromJSON (CollectionFormat (SwaggerKindNormal t)), FromJSON (ParamSchema (SwaggerKindNormal t))) => FromJSON (SwaggerItems (SwaggerKindNormal t)) where
+instance (FromJSON (CollectionFormat ('SwaggerKindNormal t)), FromJSON (ParamSchema ('SwaggerKindNormal t))) => FromJSON (SwaggerItems ('SwaggerKindNormal t)) where
   parseJSON = withObject "SwaggerItemsPrimitive" $ \o -> SwaggerItemsPrimitive
     <$> o .:? "collectionFormat"
     <*> (o .: "items" >>= parseJSON)
 
-instance FromJSON (SwaggerItems SwaggerKindParamOtherSchema) where
+instance FromJSON (SwaggerItems 'SwaggerKindParamOtherSchema) where
   parseJSON = withObject "SwaggerItemsPrimitive" $ \o -> SwaggerItemsPrimitive
     <$> o .:? "collectionFormat"
     <*> ((o .: "items" >>= parseJSON) <|> fail ("foo" ++ show o))
 
-instance FromJSON (SwaggerItems SwaggerKindSchema) where
+instance FromJSON (SwaggerItems 'SwaggerKindSchema) where
   parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
   parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
   parseJSON _ = empty
@@ -1226,30 +1225,30 @@ instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
 
-instance FromJSON (SwaggerType SwaggerKindSchema) where
+instance FromJSON (SwaggerType 'SwaggerKindSchema) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerNull, SwaggerObject]
 
-instance FromJSON (SwaggerType SwaggerKindParamOtherSchema) where
+instance FromJSON (SwaggerType 'SwaggerKindParamOtherSchema) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray, SwaggerFile]
 
-instance FromJSON (SwaggerType (SwaggerKindNormal t)) where
+instance FromJSON (SwaggerType ('SwaggerKindNormal t)) where
   parseJSON = parseOneOf [SwaggerString, SwaggerInteger, SwaggerNumber, SwaggerBoolean, SwaggerArray]
 
-instance FromJSON (CollectionFormat (SwaggerKindNormal t)) where
+instance FromJSON (CollectionFormat ('SwaggerKindNormal t)) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
 -- NOTE: There aren't collections of 'Schema'
 --instance FromJSON (CollectionFormat (SwaggerKindSchema)) where
 --  parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes]
 
-instance FromJSON (CollectionFormat SwaggerKindParamOtherSchema) where
+instance FromJSON (CollectionFormat 'SwaggerKindParamOtherSchema) where
   parseJSON = parseOneOf [CollectionCSV, CollectionSSV, CollectionTSV, CollectionPipes, CollectionMulti]
 
-instance (FromJSON (SwaggerType (SwaggerKindNormal t)), FromJSON (SwaggerItems (SwaggerKindNormal t))) => FromJSON (ParamSchema (SwaggerKindNormal t)) where
+instance (FromJSON (SwaggerType ('SwaggerKindNormal t)), FromJSON (SwaggerItems ('SwaggerKindNormal t))) => FromJSON (ParamSchema ('SwaggerKindNormal t)) where
   parseJSON = sopSwaggerGenericParseJSON
-instance FromJSON (ParamSchema SwaggerKindParamOtherSchema) where
+instance FromJSON (ParamSchema 'SwaggerKindParamOtherSchema) where
   parseJSON = sopSwaggerGenericParseJSON
-instance FromJSON (ParamSchema SwaggerKindSchema) where
+instance FromJSON (ParamSchema 'SwaggerKindSchema) where
   parseJSON = sopSwaggerGenericParseJSON
 
 -------------------------------------------------------------------------------
@@ -1292,12 +1291,12 @@ instance HasSwaggerAesonOptions Schema where
 instance HasSwaggerAesonOptions Swagger where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("swagger", "2.0")]
 
-instance HasSwaggerAesonOptions (ParamSchema (SwaggerKindNormal t)) where
+instance HasSwaggerAesonOptions (ParamSchema ('SwaggerKindNormal t)) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
-instance HasSwaggerAesonOptions (ParamSchema SwaggerKindParamOtherSchema) where
+instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindParamOtherSchema) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
 -- NOTE: Schema doesn't have 'items' sub object!
-instance HasSwaggerAesonOptions (ParamSchema SwaggerKindSchema) where
+instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindSchema) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema"
 
 instance AesonDefaultValue (ParamSchema s)
