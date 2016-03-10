@@ -291,7 +291,7 @@ validateObject o = withSchema $ \schema ->
           Null | not (k `elem` (schema ^. required)) -> valid  -- null is fine for non-required property
           _ ->
             case HashMap.lookup k (schema ^. properties) of
-              Nothing -> check additionalProperties $ \s -> sub s $ validateWithSchema v
+              Nothing -> check additionalProperties $ \s -> validateWithSchemaRef s v
               Just s  -> validateWithSchemaRef s v
 
 validateEnum :: Value -> Validation (ParamSchema t) ()

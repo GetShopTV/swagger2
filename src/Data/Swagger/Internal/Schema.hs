@@ -471,7 +471,7 @@ instance ToSchema a => ToSchema (IntMap a) where
 
 instance ToSchema a => ToSchema (Map String a) where
   declareNamedSchema _ = do
-    schema <- declareSchema (Proxy :: Proxy a)
+    schema <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & type_ .~ SwaggerObject
       & additionalProperties ?~ schema

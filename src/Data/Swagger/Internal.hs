@@ -483,7 +483,7 @@ data Schema = Schema
 
   , _schemaAllOf :: Maybe [Schema]
   , _schemaProperties :: HashMap Text (Referenced Schema)
-  , _schemaAdditionalProperties :: Maybe Schema
+  , _schemaAdditionalProperties :: Maybe (Referenced Schema)
 
   , _schemaDiscriminator :: Maybe Text
   , _schemaReadOnly :: Maybe Bool

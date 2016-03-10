@@ -271,7 +271,7 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
   & type_ .~ SwaggerObject
-  & additionalProperties ?~ (mempty & type_ .~ SwaggerString)
+  & additionalProperties ?~ Inline (mempty & type_ .~ SwaggerString)
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
