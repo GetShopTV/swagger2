@@ -1,3 +1,10 @@
+2.0.2
+---
+
+* Fixes:
+  * Fix `additionalProperties` to allow references;
+  * Fix `ToSchema` instances for `Map` and `HashMap` (prevent infinite recursion for recursive values).
+
 2.0.1
 ---
 
