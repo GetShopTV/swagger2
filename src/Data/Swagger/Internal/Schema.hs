@@ -88,15 +88,15 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 -- data Coord = Coord { x :: Double, y :: Double }
 --
 -- instance ToSchema Coord where
---   declareNamedSchema = pure (Just \"Coord\", schema)
---    where
---      schema = mempty
---        & type_ .~ SwaggerObject
---        & properties .~
---            [ (\"x\", toSchemaRef (Proxy :: Proxy Double))
---            , (\"y\", toSchemaRef (Proxy :: Proxy Double))
---            ]
---        & required .~ [ \"x\", \"y\" ]
+--   declareNamedSchema = do
+--     doubleSchema <- declareSchemaRef (Proxy :: Proxy Double)
+--     return $ NamedSchema (Just \"Coord\")) $ mempty
+--       & type_ .~ SwaggerObject
+--       & properties .~
+--           [ (\"x\", doubleSchema)
+--           , (\"y\", doubleSchema)
+--           ]
+--       & required .~ [ \"x\", \"y\" ]
 -- @
 --
 -- Instead of manually writing your @'ToSchema'@ instance you can
