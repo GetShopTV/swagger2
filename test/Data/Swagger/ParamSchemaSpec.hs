@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -11,12 +12,13 @@ import Data.Proxy
 import GHC.Generics
 
 import Data.Swagger
+import Data.Swagger.Internal (SwaggerKind(..))
 
 import SpecCommon
 import Test.Hspec
 
 checkToParamSchema :: ToParamSchema a => Proxy a -> Value -> Spec
-checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema Param) <=> js
+checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema (SwaggerKindNormal Param)) <=> js
 
 spec :: Spec
 spec = do

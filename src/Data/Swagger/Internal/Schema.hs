@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
@@ -25,6 +26,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
+import qualified Data.Aeson.Types as Aeson
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
@@ -33,6 +35,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
+import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
@@ -194,7 +198,7 @@ declareSchemaRef proxy = do
       -- have already declared it.
       -- If we have, we don't need to declare anything for
       -- this schema this time and thus simply return the reference.
-      known <- looks (HashMap.member name)
+      known <- looks (InsOrdHashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
         void $ declareNamedSchema proxy
@@ -213,7 +217,7 @@ inlineSchemasWhen p defs = template %~ deref
   where
     deref r@(Ref (Reference name))
       | p name =
-          case HashMap.lookup name defs of
+          case InsOrdHashMap.lookup name defs of
             Just schema -> Inline (inlineSchemasWhen p defs schema)
             Nothing -> r
       | otherwise = r
@@ -255,7 +259,7 @@ inlineNonRecursiveSchemas :: Data s => (Definitions Schema) -> s -> s
 inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
   where
     nonRecursive name =
-      case HashMap.lookup name defs of
+      case InsOrdHashMap.lookup name defs of
         Just schema -> name `notElem` execDeclare (usedNames schema) mempty
         Nothing     -> False
 
@@ -267,7 +271,7 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
         seen <- looks (name `elem`)
         when (not seen) $ do
           declare [name]
-          traverse_ usedNames (HashMap.lookup name defs)
+          traverse_ usedNames (InsOrdHashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
 -- | Default schema for binary data (any sequence of octets).
@@ -304,7 +308,7 @@ passwordSchema = mempty
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> encode $ sketchSchema (Person "Jack" 25)
--- "{\"example\":{\"age\":25,\"name\":\"Jack\"},\"required\":[\"age\",\"name\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}}}"
+-- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -331,7 +335,7 @@ sketchSchema = sketch . toJSON
     go js@(Object o) = mempty
       & type_         .~ SwaggerObject
       & required      .~ HashMap.keys o
-      & properties    .~ fmap (Inline . go) o
+      & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
 
 -- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema uses as much constraints as possible.
@@ -348,7 +352,7 @@ sketchSchema = sketch . toJSON
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> encode $ sketchStrictSchema (Person "Jack" 25)
--- "{\"minProperties\":2,\"required\":[\"age\",\"name\"],\"maxProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}}}"
+-- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}},\"maxProperties\":2,\"minProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}]}"
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
@@ -381,7 +385,7 @@ sketchStrictSchema = go . toJSON
     go js@(Object o) = mempty
       & type_         .~ SwaggerObject
       & required      .~ names
-      & properties    .~ fmap (Inline . go) o
+      & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
       & maxProperties ?~ fromIntegral (length names)
       & minProperties ?~ fromIntegral (length names)
       & enum_         ?~ [js]
@@ -564,8 +568,8 @@ gdeclareSchema opts proxy = _namedSchemaSchema <$> gdeclareNamedSchema opts prox
 
 instance (GToSchema f, GToSchema g) => GToSchema (f :*: g) where
   gdeclareNamedSchema opts _ schema = do
-    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy g) schema
-    gdeclareNamedSchema opts (Proxy :: Proxy f) gschema
+    NamedSchema _ gschema <- gdeclareNamedSchema opts (Proxy :: Proxy f) schema
+    gdeclareNamedSchema opts (Proxy :: Proxy g) gschema
 
 instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
   gdeclareNamedSchema opts _ s = rename name <$> gdeclareNamedSchema opts (Proxy :: Proxy f) s
@@ -605,16 +609,16 @@ gdeclareSchemaRef opts proxy = do
       -- have already declared it.
       -- If we have, we don't need to declare anything for
       -- this schema this time and thus simply return the reference.
-      known <- looks (HashMap.member name)
+      known <- looks (InsOrdHashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
         void $ gdeclareNamedSchema opts proxy mempty
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
-appendItem :: Referenced Schema -> Maybe (SwaggerItems Schema) -> Maybe (SwaggerItems Schema)
+appendItem :: Referenced Schema -> Maybe (SwaggerItems SwaggerKindSchema) -> Maybe (SwaggerItems SwaggerKindSchema)
 appendItem x Nothing = Just (SwaggerItemsArray [x])
-appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (x:xs))
+appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (xs ++ [x]))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
 
 withFieldSchema :: forall proxy s f. (Selector s, GToSchema f) =>
@@ -630,7 +634,7 @@ withFieldSchema opts _ isRequiredField schema = do
         & type_ .~ SwaggerObject
         & properties . at fname ?~ ref
         & if isRequiredField
-            then required %~ (fname :)
+            then required %~ (++ [fname])
             else id
   where
     fname = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
@@ -662,7 +666,7 @@ gdeclareNamedSumSchema opts proxy s
 
     toStringTag schema = mempty
       & type_ .~ SwaggerString
-      & enum_ ?~ map toJSON (schema ^.. properties.ifolded.asIndex)
+      & enum_ ?~ map toJSON  (schema ^.. properties.ifolded.asIndex)
 
 type AllNullary = All
 
@@ -670,7 +674,7 @@ class GSumToSchema f where
   gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
-  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) <=< gsumToSchema opts (Proxy :: Proxy g)
+  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) >=> gsumToSchema opts (Proxy :: Proxy g)
 
 gsumConToSchemaWith :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
   Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema

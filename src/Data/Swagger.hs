@@ -186,7 +186,7 @@ import Data.Swagger.Internal
 --         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"User\":{\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}},\"produces\":[\"application/json\"]}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
 --
 -- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
 -- which produces @application/json@ output. It should respond with code @200@ and body specified
@@ -205,7 +205,7 @@ import Data.Swagger.Internal
 --   & type_       .~ SwaggerBoolean
 --   & description ?~ "To be or not to be"
 -- :}
--- "{\"type\":\"boolean\",\"description\":\"To be or not to be\"}"
+-- "{\"description\":\"To be or not to be\",\"type\":\"boolean\"}"
 --
 -- @'ParamSchema'@ is basically the /base schema specification/ and many types contain it (see @'HasParamSchema'@).
 -- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
@@ -271,7 +271,7 @@ import Data.Swagger.Internal
 -- >>> encode (Person "David" 28)
 -- "{\"age\":28,\"name\":\"David\"}"
 -- >>> encode $ toSchema (Proxy :: Proxy Person)
--- "{\"required\":[\"name\",\"age\"],\"type\":\"object\",\"properties\":{\"age\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"}}}"
+-- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"integer\"}},\"type\":\"object\"}"
 
 -- $manipulation
 -- Sometimes you have to work with an imported or generated @'Swagger'@.

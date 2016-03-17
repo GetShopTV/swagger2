@@ -9,8 +9,6 @@ module Data.Swagger.Internal.Utils where
 import Prelude ()
 import Prelude.Compat
 
-import Control.Arrow (first)
-import Control.Applicative
 import Control.Lens ((&), (%~))
 import Control.Lens.TH
 import Data.Aeson
@@ -20,13 +18,14 @@ import Data.Data
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Map (Map)
 import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
 import Language.Haskell.TH (mkName)
-import Text.Read (readMaybe)
 
 swaggerFieldRules :: LensRules
 swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer
@@ -53,17 +52,6 @@ gunfoldEnum tname xs _k z c = case lookup (constrIndex c) (zip [1..] xs) of
   Just x -> z x
   Nothing -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type " ++ tname ++ "."
 
-hashMapMapKeys :: (Eq k', Hashable k') => (k -> k') -> HashMap k v -> HashMap k' v
-hashMapMapKeys f = HashMap.fromList . map (first f) . HashMap.toList
-
-hashMapTraverseKeys :: (Eq k', Hashable k', Applicative f) => (k -> f k') -> HashMap k v -> f (HashMap k' v)
-hashMapTraverseKeys f = fmap HashMap.fromList . traverse g . HashMap.toList
-  where
-    g (x, y) = (\a -> (a, y)) <$> f x
-
-hashMapReadKeys :: (Eq k, Read k, Hashable k, Alternative f) => HashMap String v -> f (HashMap k v)
-hashMapReadKeys = hashMapTraverseKeys (maybe empty pure . readMaybe)
-
 jsonPrefix :: String -> Options
 jsonPrefix prefix = defaultOptions
   { fieldLabelModifier      = modifier . drop 1
@@ -85,39 +73,9 @@ parseOneOf xs js =
   where
     ys = zip (map toJSON xs) xs
 
-omitEmptiesExcept :: (Text -> Value -> Bool) -> Value -> Value
-omitEmptiesExcept f (Object o) = Object (HashMap.filterWithKey nonEmpty o)
-  where
-    nonEmpty k js = f k js || (js /= Object mempty) && (js /= Array mempty) && (js /= Null)
-omitEmptiesExcept _ js = js
-
-omitEmpties :: Value -> Value
-omitEmpties = omitEmptiesExcept (\_ _ -> False)
-
-genericToJSONWithSub :: (Generic a, GToJSON (Rep a)) => Text -> Options -> a -> Value
-genericToJSONWithSub sub opts x =
-  case genericToJSON opts x of
-    Object o ->
-      case HashMap.lookup sub o of
-        Just so -> Object (HashMap.delete sub o) <+> so
-        Nothing -> Object o -- no subjson, leaving object as is
-    _ -> error "genericToJSONWithSub: subjson is not an object"
-
-genericParseJSONWithSub :: (Generic a, GFromJSON (Rep a)) => Text -> Options -> Value -> Parser a
-genericParseJSONWithSub sub opts js@(Object o)
-    = genericParseJSON opts js    -- try without subjson
-  <|> genericParseJSON opts js'   -- try with subjson
-  where
-    js' = Object (HashMap.insert sub (Object o) o)
-genericParseJSONWithSub _ _ _ = error "genericParseJSONWithSub: given json is not an object"
-
 (<+>) :: Value -> Value -> Value
 Object x <+> Object y = Object (x <> y)
 _ <+> _ = error "<+>: merging non-objects"
-
-withDefaults :: (Value -> Parser a) -> [Pair] -> Value -> Parser a
-withDefaults parser defs js@(Object _) = parser (js <+> object defs)
-withDefaults _ _ _ = empty
 
 genericMempty :: (Generic a, GMonoid (Rep a)) => a
 genericMempty = to gmempty
@@ -161,6 +119,10 @@ instance (Eq k, Hashable k) => SwaggerMonoid (HashMap k v) where
   swaggerMempty = mempty
   swaggerMappend = HashMap.unionWith (\_old new -> new)
 
+instance (Eq k, Hashable k) => SwaggerMonoid (InsOrdHashMap k v) where
+  swaggerMempty = mempty
+  swaggerMappend = InsOrdHashMap.unionWith (\_old new -> new)
+
 instance SwaggerMonoid Text where
   swaggerMempty = mempty
   swaggerMappend x "" = x
@@ -170,4 +132,3 @@ instance SwaggerMonoid (Maybe a) where
   swaggerMempty = Nothing
   swaggerMappend x Nothing = x
   swaggerMappend _ y = y
-

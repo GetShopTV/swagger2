@@ -1,5 +1,8 @@
 flags: {}
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- generics-sop-0.2.1.0
+- insert-ordered-containers-0.1.0.1
+- unordered-containers-0.2.7.0
 resolver: lts-2.22

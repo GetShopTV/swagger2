@@ -46,6 +46,9 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
 
+import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+
 -- $setup
 -- >>> import Data.Aeson
 -- >>> import Data.Proxy
@@ -58,10 +61,8 @@ import Data.Swagger.Schema
 -- >>> encode $ prependPath "user/{user_id}" api ^. paths
 -- "{\"/user/{user_id}/info\":{}}"
 prependPath :: FilePath -> Swagger -> Swagger
-prependPath path = paths %~ mapKeys (path </>)
+prependPath path = paths %~ InsOrdHashMap.mapKeys (path </>)
   where
-    mapKeys f = HashMap.fromList . map (first f) . HashMap.toList
-
     x </> y = case trim y of
       "" -> "/" <> trim x
       y' -> "/" <> trim x <> "/" <> y'
@@ -80,15 +81,15 @@ allOperations = paths.traverse.template
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ ok & post ?~ ok)]
 -- >>> let sub = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> encode api
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 -- >>> encode $ api & operationsOf sub . at 404 ?~ "Not found"
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 operationsOf :: Swagger -> Traversal' Swagger Operation
 operationsOf sub = paths.itraversed.withIndex.subops
   where
     -- | Traverse operations that correspond to paths and methods of the sub API.
     subops :: Traversal' (FilePath, PathItem) Operation
-    subops f (path, item) = case HashMap.lookup path (sub ^. paths) of
+    subops f (path, item) = case InsOrdHashMap.lookup path (sub ^. paths) of
       Just subitem -> (,) path <$> methodsOf subitem f item
       Nothing      -> pure (path, item)
 
@@ -119,7 +120,7 @@ applyTagsFor ops ts swag = swag
 -- necessary schema definitions.
 --
 -- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
--- "[{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}]"
+-- "[{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
 declareResponse :: ToSchema a => proxy a -> Declare (Definitions Schema) Response
 declareResponse proxy = do
   s <- declareSchemaRef proxy
@@ -139,7 +140,7 @@ declareResponse proxy = do
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponse 200 res
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}}}"
 --
 -- See also @'setResponseWith'@.
 setResponse :: HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
