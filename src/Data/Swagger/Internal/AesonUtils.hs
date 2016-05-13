@@ -5,6 +5,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE TemplateHaskell #-}
+#if __GLASGOW_HASKELL__ >= 800
+{-# LANGUAGE UndecidableSuperClasses #-}
+#endif
 module Data.Swagger.Internal.AesonUtils (
     -- * Generic functions
     AesonDefaultValue(..),
