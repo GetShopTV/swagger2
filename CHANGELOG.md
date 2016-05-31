@@ -1,3 +1,10 @@
+2.1
+---
+
+* Major changes:
+  * Use `InsOrdHashMap` to preserve insertion order for endpoints and definitions (see [#56](https://github.com/GetShopTV/swagger2/pull/56));
+  * Add support for GHC 8.0 (see [#65](https://github.com/GetShopTV/swagger2/pull/65)).
+
 2.0.2
 ---
 
