@@ -58,6 +58,7 @@ import Data.Swagger.Declare
 import Data.Swagger.Internal
 import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
 import Data.Swagger.Lens hiding (name, schema)
+import qualified Data.Swagger.Lens as Swagger
 import Data.Swagger.SchemaOptions
 
 #ifdef __DOCTEST__
@@ -416,7 +417,10 @@ instance ToSchema Word16  where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Word32  where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Word64  where declareNamedSchema = plain . paramSchemaToSchema
 
-instance ToSchema Char        where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Char where
+  declareNamedSchema proxy = plain (paramSchemaToSchema proxy)
+    & mapped.Swagger.schema.example ?~ toJSON '?'
+
 instance ToSchema Scientific  where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Double      where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Float       where declareNamedSchema = plain . paramSchemaToSchema
@@ -443,17 +447,20 @@ timeSchema fmt = mempty
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
 instance ToSchema Day where
-  declareNamedSchema _ = pure $ named "Day" (timeSchema "date")
+  declareNamedSchema _ = pure $ named "Day" $ timeSchema "date"
+    & example ?~ toJSON (fromGregorian 2016 7 22)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToSchema LocalTime where
-  declareNamedSchema _ = pure $ named "LocalTime" (timeSchema "yyyy-mm-ddThh:MM:ss")
+  declareNamedSchema _ = pure $ named "LocalTime" $ timeSchema "yyyy-mm-ddThh:MM:ss"
+    & example ?~ toJSON (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0))
 
 -- | Format @"date"@ corresponds to @yyyy-mm-ddThh:MM:ss(Z|+hh:MM)@ format.
 instance ToSchema ZonedTime where
   declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "date-time"
+    & example ?~ toJSON (ZonedTime (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0)) (hoursToTimeZone 3))
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
@@ -462,7 +469,8 @@ instance ToSchema NominalDiffTime where
 -- >>> toSchema (Proxy :: Proxy UTCTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ssZ"
 instance ToSchema UTCTime where
-  declareNamedSchema _ = pure $ named "UTCTime" (timeSchema "yyyy-mm-ddThh:MM:ssZ")
+  declareNamedSchema _ = pure $ named "UTCTime" $ timeSchema "yyyy-mm-ddThh:MM:ssZ"
+    & example ?~ toJSON (UTCTime (fromGregorian 2016 7 22) 0)
 
 instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
