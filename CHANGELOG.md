@@ -1,3 +1,9 @@
+2.1.1
+---
+
+* Minor changes:
+  * Proper `Schema` examples for `Char`, `Day`, `LocalTime`, `ZonedTime` and `UTCTime`.
+
 2.1
 ---
 
