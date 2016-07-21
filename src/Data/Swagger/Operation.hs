@@ -120,7 +120,7 @@ applyTagsFor ops ts swag = swag
 -- necessary schema definitions.
 --
 -- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
--- "[{\"Day\":{\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
+-- "[{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
 declareResponse :: ToSchema a => proxy a -> Declare (Definitions Schema) Response
 declareResponse proxy = do
   s <- declareSchemaRef proxy
@@ -140,7 +140,7 @@ declareResponse proxy = do
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponse 200 res
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"format\":\"date\",\"type\":\"string\"}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}}}"
 --
 -- See also @'setResponseWith'@.
 setResponse :: HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger

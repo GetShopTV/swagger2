@@ -145,7 +145,7 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 -- >>> toNamedSchema (Proxy :: Proxy Day) ^. name
 -- Just "Day"
 -- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
--- "{\"format\":\"date\",\"type\":\"string\"}"
+-- "{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}"
 toNamedSchema :: ToSchema a => proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
@@ -245,7 +245,7 @@ inlineAllSchemas = inlineSchemasWhen (const True)
 -- | Convert a type into a schema without references.
 --
 -- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"format\":\"date\",\"type\":\"string\"},\"type\":\"array\"}"
+-- "{\"items\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"},\"type\":\"array\"}"
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
