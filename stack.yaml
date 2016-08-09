@@ -1,5 +1,7 @@
 flags: {}
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- aeson-1.0.0.0
+- insert-ordered-containers-0.2.0.0
 resolver: nightly-2016-07-15
