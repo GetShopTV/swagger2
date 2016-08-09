@@ -1,3 +1,8 @@
+2.1.2.1
+-------
+
+* Bug fix previous release
+
 2.1.2
 ---
 

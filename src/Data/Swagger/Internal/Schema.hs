@@ -482,6 +482,21 @@ instance ToSchema a => ToSchema (IntMap a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [(Int, a)])
 
 #if MIN_VERSION_aeson(1,0,0)
+instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
+  declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction k of
+      ToJSONKeyText  _ _ -> declareObjectMapSchema
+      ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
+    where
+      declareObjectMapSchema = do
+        schema <- declareSchemaRef (Proxy :: Proxy v)
+        return $ unnamed $ mempty
+          & type_ .~ SwaggerObject
+          & additionalProperties ?~ schema
+
+instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
+
+#else
 
 instance ToSchema a => ToSchema (Map String a) where
   declareNamedSchema _ = do
@@ -496,22 +511,6 @@ instance ToSchema a => ToSchema (Map TL.Text a) where declareNamedSchema _ = dec
 instance ToSchema a => ToSchema (HashMap String  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 instance ToSchema a => ToSchema (HashMap T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-
-#else
-
-instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
-  declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction v of
-    ToJSONKeyText  _ _ -> declareObjectMapSchema
-    ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
-  where
-    declareObjectMapSchema = do
-      schema <- declareSchemaRef (Proxy :: Proxy v)
-      return $ unnamed $ mempty
-        & type_ .~ SwaggerObject
-        & additionalProperties ?~ schema
-
-instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
-  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
 
 #endif
 
