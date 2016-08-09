@@ -1,3 +1,9 @@
+2.1.2
+---
+
+* Minor changes:
+  * Support `aeson-1.0.0.0` (see [#70](https://github.com/GetShopTV/swagger2/pull/70)).
+
 2.1.1
 ---
 
