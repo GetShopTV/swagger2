@@ -272,6 +272,28 @@ import Data.Swagger.Internal
 -- "{\"age\":28,\"name\":\"David\"}"
 -- >>> encode $ toSchema (Proxy :: Proxy Person)
 -- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"integer\"}},\"type\":\"object\"}"
+--
+-- Please note that not all valid Haskell data types will have a proper swagger schema. For example while we can derive a 
+-- schema for basic enums like
+--
+-- >>> data SampleEnum = ChoiceOne | ChoiceTwo deriving Generic
+-- >>> instance ToSchema SampleEnum
+-- >>> instance ToJSON SampleEnum
+--
+-- and for sum types that have constructors with values
+--
+-- >>> data SampleSumType = ChoiceInt Int | ChoiceString String deriving Generic
+-- >>> instance ToSchema SampleSumType
+-- >>> instance ToJSON SampleSumType
+--
+-- we can not derive a valid schema for a mix of the above. The following will result in a bad schema
+-- 
+-- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
+-- >>> instance ToSchema BadMixedType
+-- >>> instance ToJSON BadMixedType
+--
+-- This is due to the fact that @'ToJSON'@ encodes empty constructors with an empty list which can not be described in a swagger schema.
+--
 
 -- $manipulation
 -- Sometimes you have to work with an imported or generated @'Swagger'@.
