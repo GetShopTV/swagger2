@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.Schema where
 
@@ -63,6 +64,13 @@ import Data.Swagger.SchemaOptions
 
 #ifdef __DOCTEST__
 import Data.Swagger.Lens (name, schema)
+#endif
+
+#if __GLASGOW_HASKELL__ < 800
+#else
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
+import GHC.TypeLits (TypeError, ErrorMessage(..))
 #endif
 
 unnamed :: Schema -> NamedSchema
@@ -474,6 +482,18 @@ instance ToSchema UTCTime where
 
 instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
+
+#if __GLASGOW_HASKELL__ < 800
+#else
+type family ToSchemaByteStringError bs where
+  ToSchemaByteStringError bs = TypeError
+      ( Text "Impossible to have an instance " :<>: ShowType (ToSchema bs) :<>: Text "."
+   :$$: Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
+   :$$: Text "Consider using byteSchema or binarySchema templates." )
+
+instance ToSchemaByteStringError BS.ByteString  => ToSchema BS.ByteString  where declareNamedSchema = error "impossible"
+instance ToSchemaByteStringError BSL.ByteString => ToSchema BSL.ByteString where declareNamedSchema = error "impossible"
+#endif
 
 instance ToSchema IntSet where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set Int))
 
