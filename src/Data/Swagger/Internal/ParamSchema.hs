@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,8 +8,10 @@
 {-# LANGUAGE PackageImports #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.ParamSchema where
 
@@ -34,6 +37,13 @@ import Data.Word
 import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
+
+#if __GLASGOW_HASKELL__ < 800
+#else
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
+import GHC.TypeLits (TypeError, ErrorMessage(..))
+#endif
 
 -- | Default schema for binary data (any sequence of octets).
 binaryParamSchema :: ParamSchema t
@@ -187,6 +197,18 @@ instance ToParamSchema T.Text where
 
 instance ToParamSchema TL.Text where
   toParamSchema _ = toParamSchema (Proxy :: Proxy String)
+
+#if __GLASGOW_HASKELL__ < 800
+#else
+type family ToParamSchemaByteStringError bs where
+  ToParamSchemaByteStringError bs = TypeError
+      ( Text "Impossible to have an instance " :<>: ShowType (ToParamSchema bs) :<>: Text "."
+   :$$: Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
+   :$$: Text "Consider using byteParamSchema or binaryParamSchema templates." )
+
+instance ToParamSchemaByteStringError BS.ByteString  => ToParamSchema BS.ByteString  where toParamSchema = error "impossible"
+instance ToParamSchemaByteStringError BSL.ByteString => ToParamSchema BSL.ByteString where toParamSchema = error "impossible"
+#endif
 
 instance ToParamSchema All where toParamSchema _ = toParamSchema (Proxy :: Proxy Bool)
 instance ToParamSchema Any where toParamSchema _ = toParamSchema (Proxy :: Proxy Bool)
