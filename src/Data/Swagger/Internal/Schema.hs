@@ -53,6 +53,7 @@ import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
 import GHC.Generics
+import qualified Data.UUID.Types as UUID
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -432,6 +433,11 @@ instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 
 instance ToSchema () where
   declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
+
+-- | For 'ToJSON' instance, see <http://hackage.haskell.org/package/uuid-aeson uuid-aeson> package.
+instance ToSchema UUID.UUID where
+  declareNamedSchema p = pure $ named "UUID" $ paramSchemaToSchema p
+    & example ?~ toJSON (UUID.toText UUID.nil)
 
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
