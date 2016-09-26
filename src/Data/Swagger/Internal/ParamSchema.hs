@@ -30,6 +30,7 @@ import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
+import Data.UUID.Types (UUID)
 
 import Data.Swagger.Internal
 import Data.Swagger.Lens
@@ -220,6 +221,11 @@ instance ToParamSchema () where
   toParamSchema _ = mempty
     & type_ .~ SwaggerString
     & enum_ ?~ ["_"]
+
+instance ToParamSchema UUID where
+  toParamSchema _ = mempty
+    & type_ .~ SwaggerString
+    & format ?~ "uuid"
 
 -- | A configurable generic @'ParamSchema'@ creator.
 --

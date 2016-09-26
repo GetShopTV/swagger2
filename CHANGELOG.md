@@ -1,3 +1,8 @@
+2.1.3
+-----
+
+* Add UUID instances (see [#81](https://github.com/GetShopTV/swagger2/pull/81)).
+
 2.1.2.1
 -------
 
