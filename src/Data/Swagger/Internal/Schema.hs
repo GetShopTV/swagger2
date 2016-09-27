@@ -54,6 +54,7 @@ import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
 import GHC.Generics
+import qualified Data.UUID.Types as UUID
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -441,6 +442,11 @@ instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
 instance ToSchema () where
   declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
 
+-- | For 'ToJSON' instance, see <http://hackage.haskell.org/package/uuid-aeson uuid-aeson> package.
+instance ToSchema UUID.UUID where
+  declareNamedSchema p = pure $ named "UUID" $ paramSchemaToSchema p
+    & example ?~ toJSON (UUID.toText UUID.nil)
+
 instance (ToSchema a, ToSchema b) => ToSchema (a, b)
 instance (ToSchema a, ToSchema b, ToSchema c) => ToSchema (a, b, c)
 instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d) => ToSchema (a, b, c, d)
@@ -502,6 +508,21 @@ instance ToSchema a => ToSchema (IntMap a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [(Int, a)])
 
 #if MIN_VERSION_aeson(1,0,0)
+instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
+  declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction k of
+      ToJSONKeyText  _ _ -> declareObjectMapSchema
+      ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
+    where
+      declareObjectMapSchema = do
+        schema <- declareSchemaRef (Proxy :: Proxy v)
+        return $ unnamed $ mempty
+          & type_ .~ SwaggerObject
+          & additionalProperties ?~ schema
+
+instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
+
+#else
 
 instance ToSchema a => ToSchema (Map String a) where
   declareNamedSchema _ = do
@@ -516,22 +537,6 @@ instance ToSchema a => ToSchema (Map TL.Text a) where declareNamedSchema _ = dec
 instance ToSchema a => ToSchema (HashMap String  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 instance ToSchema a => ToSchema (HashMap T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-
-#else
-
-instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
-  declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction v of
-    ToJSONKeyText  _ _ -> declareObjectMapSchema
-    ToJSONKeyValue _ _ -> declareNamedSchema (Proxy :: Proxy [(k, v)])
-  where
-    declareObjectMapSchema = do
-      schema <- declareSchemaRef (Proxy :: Proxy v)
-      return $ unnamed $ mempty
-        & type_ .~ SwaggerObject
-        & additionalProperties ?~ schema
-
-instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
-  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
 
 #endif
 
