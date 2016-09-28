@@ -9,6 +9,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+#if __GLASGOW_HASKELL__ >= 800
+-- Generic a is redundant in  ToParamSchema a default imple
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+#endif
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.ParamSchema where
 

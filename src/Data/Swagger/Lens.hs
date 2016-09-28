@@ -62,17 +62,21 @@ makePrisms ''Referenced
 
 _SwaggerItemsArray :: Review (SwaggerItems 'SwaggerKindSchema) [Referenced Schema]
 _SwaggerItemsArray
-  = prism (\x -> SwaggerItemsArray x) $ \x -> case x of
+  = unto (\x -> SwaggerItemsArray x)
+{- \x -> case x of
       SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
       SwaggerItemsObject o      -> Left (SwaggerItemsObject o)
       SwaggerItemsArray a       -> Right a
+-}
 
 _SwaggerItemsObject :: Review (SwaggerItems 'SwaggerKindSchema) (Referenced Schema)
 _SwaggerItemsObject
-  = prism (\x -> SwaggerItemsObject x) $ \x -> case x of
+  = unto (\x -> SwaggerItemsObject x)
+{- \x -> case x of
       SwaggerItemsPrimitive c p -> Left (SwaggerItemsPrimitive c p)
       SwaggerItemsObject o      -> Right o
       SwaggerItemsArray a       -> Left (SwaggerItemsArray a)
+-}
 
 _SwaggerItemsPrimitive :: forall t p f. (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
 _SwaggerItemsPrimitive = unto (\(c, p) -> SwaggerItemsPrimitive c p)

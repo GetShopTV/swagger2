@@ -2,7 +2,16 @@ flags: {}
 packages:
 - '.'
 extra-deps:
+- aeson-0.11.2.1
+- attoparsec-0.13.1.0
+- base-compat-0.9.1
+- fail-4.9.0.0
 - generics-sop-0.2.1.0
 - insert-ordered-containers-0.1.0.1
+- primitive-0.6.1.0
+- tagged-0.8.4
 - unordered-containers-0.2.7.0
 resolver: lts-2.22
+flags:
+  aeson:
+    old-locale: true

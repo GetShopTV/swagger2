@@ -22,7 +22,6 @@ module Data.Swagger.Internal.Schema.Validation where
 
 import Control.Applicative
 import Control.Lens
-import Control.Lens.TH
 import Control.Monad (when)
 
 import Data.Aeson hiding (Result)
@@ -30,7 +29,6 @@ import Data.Foldable (traverse_, for_, sequenceA_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Monoid
 import Data.Proxy
@@ -61,11 +59,12 @@ validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 -- For validation without patterns see @'validateToJSON'@.
 validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) =>
   (Pattern -> Text -> Bool) -> a -> [ValidationError]
-validateToJSONWithPatternChecker checker x = case runValidation (validateWithSchema js) cfg schema of
+validateToJSONWithPatternChecker checker x =
+  case runValidation (validateWithSchema js) cfg sch of
     Failed xs -> xs
     Passed _  -> mempty
   where
-    (defs, schema) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
+    (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
     js = toJSON x
     cfg = defaultConfig
             { configPatternChecker = checker
@@ -95,7 +94,7 @@ instance Alternative Result where
 instance Monad Result where
   return = pure
   Passed x >>=  f = f x
-  Failed xs >>= f = Failed xs
+  Failed xs >>= _ = Failed xs
 
 -- | Validation configuration.
 data Config = Config
@@ -140,7 +139,7 @@ instance Choice Validation where
 
 instance Monad (Validation s) where
   return = pure
-  Validation x >>= f = Validation (\c s -> x c s >>= \x -> runValidation (f x) c s)
+  Validation x >>= f = Validation (\c s -> x c s >>= \y -> runValidation (f y) c s)
   (>>) = (*>)
 
 withConfig :: (Config -> Validation s a) -> Validation s a
@@ -160,8 +159,8 @@ valid = pure ()
 -- | Validate schema's property given a lens into that property
 -- and property checker.
 check :: Lens' s (Maybe a) -> (a -> Validation s ()) -> Validation s ()
-check l g = withSchema $ \schema ->
-  case schema ^. l of
+check l g = withSchema $ \sch ->
+  case sch ^. l of
     Nothing -> valid
     Just x  -> g x
 
@@ -181,7 +180,7 @@ withRef (Reference ref) f = withConfig $ \cfg ->
     Just s  -> f s
 
 validateWithSchemaRef :: Referenced Schema -> Value -> Validation s ()
-validateWithSchemaRef (Ref ref)  js = withRef ref $ \schema -> sub schema (validateWithSchema js)
+validateWithSchemaRef (Ref ref)  js = withRef ref $ \sch -> sub sch (validateWithSchema js)
 validateWithSchemaRef (Inline s) js = sub s (validateWithSchema js)
 
 -- | Validate JSON @'Value'@ with Swagger @'Schema'@.
@@ -203,9 +202,9 @@ validateInteger n = do
   validateNumber n
 
 validateNumber :: Scientific -> Validation (ParamSchema t) ()
-validateNumber n = withConfig $ \cfg -> withSchema $ \schema -> do
-  let exMax = Just True == schema ^. exclusiveMaximum
-      exMin = Just True == schema ^. exclusiveMinimum
+validateNumber n = withConfig $ \_cfg -> withSchema $ \sch -> do
+  let exMax = Just True == sch ^. exclusiveMaximum
+      exMin = Just True == sch ^. exclusiveMinimum
 
   check maximum_ $ \m ->
     when (if exMax then (n >= m) else (n > m)) $
@@ -262,8 +261,8 @@ validateArray xs = do
     allUnique = len == HashSet.size (HashSet.fromList (Vector.toList xs))
 
 validateObject :: HashMap Text Value -> Validation Schema ()
-validateObject o = withSchema $ \schema ->
-  case schema ^. discriminator of
+validateObject o = withSchema $ \sch ->
+  case sch ^. discriminator of
     Just pname -> case fromJSON <$> HashMap.lookup pname o of
       Just (Success ref) -> validateWithSchemaRef ref (Object o)
       Just (Error msg)   -> invalid ("failed to parse discriminator property " ++ show pname ++ ": " ++ show msg)
@@ -282,17 +281,17 @@ validateObject o = withSchema $ \schema ->
   where
     size = fromIntegral (HashMap.size o)
 
-    validateRequired = withSchema $ \schema -> traverse_ validateReq (schema ^. required)
-    validateReq name =
-      when (not (HashMap.member name o)) $
-        invalid ("property " ++ show name ++ " is required, but not found in " ++ show (encode o))
+    validateRequired = withSchema $ \sch -> traverse_ validateReq (sch ^. required)
+    validateReq n =
+      when (not (HashMap.member n o)) $
+        invalid ("property " ++ show n ++ " is required, but not found in " ++ show (encode o))
 
-    validateProps = withSchema $ \schema -> do
+    validateProps = withSchema $ \sch -> do
       for_ (HashMap.toList o) $ \(k, v) ->
         case v of
-          Null | not (k `elem` (schema ^. required)) -> valid  -- null is fine for non-required property
+          Null | not (k `elem` (sch ^. required)) -> valid  -- null is fine for non-required property
           _ ->
-            case InsOrdHashMap.lookup k (schema ^. properties) of
+            case InsOrdHashMap.lookup k (sch ^. properties) of
               Nothing -> check additionalProperties $ \s -> validateWithSchemaRef s v
               Just s  -> validateWithSchemaRef s v
 
@@ -303,8 +302,8 @@ validateEnum value = do
       invalid ("expected one of " ++ show (encode xs) ++ " but got " ++ show value)
 
 validateSchemaType :: Value -> Validation Schema ()
-validateSchemaType value = withSchema $ \schema ->
-  case (schema ^. type_, value) of
+validateSchemaType value = withSchema $ \sch ->
+  case (sch ^. type_, value) of
     (SwaggerNull,    Null)       -> valid
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
@@ -315,8 +314,8 @@ validateSchemaType value = withSchema $ \schema ->
     (t, _) -> invalid $ "expected JSON value of type " ++ show t
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
-validateParamSchemaType value = withSchema $ \schema ->
-  case (schema ^. type_, value) of
+validateParamSchemaType value = withSchema $ \sch ->
+  case (sch ^. type_, value) of
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> validateInteger n
     (SwaggerNumber,  Number n)   -> validateNumber n

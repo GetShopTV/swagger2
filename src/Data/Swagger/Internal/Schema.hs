@@ -13,6 +13,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+#if __GLASGOW_HASKELL__ >= 800
+-- Few generics related redundant constraints
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+#endif
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.Schema where
 
@@ -22,20 +26,16 @@ import Prelude.Compat
 import Control.Lens
 import Data.Data.Lens (template)
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
-import qualified Data.Aeson.Types as Aeson
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
-import Data.Function (on)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
-import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
@@ -318,11 +318,11 @@ sketchSchema = sketch . toJSON
     sketch js@(Bool _) = go js
     sketch js = go js & example ?~ js
 
-    go Null          = mempty & type_ .~ SwaggerNull
-    go js@(Bool _)   = mempty & type_ .~ SwaggerBoolean
-    go js@(String s) = mempty & type_   .~ SwaggerString
-    go js@(Number n) = mempty & type_ .~ SwaggerNumber
-    go js@(Array xs) = mempty
+    go Null       = mempty & type_ .~ SwaggerNull
+    go (Bool _)   = mempty & type_ .~ SwaggerBoolean
+    go (String _) = mempty & type_   .~ SwaggerString
+    go (Number _) = mempty & type_ .~ SwaggerNumber
+    go (Array xs) = mempty
       & type_   .~ SwaggerArray
       & items ?~ case ischema of
           Just s -> SwaggerItemsObject (Inline s)
@@ -332,9 +332,9 @@ sketchSchema = sketch . toJSON
         allSame = and ((zipWith (==)) ys (tail ys))
 
         ischema = case ys of
-          (z:zs) | allSame -> Just z
-          _ -> Nothing
-    go js@(Object o) = mempty
+          (z:_) | allSame -> Just z
+          _               -> Nothing
+    go (Object o) = mempty
       & type_         .~ SwaggerObject
       & required      .~ HashMap.keys o
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
@@ -649,7 +649,7 @@ gdeclareSchemaRef opts proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
-appendItem :: Referenced Schema -> Maybe (SwaggerItems SwaggerKindSchema) -> Maybe (SwaggerItems SwaggerKindSchema)
+appendItem :: Referenced Schema -> Maybe (SwaggerItems 'SwaggerKindSchema) -> Maybe (SwaggerItems 'SwaggerKindSchema)
 appendItem x Nothing = Just (SwaggerItemsArray [x])
 appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (xs ++ [x]))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
