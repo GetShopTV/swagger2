@@ -30,23 +30,21 @@ module Data.Swagger.Operation (
   declareResponse,
 ) where
 
-import Control.Applicative
-import Control.Arrow
+import Prelude ()
+import Prelude.Compat
+
 import Control.Lens
 import Data.Data.Lens
-import qualified Data.HashMap.Strict as HashMap
-import Data.List
+import Data.List.Compat
 import Data.Maybe (mapMaybe)
 import Data.Monoid
 import qualified Data.Set as Set
-import Data.Traversable
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
 
-import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 
 -- $setup
@@ -187,7 +185,7 @@ setResponseForWith ops f code dres swag = swag
   where
     (defs, new) = runDeclare dres mempty
 
-    combine (Just (Ref (Reference name))) = case swag ^. responses.at name of
+    combine (Just (Ref (Reference n))) = case swag ^. responses.at n of
       Just old -> f old new
       Nothing  -> new -- response name can't be dereferenced, replacing with new response
     combine (Just (Inline old)) = f old new

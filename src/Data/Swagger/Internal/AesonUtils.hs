@@ -101,8 +101,7 @@ instance AesonDefaultValue (InsOrd.InsOrdHashMap k v) where defaultValue = Just 
 -- * possible to merge sub-object
 sopSwaggerGenericToJSON
     :: forall a xs.
-        ( Generic a
-        , HasDatatypeInfo a
+        ( HasDatatypeInfo a
         , HasSwaggerAesonOptions a
         , All2 ToJSON (Code a)
         , All2 Eq (Code a)
@@ -190,8 +189,7 @@ sopSwaggerGenericToJSON'' (SwaggerAesonOptions prefix _ sub) = go
 
 sopSwaggerGenericParseJSON
     :: forall a xs.
-        ( Generic a
-        , HasDatatypeInfo a
+        ( HasDatatypeInfo a
         , HasSwaggerAesonOptions a
         , All2 FromJSON (Code a)
         , All2 Eq (Code a)
@@ -270,8 +268,7 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
 
 sopSwaggerGenericToEncoding
     :: forall a xs.
-        ( Generic a
-        , HasDatatypeInfo a
+        ( HasDatatypeInfo a
         , HasSwaggerAesonOptions a
         , All2 ToJSON (Code a)
         , All2 Eq (Code a)
