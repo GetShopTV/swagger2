@@ -42,6 +42,7 @@ library
   build-depends:       base        >=4.7   && <4.10
                      , base-compat >=0.9.1 && <0.10
                      , aeson       >=0.11.2.1
+                     , bytestring
                      , containers
                      , hashable
                      , generics-sop >=0.2 && <0.3
