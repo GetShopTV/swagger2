@@ -15,6 +15,8 @@
 #if __GLASGOW_HASKELL__ >= 800
 -- Generic a is redundant in  ToParamSchema a default imple
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+-- For TypeErrors
+{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 #endif
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.ParamSchema where
@@ -207,9 +209,9 @@ instance ToParamSchema TL.Text where
 #else
 type family ToParamSchemaByteStringError bs where
   ToParamSchemaByteStringError bs = TypeError
-      ( Text "Impossible to have an instance " :<>: ShowType (ToParamSchema bs) :<>: Text "."
-   :$$: Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
-   :$$: Text "Consider using byteParamSchema or binaryParamSchema templates." )
+      ( 'Text "Impossible to have an instance " :<>: ShowType (ToParamSchema bs) :<>: Text "."
+   :$$: 'Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
+   :$$: 'Text "Consider using byteParamSchema or binaryParamSchema templates." )
 
 instance ToParamSchemaByteStringError BS.ByteString  => ToParamSchema BS.ByteString  where toParamSchema = error "impossible"
 instance ToParamSchemaByteStringError BSL.ByteString => ToParamSchema BSL.ByteString where toParamSchema = error "impossible"

@@ -17,6 +17,8 @@
 #if __GLASGOW_HASKELL__ >= 800
 -- Few generics related redundant constraints
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+-- For TypeErrors
+{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 #endif
 #include "overlapping-compat.h"
 module Data.Swagger.Internal.Schema where

@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PackageImports #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Swagger.Schema.ValidationSpec where
 
 import Control.Applicative
@@ -8,29 +9,22 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.Int
 import Data.IntMap (IntMap)
-import qualified Data.IntMap as IntMap
-import Data.IntSet (IntSet)
 import Data.Hashable (Hashable)
 import "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Map (Map)
-import qualified Data.Map as Map
 import Data.Proxy
 import Data.Time
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Word
 import GHC.Generics
 
 import Data.Swagger
-import Data.Swagger.Declare
-import Data.Swagger.Schema.Validation
 
-import SpecCommon
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -167,18 +161,6 @@ instance Arbitrary Light where
     ]
 
 -- Arbitrary instances for common types
-
-#if MIN_VERSION_QuickCheck(2,8,2)
-#else
-instance (Ord k, Arbitrary k, Arbitrary v) => Arbitrary (Map k v) where
-  arbitrary = Map.fromList <$> arbitrary
-
-instance Arbitrary a => Arbitrary (IntMap a) where
-  arbitrary = IntMap.fromList <$> arbitrary
-
-instance (Ord a, Arbitrary a) => Arbitrary (Set a) where
-  arbitrary = Set.fromList <$> arbitrary
-#endif
 
 instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
   arbitrary = HashMap.fromList <$> arbitrary

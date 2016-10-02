@@ -1,7 +1,10 @@
 2.1.3
 -----
 
-* Add UUID instances (see [#81](https://github.com/GetShopTV/swagger2/pull/81)).
+* Add [`UUID`](http://hackage.haskell.org/package/uuid-types/docs/Data-UUID-Types.html#t:UUID) instances (see [#81](https://github.com/GetShopTV/swagger2/pull/81)).
+* Add [`TypeError`](https://hackage.haskell.org/package/base-4.9.0.0/docs/GHC-TypeLits.html#g:4) `ToSchema` and `ToParamSchema ByteString` instances (see [#78](https://github.com/GetShopTV/swagger2/pull/78))
+* Improve documentation for generic sum type instance derivation (see [#75](https://github.com/GetShopTV/swagger2/pull/75))
+* Compile warning free (see [#82](https://github.com/GetShopTV/swagger2/pull/82))
 
 2.1.2.1
 -------
