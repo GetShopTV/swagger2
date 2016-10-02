@@ -11,11 +11,9 @@ import Control.Lens ((^.))
 import Data.Aeson
 import Data.Aeson.QQ
 import Data.Char
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Proxy
 import Data.Set (Set)
-import qualified Data.Set as Set
 import qualified Data.Text as Text
 import GHC.Generics
 

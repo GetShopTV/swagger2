@@ -18,7 +18,7 @@ import SpecCommon
 import Test.Hspec
 
 checkToParamSchema :: ToParamSchema a => Proxy a -> Value -> Spec
-checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema (SwaggerKindNormal Param)) <=> js
+checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema ('SwaggerKindNormal Param)) <=> js
 
 spec :: Spec
 spec = do
