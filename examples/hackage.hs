@@ -20,7 +20,21 @@ type Username = Text
 data UserSummary = UserSummary
   { summaryUsername :: Username
   , summaryUserid   :: Int
-  } deriving (Generic, ToSchema)
+  } deriving (Generic)
+
+instance ToSchema UserSummary where
+  declareNamedSchema = do
+    usernameSchema <- declareSchemaRef (Proxy :: Proxy Username)
+    useridSchema   <- declareSchemaRef (Proxy :: Proxy Int)
+    return $ NamedSchema (Just "UserSummary")) $ mempty
+      & type_ .~ SwaggerObject
+      & properties .~
+          [ ("summaryUsername", usernameSchema )
+          , ("summaryUserid"  , useridSchema   )
+          ]
+      & required .~ [ "summaryUsername"
+                    , "summaryUserid"   ]
+
 
 type Group = Text
 
