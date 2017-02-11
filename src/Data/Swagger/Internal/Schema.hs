@@ -104,9 +104,9 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 -- data Coord = Coord { x :: Double, y :: Double }
 --
 -- instance ToSchema Coord where
---   declareNamedSchema = do
+--   declareNamedSchema _ = do
 --     doubleSchema <- declareSchemaRef (Proxy :: Proxy Double)
---     return $ NamedSchema (Just \"Coord\")) $ mempty
+--     return $ NamedSchema (Just \"Coord\") $ mempty
 --       & type_ .~ SwaggerObject
 --       & properties .~
 --           [ (\"x\", doubleSchema)
