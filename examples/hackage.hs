@@ -23,10 +23,10 @@ data UserSummary = UserSummary
   } deriving (Generic)
 
 instance ToSchema UserSummary where
-  declareNamedSchema = do
+  declareNamedSchema _ = do
     usernameSchema <- declareSchemaRef (Proxy :: Proxy Username)
     useridSchema   <- declareSchemaRef (Proxy :: Proxy Int)
-    return $ NamedSchema (Just "UserSummary")) $ mempty
+    return $ NamedSchema (Just "UserSummary") $ mempty
       & type_ .~ SwaggerObject
       & properties .~
           [ ("summaryUsername", usernameSchema )
