@@ -83,9 +83,9 @@ passwordParamSchema = mempty
 -- data Direction = Up | Down
 --
 -- instance ToParamSchema Direction where
---   toParamSchema = mempty
+--   toParamSchema _ = mempty
 --      & type_ .~ SwaggerString
---      & enum_ .~ [ \"Up\", \"Down\" ]
+--      & enum_ .~ (Just [ \"Up\", \"Down\" ])
 -- @
 --
 -- Instead of manually writing your @'ToParamSchema'@ instance you can
