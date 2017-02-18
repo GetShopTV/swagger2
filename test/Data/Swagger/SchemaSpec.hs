@@ -146,7 +146,9 @@ ispairSchemaJSON = [aesonQQ|
     [
       { "type": "integer" },
       { "type": "string"  }
-    ]
+    ],
+  "minItems": 2,
+  "maxItems": 2
 }
 |]
 

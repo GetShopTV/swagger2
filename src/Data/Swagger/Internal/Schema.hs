@@ -685,6 +685,8 @@ withFieldSchema opts _ isRequiredField schema = do
       then schema
         & type_ .~ SwaggerArray
         & items %~ appendItem ref
+        & maxItems %~ Just . maybe 1 (+1)   -- increment maxItems
+        & minItems %~ Just . maybe 1 (+1)   -- increment minItems
       else schema
         & type_ .~ SwaggerObject
         & properties . at fname ?~ ref
