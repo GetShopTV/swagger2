@@ -85,7 +85,7 @@ passwordParamSchema = mempty
 -- instance ToParamSchema Direction where
 --   toParamSchema _ = mempty
 --      & type_ .~ SwaggerString
---      & enum_ .~ (Just [ \"Up\", \"Down\" ])
+--      & enum_ ?~ [ \"Up\", \"Down\" ]
 -- @
 --
 -- Instead of manually writing your @'ToParamSchema'@ instance you can
