@@ -87,6 +87,13 @@ instance (Applicative m, Monad m, Monoid d) => MonadDeclare d (DeclareT d m) whe
   declare d = DeclareT (\_ -> return (d, ()))
   look = DeclareT (\d -> return (mempty, d))
 
+-- | Lift a computation from the simple Declare monad.
+liftDeclare :: MonadDeclare d m => Declare d a -> m a
+liftDeclare da = do
+  (d', a) <- looks (runDeclare da)
+  declare d'
+  pure a
+
 -- | Retrieve a function of all the output so far.
 looks :: MonadDeclare d m => (d -> a) -> m a
 looks f = f <$> look
