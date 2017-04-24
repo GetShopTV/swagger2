@@ -18,7 +18,6 @@ import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Cont (ContT)
 import Control.Monad.Error (Error, ErrorT)
-import Control.Monad.Except (ExceptT)
 import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Trans.Identity (IdentityT)
@@ -157,9 +156,7 @@ instance (Error e, MonadDeclare d m) => MonadDeclare d (ErrorT e m) where
   declare = lift . declare
   look = lift look
 
-instance MonadDeclare d m => MonadDeclare d (ExceptT e m) where
-  declare = lift . declare
-  look = lift look
+-- Note: ExceptT not provided because it is not available in ghc 7.8.
 
 instance MonadDeclare d m => MonadDeclare d (IdentityT m) where
   declare = lift . declare
