@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 -- |
 -- Module:      Data.Swagger.Declare
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -15,6 +16,15 @@ import Prelude.Compat
 
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Cont (ContT)
+import Control.Monad.Error (Error, ErrorT)
+import Control.Monad.Except (ExceptT)
+import Control.Monad.List (ListT)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.Maybe (MaybeT)
+import Control.Monad.Trans.Writer.Lazy as Lazy
+import Control.Monad.Trans.Writer.Strict as Strict
 import Data.Functor.Identity
 import Data.Monoid
 
@@ -125,3 +135,45 @@ execDeclare m = runIdentity . execDeclareT m
 undeclare :: Monoid d => Declare d a -> a
 undeclare = runIdentity . undeclareT
 
+-- ---------------------------------------------------------------------------
+-- Instances for other mtl transformers
+--
+-- All of these instances need UndecidableInstances,
+-- because they do not satisfy the coverage condition.
+
+instance MonadDeclare d m => MonadDeclare d (ContT r m) where
+  declare = lift . declare
+  look = lift look
+
+-- Note: deprecated, fails with -Wall
+instance (Error e, MonadDeclare d m) => MonadDeclare d (ErrorT e m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (ExceptT e m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (IdentityT m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (ListT m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (MaybeT m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (ReaderT r m) where
+  declare = lift . declare
+  look = lift look
+
+instance (Monoid w, MonadDeclare d m) => MonadDeclare d (Lazy.WriterT w m) where
+  declare = lift . declare
+  look = lift look
+
+instance (Monoid w, MonadDeclare d m) => MonadDeclare d (Strict.WriterT w m) where
+  declare = lift . declare
+  look = lift look
