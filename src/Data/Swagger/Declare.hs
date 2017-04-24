@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -17,7 +18,9 @@ import Prelude.Compat
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Cont (ContT)
-import Control.Monad.Error (Error, ErrorT)
+#if __GLASGOW_HASKELL__ >= 710
+import Control.Monad.Except (ExceptT)
+#endif
 import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Trans.Identity (IdentityT)
@@ -151,12 +154,11 @@ instance MonadDeclare d m => MonadDeclare d (ContT r m) where
   declare = lift . declare
   look = lift look
 
--- Note: deprecated, fails with -Wall
-instance (Error e, MonadDeclare d m) => MonadDeclare d (ErrorT e m) where
+#if __GLASGOW_HASKELL__ >= 710
+instance MonadDeclare d m => MonadDeclare d (ExceptT e m) where
   declare = lift . declare
   look = lift look
-
--- Note: ExceptT not provided because it is not available in ghc 7.8.
+#endif
 
 instance MonadDeclare d m => MonadDeclare d (IdentityT m) where
   declare = lift . declare
