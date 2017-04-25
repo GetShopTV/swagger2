@@ -1,3 +1,9 @@
+2.1.4
+-----
+
+* Add `liftDeclare` (see [#100](https://github.com/GetShopTV/swagger2/pull/100));
+* Add `MonadDeclare` instances for all monad transformers (see [#100](https://github.com/GetShopTV/swagger2/pull/100)).
+
 2.1.3
 -----
 
