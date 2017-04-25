@@ -22,6 +22,10 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Except (ExceptT)
 import Control.Monad.Trans.Identity (IdentityT)
 import Control.Monad.Trans.Maybe (MaybeT)
+import Control.Monad.Trans.State.Lazy as Lazy
+import Control.Monad.Trans.State.Strict as Strict
+import Control.Monad.Trans.RWS.Lazy as Lazy
+import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Writer.Lazy as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
 import Data.Functor.Identity
@@ -168,6 +172,22 @@ instance MonadDeclare d m => MonadDeclare d (MaybeT m) where
   look = lift look
 
 instance MonadDeclare d m => MonadDeclare d (ReaderT r m) where
+  declare = lift . declare
+  look = lift look
+
+instance (Monoid w, MonadDeclare d m) => MonadDeclare d (Lazy.RWST r w s m) where
+  declare = lift . declare
+  look = lift look
+
+instance (Monoid w, MonadDeclare d m) => MonadDeclare d (Strict.RWST r w s m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (Lazy.StateT s m) where
+  declare = lift . declare
+  look = lift look
+
+instance MonadDeclare d m => MonadDeclare d (Strict.StateT s m) where
   declare = lift . declare
   look = lift look
 
