@@ -100,6 +100,8 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 -- {-\# LANGUAGE OverloadedLists \#-}     -- allows to write 'Map' and 'HashMap' as lists
 --
 -- import Control.Lens
+-- import Data.Proxy
+-- import Data.Swagger
 --
 -- data Coord = Coord { x :: Double, y :: Double }
 --
