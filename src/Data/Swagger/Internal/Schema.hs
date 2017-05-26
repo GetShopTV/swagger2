@@ -729,7 +729,7 @@ gdeclareNamedSumSchema opts proxy s
 
 type AllNullary = All
 
-class GSumToSchema f where
+class GSumToSchema (f :: * -> *)  where
   gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
