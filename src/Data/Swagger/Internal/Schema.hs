@@ -768,3 +768,5 @@ data Proxy2 a b = Proxy2
 
 data Proxy3 a b c = Proxy3
 
+-- $setup
+-- >>> import Data.Swagger
