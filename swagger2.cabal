@@ -10,7 +10,7 @@ author:              Nickolay Kudasov
 maintainer:          nickolay@getshoptv.com
 copyright:           (c) 2015-2016, GetShopTV
 category:            Web
-build-type:          Simple
+build-type:          Custom
 extra-source-files:
     README.md
   , CHANGELOG.md
@@ -18,6 +18,10 @@ extra-source-files:
   , include/overlapping-compat.h
 cabal-version:       >=1.10
 tested-with:         GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
+
+custom-setup
+  setup-depends:
+    base, Cabal, cabal-doctest >=1.0.2 && <1.1
 
 library
   hs-source-dirs:      src
@@ -93,11 +97,11 @@ test-suite spec
     Data.Swagger.Schema.ValidationSpec
   default-language: Haskell2010
 
-test-suite doctest
+test-suite doctests
   build-depends:    base, doctest, Glob
   default-language: Haskell2010
   hs-source-dirs:   test
-  main-is:          DocTest.hs
+  main-is:          doctests.hs
   type:             exitcode-stdio-1.0
 
 source-repository head
