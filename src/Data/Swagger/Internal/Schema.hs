@@ -65,10 +65,6 @@ import Data.Swagger.Lens hiding (name, schema)
 import qualified Data.Swagger.Lens as Swagger
 import Data.Swagger.SchemaOptions
 
-#ifdef __DOCTEST__
-import Data.Swagger.Lens (name, schema)
-#endif
-
 #if __GLASGOW_HASKELL__ < 800
 #else
 import qualified Data.ByteString as BS
