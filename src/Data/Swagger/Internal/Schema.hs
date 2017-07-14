@@ -65,10 +65,6 @@ import Data.Swagger.Lens hiding (name, schema)
 import qualified Data.Swagger.Lens as Swagger
 import Data.Swagger.SchemaOptions
 
-#ifdef __DOCTEST__
-import Data.Swagger.Lens (name, schema)
-#endif
-
 #if __GLASGOW_HASKELL__ < 800
 #else
 import qualified Data.ByteString as BS
@@ -729,7 +725,7 @@ gdeclareNamedSumSchema opts proxy s
 
 type AllNullary = All
 
-class GSumToSchema f where
+class GSumToSchema (f :: * -> *)  where
   gsumToSchema :: SchemaOptions -> proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
@@ -768,3 +764,5 @@ data Proxy2 a b = Proxy2
 
 data Proxy3 a b c = Proxy3
 
+-- $setup
+-- >>> import Data.Swagger

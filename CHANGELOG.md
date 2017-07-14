@@ -1,3 +1,9 @@
+2.1.4.1
+-------
+
+* GHC-8.2 support (see [#95](https://github.com/GetShopTV/swagger2/issues/95))
+* Documentation corrections (see [#105](https://github.com/GetShopTV/swagger2/pull/105))
+
 2.1.4
 -----
 
