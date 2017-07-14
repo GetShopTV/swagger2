@@ -13,7 +13,7 @@ license-file:        LICENSE
 author:              Nickolay Kudasov
 maintainer:          nickolay@getshoptv.com
 copyright:           (c) 2015-2016, GetShopTV
-category:            Web
+category:            Web, Swagger
 build-type:          Custom
 extra-source-files:
     README.md
