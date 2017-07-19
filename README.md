@@ -11,7 +11,7 @@ The original Swagger 2.0 specification is available at http://swagger.io/specifi
 
 ## Usage
 
-This library is inteded to be used for decoding and encoding Swagger 2.0 API specifications as well as manipulating them.
+This library is intended to be used for decoding and encoding Swagger 2.0 API specifications as well as manipulating them.
 
 Please refer to [haddock documentation](http://hackage.haskell.org/package/swagger2).
 
