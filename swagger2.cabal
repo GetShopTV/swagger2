@@ -1,7 +1,11 @@
 name:                swagger2
 version:             2.1.4.1
 synopsis:            Swagger 2.0 data model
-description:         Please see README.md
+description:
+  This library is inteded to be used for decoding and encoding Swagger 2.0 API
+  specifications as well as manipulating them.
+  .
+  The original Swagger 2.0 specification is available at http://swagger.io/specification/.
 homepage:            https://github.com/GetShopTV/swagger2
 bug-reports:         https://github.com/GetShopTV/swagger2/issues
 license:             BSD3
@@ -9,7 +13,7 @@ license-file:        LICENSE
 author:              Nickolay Kudasov
 maintainer:          nickolay@getshoptv.com
 copyright:           (c) 2015-2016, GetShopTV
-category:            Web
+category:            Web, Swagger
 build-type:          Custom
 extra-source-files:
     README.md
@@ -96,6 +100,9 @@ test-suite spec
     Data.Swagger.SchemaSpec
     Data.Swagger.Schema.ValidationSpec
   default-language: Haskell2010
+  -- https://github.com/haskell/cabal/issues/3708
+  build-tool-depends:
+    hspec-discover:hspec-discover
 
 test-suite doctests
   -- See QuickCheck note in https://github.com/phadej/cabal-doctest#notes
