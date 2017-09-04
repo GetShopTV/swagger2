@@ -225,6 +225,8 @@ instance ToParamSchema a => ToParamSchema (First a)   where toParamSchema _ = to
 instance ToParamSchema a => ToParamSchema (Last a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 instance ToParamSchema a => ToParamSchema (Dual a)    where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
 
+instance ToParamSchema a => ToParamSchema (Identity a) where toParamSchema _ = toParamSchema (Proxy :: Proxy a)
+
 instance ToParamSchema a => ToParamSchema [a] where
   toParamSchema _ = mempty
     & type_ .~ SwaggerArray
