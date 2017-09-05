@@ -47,6 +47,7 @@ library
     Data.Swagger.Internal.ParamSchema
     Data.Swagger.Internal.Utils
     Data.Swagger.Internal.AesonUtils
+    Data.Swagger.Internal.TypeShape
   build-depends:       base        >=4.7   && <4.11
                      , base-compat >=0.9.1 && <0.10
                      , aeson       >=0.11.2.1
