@@ -64,6 +64,7 @@ import Data.Swagger.Internal.ParamSchema (ToParamSchema(..))
 import Data.Swagger.Lens hiding (name, schema)
 import qualified Data.Swagger.Lens as Swagger
 import Data.Swagger.SchemaOptions
+import Data.Swagger.Internal.TypeShape
 
 #if __GLASGOW_HASKELL__ < 800
 #else
@@ -708,7 +709,12 @@ instance OVERLAPPING_ ToSchema c => GToSchema (K1 i (Maybe c)) where
 instance OVERLAPPABLE_ ToSchema c => GToSchema (K1 i c) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
-instance (GSumToSchema f, GSumToSchema g) => GToSchema (f :+: g) where
+instance ( GSumToSchema f
+         , GSumToSchema g
+         , LegalShape (GenericShape (f :+: g))
+         
+         ) => GToSchema (f :+: g) 
+   where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
 gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
