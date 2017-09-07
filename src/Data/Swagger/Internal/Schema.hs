@@ -138,7 +138,8 @@ class ToSchema a where
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
   declareNamedSchema :: proxy a -> Declare (Definitions Schema) NamedSchema
-  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) => proxy a -> Declare (Definitions Schema) NamedSchema
+  default declareNamedSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
+    proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 -- | Convert a type into a schema and declare all used schema definitions.
@@ -582,15 +583,32 @@ genericToNamedSchemaBoundedIntegral opts proxy
   = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (toSchemaBoundedIntegral proxy)
 
 -- | A configurable generic @'Schema'@ creator.
-genericDeclareSchema :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare (Definitions Schema) Schema
-genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
+genericDeclareSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareSchemaUnrestricted") =>
+  SchemaOptions -> proxy a -> Declare (Definitions Schema) Schema
+genericDeclareSchema = genericDeclareSchemaUnrestricted
 
 -- | A configurable generic @'NamedSchema'@ creator.
 -- This function applied to @'defaultSchemaOptions'@
 -- is used as the default for @'declareNamedSchema'@
 -- when the type is an instance of @'Generic'@.
-genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare (Definitions Schema) NamedSchema
-genericDeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
+genericDeclareNamedSchema :: forall a proxy. (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
+  SchemaOptions -> proxy a -> Declare (Definitions Schema) NamedSchema
+genericDeclareNamedSchema = genericDeclareNamedSchemaUnrestricted
+
+-- | A configurable generic @'Schema'@ creator.
+--
+-- Unlike 'genericDeclareSchema' also works for mixed sum types.
+-- Use with care since some Swagger tools do not support well schemas for mixed sum types.
+genericDeclareSchemaUnrestricted :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> proxy a -> Declare (Definitions Schema) Schema
+genericDeclareSchemaUnrestricted opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchemaUnrestricted opts proxy
+
+-- | A configurable generic @'NamedSchema'@ creator.
+--
+-- Unlike 'genericDeclareNamedSchema' also works for mixed sum types.
+-- Use with care since some Swagger tools do not support well schemas for mixed sum types.
+genericDeclareNamedSchemaUnrestricted :: forall a proxy. (Generic a, GToSchema (Rep a)) =>
+  SchemaOptions -> proxy a -> Declare (Definitions Schema) NamedSchema
+genericDeclareNamedSchemaUnrestricted opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe T.Text
 gdatatypeSchemaName opts _ = case name of
@@ -711,9 +729,7 @@ instance OVERLAPPABLE_ ToSchema c => GToSchema (K1 i c) where
 
 instance ( GSumToSchema f
          , GSumToSchema g
-         , LegalShape (GenericShape (f :+: g))
-         
-         ) => GToSchema (f :+: g) 
+         ) => GToSchema (f :+: g)
    where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
