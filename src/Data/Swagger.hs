@@ -286,13 +286,30 @@ import Data.Swagger.Internal
 -- >>> instance ToSchema SampleSumType
 -- >>> instance ToJSON SampleSumType
 --
--- we can not derive a valid schema for a mix of the above. The following will result in a bad schema
--- 
+-- we can not derive a valid schema for a mix of the above. The following will result in a type error
+--
 -- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
 -- >>> instance ToSchema BadMixedType
--- >>> instance ToJSON BadMixedType
+-- ...
+-- ... error:
+-- ... • Cannot derive Generic-based Swagger Schema for BadMixedType
+-- ...   BadMixedType is a mixed sum type (has both unit and non-unit constructors).
+-- ...   Swagger does not have a good representation for these types.
+-- ...   Use genericDeclareNamedSchemaUnrestricted if you want to derive schema
+-- ...   that matches aeson's Generic-based toJSON,
+-- ...   but that's not supported by some Swagger tools.
+-- ... • In the expression:
+-- ...     Data.Swagger.Internal.Schema.$dmdeclareNamedSchema @BadMixedType
+-- ...   In an equation for ‘declareNamedSchema’:
+-- ...       declareNamedSchema
+-- ...         = Data.Swagger.Internal.Schema.$dmdeclareNamedSchema @BadMixedType
+-- ...   In the instance declaration for ‘ToSchema BadMixedType’
 --
--- This is due to the fact that @'ToJSON'@ encodes empty constructors with an empty list which can not be described in a swagger schema.
+-- We can use 'genericDeclareNamedSchemaUnrestricted' to try our best to represent this type as a Swagger Schema and match 'ToJSON':
+--
+-- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
+-- >>> instance ToSchema BadMixedType where declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
+-- >>> instance ToJSON BadMixedType
 --
 
 -- $manipulation
