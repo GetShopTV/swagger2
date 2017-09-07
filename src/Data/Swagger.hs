@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- |
 -- Module:      Data.Swagger
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -288,6 +289,21 @@ import Data.Swagger.Internal
 --
 -- we can not derive a valid schema for a mix of the above. The following will result in a type error
 --
+#if __GLASGOW_HASKELL__ < 800
+-- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
+-- >>> instance ToSchema BadMixedType
+-- ...
+-- ... error:
+-- ... • No instance for (Data.Swagger.Internal.TypeShape.CannotDeriveSchemaForMixedSumType
+-- ...                      BadMixedType)
+-- ...     arising from a use of ‘Data.Swagger.Internal.Schema.$dmdeclareNamedSchema’
+-- ... • In the expression:
+-- ...     Data.Swagger.Internal.Schema.$dmdeclareNamedSchema @BadMixedType
+-- ...   In an equation for ‘declareNamedSchema’:
+-- ...       declareNamedSchema
+-- ...         = Data.Swagger.Internal.Schema.$dmdeclareNamedSchema @BadMixedType
+-- ...   In the instance declaration for ‘ToSchema BadMixedType’
+#else
 -- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
 -- >>> instance ToSchema BadMixedType
 -- ...
@@ -304,6 +320,7 @@ import Data.Swagger.Internal
 -- ...       declareNamedSchema
 -- ...         = Data.Swagger.Internal.Schema.$dmdeclareNamedSchema @BadMixedType
 -- ...   In the instance declaration for ‘ToSchema BadMixedType’
+#endif
 --
 -- We can use 'genericDeclareNamedSchemaUnrestricted' to try our best to represent this type as a Swagger Schema and match 'ToJSON':
 --
