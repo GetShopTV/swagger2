@@ -148,7 +148,8 @@ instance Arbitrary MyRoseTree where
 
 data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic)
 
-instance ToSchema Light
+instance ToSchema Light where
+  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
 
 instance ToJSON Light where
   toJSON = genericToJSON defaultOptions { sumEncoding = ObjectWithSingleField }
