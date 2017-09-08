@@ -1,5 +1,7 @@
 # swagger2
 
+[![Join the chat at https://gitter.im/haskell-swagger2/Lobby](https://badges.gitter.im/haskell-swagger2/Lobby.svg)](https://gitter.im/haskell-swagger2/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Hackage](https://img.shields.io/hackage/v/swagger2.svg)](http://hackage.haskell.org/package/swagger2)
 [![Build Status](https://travis-ci.org/GetShopTV/swagger2.svg?branch=master)](https://travis-ci.org/GetShopTV/swagger2)
 [![Stackage LTS](http://stackage.org/package/swagger2/badge/lts)](http://stackage.org/lts/package/swagger2)
