@@ -22,6 +22,10 @@ module Data.Swagger.Schema (
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 
+  -- ** Unrestricted versions
+  genericDeclareNamedSchemaUnrestricted,
+  genericDeclareSchemaUnrestricted,
+
   -- * Schema templates
   passwordSchema,
   binarySchema,

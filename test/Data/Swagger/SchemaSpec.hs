@@ -599,7 +599,7 @@ data Light
   deriving (Generic)
 
 instance ToSchema Light where
-  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 lightSchemaJSON :: Value
