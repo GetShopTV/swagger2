@@ -1,3 +1,8 @@
+2.1.4.2
+-------
+
+* `allOf` accepts reference schema (see [#119](https://github.com/GetShopTV/swagger2/issues/119))
+
 2.1.4.1
 -------
 
