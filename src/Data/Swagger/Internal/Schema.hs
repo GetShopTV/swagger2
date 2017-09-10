@@ -565,6 +565,8 @@ instance ToSchema a => ToSchema (First a)   where declareNamedSchema _ = unname 
 instance ToSchema a => ToSchema (Last a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
 instance ToSchema a => ToSchema (Dual a)    where declareNamedSchema _ = unname <$> declareNamedSchema (Proxy :: Proxy a)
 
+instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
+
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 --
 -- >>> encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
