@@ -554,7 +554,7 @@ data Schema = Schema
   , _schemaDescription :: Maybe Text
   , _schemaRequired :: [ParamName]
 
-  , _schemaAllOf :: Maybe [Schema]
+  , _schemaAllOf :: Maybe [Referenced Schema]
   , _schemaProperties :: InsOrdHashMap Text (Referenced Schema)
   , _schemaAdditionalProperties :: Maybe (Referenced Schema)
 

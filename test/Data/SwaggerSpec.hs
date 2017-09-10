@@ -42,6 +42,7 @@ spec = do
   describe "Parameters Definition Object" $ paramsDefinitionExample <=> paramsDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <=> responsesDefinitionExampleJSON
   describe "Security Definitions Object" $ securityDefinitionsExample <=> securityDefinitionsExampleJSON
+  describe "Composition Schema Example" $ compositionSchemaExample <=> compositionSchemaExampleJSON
   describe "Swagger Object" $ do
     context "Todo Example" $ swaggerExample <=> swaggerExampleJSON
     context "PetStore Example" $
@@ -1612,5 +1613,35 @@ petstoreExampleJSON = [aesonQQ|
       "description":"Find out more about Swagger",
       "url":"http://swagger.io"
    }
+}
+|]
+
+compositionSchemaExample :: Schema
+compositionSchemaExample = mempty
+  & type_ .~ SwaggerObject
+  & Data.Swagger.allOf ?~ [
+      Ref (Reference "Other")
+    , Inline (mempty
+             & type_ .~ SwaggerObject
+             & properties .~
+                  [ ("greet", Inline $ mempty
+                            & type_ .~ SwaggerString) ])
+  ]
+
+compositionSchemaExampleJSON :: Value
+compositionSchemaExampleJSON = [aesonQQ|
+{
+  "type": "object",
+  "allOf": [
+      {
+         "$ref": "#/definitions/Other"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "greet": { "type": "string" }
+        }
+      }
+  ]
 }
 |]
