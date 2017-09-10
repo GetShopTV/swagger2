@@ -1,13 +1,18 @@
-2.1.4.2
--------
+2.1.5
+-----
 
-* `allOf` accepts reference schema (see [#119](https://github.com/GetShopTV/swagger2/issues/119))
+* Type error by default when deriving Generic-based instances for mixed sum types (see [#118](https://github.com/GetShopTV/swagger2/pull/118));
+* Adjust `allOf` to accept referenced schemas (see [#119](https://github.com/GetShopTV/swagger2/issues/119));
+* Add instances for `Identity` (see [#116](https://github.com/GetShopTV/swagger2/pull/116));
+* Add Gitter chat badge (see [#114](https://github.com/GetShopTV/swagger2/pull/114)).
 
 2.1.4.1
 -------
 
-* GHC-8.2 support (see [#95](https://github.com/GetShopTV/swagger2/issues/95))
-* Documentation corrections (see [#105](https://github.com/GetShopTV/swagger2/pull/105))
+* GHC-8.2 support (see [#95](https://github.com/GetShopTV/swagger2/issues/95), [#106](https://github.com/GetShopTV/swagger2/pull/106) and [#108](https://github.com/GetShopTV/swagger2/pull/108));
+* Documentation corrections (see [#105](https://github.com/GetShopTV/swagger2/pull/105));
+* Allow `generics-sop-0.3` (see [#102](https://github.com/GetShopTV/swagger2/pull/102));
+* Fix `ToSchema` example in docs (see [#104](https://github.com/GetShopTV/swagger2/pull/104)).
 
 2.1.4
 -----

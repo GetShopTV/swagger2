@@ -1,5 +1,5 @@
 name:                swagger2
-version:             2.1.4.2
+version:             2.1.5
 synopsis:            Swagger 2.0 data model
 description:
   This library is inteded to be used for decoding and encoding Swagger 2.0 API
