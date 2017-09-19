@@ -47,6 +47,7 @@ import Data.IntMap (IntMap)
 import Data.Map (Map)
 import Data.Proxy
 import Data.Scientific (Scientific)
+import Data.Fixed (Fixed, HasResolution)
 import Data.Set (Set)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -436,6 +437,8 @@ instance ToSchema Char where
 instance ToSchema Scientific  where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Double      where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Float       where declareNamedSchema = plain . paramSchemaToSchema
+
+instance HasResolution a => ToSchema (Fixed a) where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema a => ToSchema (Maybe a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)

@@ -31,6 +31,7 @@ import "unordered-containers" Data.HashSet (HashSet)
 import Data.Monoid
 import Data.Set (Set)
 import Data.Scientific
+import Data.Fixed (HasResolution(..), Fixed)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Time
@@ -158,6 +159,11 @@ instance ToParamSchema Char where
 
 instance ToParamSchema Scientific where
   toParamSchema _ = mempty & type_ .~ SwaggerNumber
+
+instance HasResolution a => ToParamSchema (Fixed a) where
+  toParamSchema _ = mempty
+    & type_      .~ SwaggerNumber
+    & multipleOf ?~ (recip . fromInteger $ resolution (Proxy :: Proxy a))
 
 instance ToParamSchema Double where
   toParamSchema _ = mempty
