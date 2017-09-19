@@ -47,7 +47,7 @@ import Data.IntMap (IntMap)
 import Data.Map (Map)
 import Data.Proxy
 import Data.Scientific (Scientific)
-import Data.Fixed (Fixed, HasResolution)
+import Data.Fixed (Fixed, HasResolution, Pico)
 import Data.Set (Set)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -483,7 +483,7 @@ instance ToSchema ZonedTime where
     & example ?~ toJSON (ZonedTime (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0)) (hoursToTimeZone 3))
 
 instance ToSchema NominalDiffTime where
-  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Integer)
+  declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Pico)
 
 -- |
 -- >>> toSchema (Proxy :: Proxy UTCTime) ^. format
