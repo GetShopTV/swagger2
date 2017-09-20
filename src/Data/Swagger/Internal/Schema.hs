@@ -56,6 +56,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import Numeric.Natural
 import Data.Word
 import GHC.Generics
 import qualified Data.UUID.Types as UUID
@@ -419,6 +420,7 @@ instance OVERLAPPABLE_ ToSchema a => ToSchema [a] where
 instance OVERLAPPING_ ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Integer where declareNamedSchema = plain . paramSchemaToSchema
+instance ToSchema Natural where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Int     where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Int8    where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Int16   where declareNamedSchema = plain . paramSchemaToSchema
