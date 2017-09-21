@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Data.Swagger.ParamSchemaSpec where
 
-import Data.Aeson
+import Data.Aeson (Value)
 import Data.Aeson.QQ
 import Data.Char
 import Data.Proxy

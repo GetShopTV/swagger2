@@ -22,7 +22,7 @@
 module Data.Swagger.Internal.ParamSchema where
 
 import Control.Lens
-import Data.Aeson
+import Data.Aeson (ToJSON (..))
 import Data.Proxy
 import GHC.Generics
 

@@ -32,7 +32,7 @@ import Data.Data.Lens (template)
 
 import Control.Monad
 import Control.Monad.Writer
-import Data.Aeson
+import Data.Aeson (ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..))
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
