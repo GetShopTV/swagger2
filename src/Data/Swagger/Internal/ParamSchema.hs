@@ -315,3 +315,5 @@ instance Constructor c => GEnumParamSchema (C1 c U1) where
 
 data Proxy3 a b c = Proxy3
 
+-- $setup
+-- >>> import Data.Aeson (encode)

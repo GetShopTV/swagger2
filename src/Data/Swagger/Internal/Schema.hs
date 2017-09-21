@@ -796,3 +796,4 @@ data Proxy3 a b c = Proxy3
 
 -- $setup
 -- >>> import Data.Swagger
+-- >>> import Data.Aeson (encode)
