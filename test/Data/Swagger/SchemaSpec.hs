@@ -8,7 +8,7 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Lens ((^.))
-import Data.Aeson
+import Data.Aeson (Value)
 import Data.Aeson.QQ
 import Data.Char
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap

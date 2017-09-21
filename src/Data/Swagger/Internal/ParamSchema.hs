@@ -22,7 +22,7 @@
 module Data.Swagger.Internal.ParamSchema where
 
 import Control.Lens
-import Data.Aeson
+import Data.Aeson (ToJSON (..))
 import Data.Proxy
 import GHC.Generics
 
@@ -315,3 +315,5 @@ instance Constructor c => GEnumParamSchema (C1 c U1) where
 
 data Proxy3 a b c = Proxy3
 
+-- $setup
+-- >>> import Data.Aeson (encode)
