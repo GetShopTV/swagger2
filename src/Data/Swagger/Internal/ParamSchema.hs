@@ -39,6 +39,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import Numeric.Natural
 import Data.Word
 import Data.UUID.Types (UUID)
 
@@ -124,6 +125,12 @@ instance ToParamSchema Bool where
 
 instance ToParamSchema Integer where
   toParamSchema _ = mempty & type_ .~ SwaggerInteger
+
+instance ToParamSchema Natural where
+  toParamSchema _ = mempty
+    & type_            .~ SwaggerInteger
+    & minimum_         ?~ 0
+    & exclusiveMinimum ?~ False
 
 instance ToParamSchema Int    where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Int8   where toParamSchema = toParamSchemaBoundedIntegral
