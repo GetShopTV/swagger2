@@ -1,3 +1,10 @@
+2.1.6
+-----
+
+* Add `ToParamSchema` and `ToSchema` instances for `Fixed` (see [#121](https://github.com/GetShopTV/swagger2/pull/121)) and `Natural` (see [#123](https://github.com/GetShopTV/swagger2/pull/123));
+* Fix instance for `NominalDiffTime` (see [#121](https://github.com/GetShopTV/swagger2/pull/121));
+* Fix build for `aeson-1.2.2.0` (see [#125](https://github.com/GetShopTV/swagger2/pull/125)).
+
 2.1.5
 -----
 
