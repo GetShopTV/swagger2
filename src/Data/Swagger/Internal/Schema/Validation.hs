@@ -57,15 +57,29 @@ validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 -- This can be used with QuickCheck to ensure those instances are coherent.
 --
 -- For validation without patterns see @'validateToJSON'@.
-validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) =>
-  (Pattern -> Text -> Bool) -> a -> [ValidationError]
-validateToJSONWithPatternChecker checker x =
+validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) => (Pattern -> Text -> Bool) -> a -> [ValidationError]
+validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checker defs sch . toJSON
+  where
+    (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
+
+-- | Validate JSON @'Value'@ against Swagger @'Schema'@.
+--
+-- prop> validateJSON mempty (toSchema (Proxy :: Proxy Int)) (toJSON (x :: Int)) == []
+--
+-- /NOTE:/ @'validateJSON'@ does not perform string pattern validation.
+-- See @'validateJSONWithPatternChecker'@.
+validateJSON :: Definitions Schema -> Schema -> Value -> [ValidationError]
+validateJSON = validateJSONWithPatternChecker (\_pattern _str -> True)
+
+-- | Validate JSON @'Value'@ agains Swagger @'ToSchema'@ for a given value and pattern checker.
+--
+-- For validation without patterns see @'validateJSON'@.
+validateJSONWithPatternChecker :: (Pattern -> Text -> Bool) -> Definitions Schema -> Schema -> Value -> [ValidationError]
+validateJSONWithPatternChecker checker defs sch js =
   case runValidation (validateWithSchema js) cfg sch of
     Failed xs -> xs
     Passed _  -> mempty
   where
-    (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
-    js = toJSON x
     cfg = defaultConfig
             { configPatternChecker = checker
             , configDefinitions = defs }
