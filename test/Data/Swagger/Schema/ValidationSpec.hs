@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE PackageImports #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Swagger.Schema.ValidationSpec where
 
@@ -24,6 +26,7 @@ import Data.Word
 import GHC.Generics
 
 import Data.Swagger
+import Data.Swagger.Declare
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -31,6 +34,11 @@ import Test.QuickCheck
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate _ x = validateToJSON x == []
+
+shouldNotValidate :: forall a. ToSchema a => (a -> Value) -> a -> Bool
+shouldNotValidate f = not . null . validateJSON defs sch . f
+  where
+    (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
 
 spec :: Spec
 spec = do
@@ -78,6 +86,12 @@ spec = do
     prop "MyRoseTree" $ shouldValidate (Proxy :: Proxy MyRoseTree)
     prop "Light" $ shouldValidate (Proxy :: Proxy Light)
 
+  describe "invalid cases" $ do
+    prop "invalidPersonToJSON"  $ shouldNotValidate invalidPersonToJSON
+    prop "invalidColorToJSON"   $ shouldNotValidate invalidColorToJSON
+    prop "invalidPaintToJSON"   $ shouldNotValidate invalidPaintToJSON
+    prop "invalidLightToJSON"   $ shouldNotValidate invalidLightToJSON
+
 main :: IO ()
 main = hspec spec
 
@@ -96,6 +110,13 @@ instance ToSchema Person
 instance Arbitrary Person where
   arbitrary = Person <$> arbitrary <*> arbitrary <*> arbitrary
 
+invalidPersonToJSON :: Person -> Value
+invalidPersonToJSON Person{..} = object
+  [ T.pack "personName"  .= toJSON name
+  , T.pack "personPhone" .= toJSON phone
+  , T.pack "personEmail" .= toJSON email
+  ]
+
 -- ========================================================================
 -- Color (enum)
 -- ========================================================================
@@ -106,6 +127,11 @@ instance ToSchema Color
 
 instance Arbitrary Color where
   arbitrary = arbitraryBoundedEnum
+
+invalidColorToJSON :: Color -> Value
+invalidColorToJSON Red    = toJSON "red"
+invalidColorToJSON Green  = toJSON "green"
+invalidColorToJSON Blue   = toJSON "blue"
 
 -- ========================================================================
 -- Paint (record with bounded enum property)
@@ -119,6 +145,9 @@ instance ToSchema Paint
 
 instance Arbitrary Paint where
   arbitrary = Paint <$> arbitrary
+
+invalidPaintToJSON :: Paint -> Value
+invalidPaintToJSON = toJSON . color
 
 -- ========================================================================
 -- MyRoseTree (custom datatypeNameModifier)
@@ -161,6 +190,9 @@ instance Arbitrary Light where
     , LightColor <$> arbitrary
     ]
 
+invalidLightToJSON :: Light -> Value
+invalidLightToJSON = genericToJSON defaultOptions
+
 -- Arbitrary instances for common types
 
 instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
@@ -193,4 +225,3 @@ instance Arbitrary ZonedTime where
 
 instance Arbitrary UTCTime where
   arbitrary = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
-
