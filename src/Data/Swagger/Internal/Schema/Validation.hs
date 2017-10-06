@@ -158,11 +158,17 @@ valid = pure ()
 
 -- | Validate schema's property given a lens into that property
 -- and property checker.
-check :: Lens' s (Maybe a) -> (a -> Validation s ()) -> Validation s ()
-check l g = withSchema $ \sch ->
+checkMissing :: Validation s () -> Lens' s (Maybe a) -> (a -> Validation s ()) -> Validation s ()
+checkMissing missing l g = withSchema $ \sch ->
   case sch ^. l of
-    Nothing -> valid
+    Nothing -> missing
     Just x  -> g x
+
+-- | Validate schema's property given a lens into that property
+-- and property checker.
+-- If property is missing in schema, consider it valid.
+check :: Lens' s (Maybe a) -> (a -> Validation s ()) -> Validation s ()
+check = checkMissing valid
 
 -- | Validate same value with different schema.
 sub :: t -> Validation t a -> Validation s a
@@ -292,8 +298,12 @@ validateObject o = withSchema $ \sch ->
           Null | not (k `elem` (sch ^. required)) -> valid  -- null is fine for non-required property
           _ ->
             case InsOrdHashMap.lookup k (sch ^. properties) of
-              Nothing -> check additionalProperties $ \s -> validateWithSchemaRef s v
+              Nothing -> checkMissing (unknownProperty k) additionalProperties $ \s -> validateWithSchemaRef s v
               Just s  -> validateWithSchemaRef s v
+
+    unknownProperty :: Text -> Validation s a
+    unknownProperty name = invalid $
+      "property " <> show name <> " is found in JSON value, but it is not mentioned in Swagger schema"
 
 validateEnum :: Value -> Validation (ParamSchema t) ()
 validateEnum value = do
