@@ -588,7 +588,62 @@ genericToNamedSchemaBoundedIntegral :: forall a d f proxy.
   , Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
 genericToNamedSchemaBoundedIntegral opts proxy
-  = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (toSchemaBoundedIntegral proxy)
+  = genericNameSchema opts proxy (toSchemaBoundedIntegral proxy)
+
+-- | Declare a named schema for a @newtype@ wrapper.
+genericDeclareNamedSchemaNewtype :: forall proxy a d c s i inner.
+  (Generic a, Datatype d, Rep a ~ D1 d (C1 c (S1 s (K1 i inner))))
+  => SchemaOptions                                          -- ^ How to derive the name.
+  -> (Proxy inner -> Declare (Definitions Schema) Schema)   -- ^ How to create a schema for the wrapped type.
+  -> proxy a
+  -> Declare (Definitions Schema) NamedSchema
+genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$> f (Proxy :: Proxy inner)
+
+-- | Declare 'Schema' for a mapping with 'Bounded' 'Enum' keys.
+-- This makes a much more useful schema when there aren't many options for key values.
+--
+-- >>> data ButtonState = Neutral | Focus | Active | Hover | Disabled deriving (Show, Bounded, Enum, Generic)
+-- >>> instance ToJSON ButtonState
+-- >>> instance ToSchema ButtonState
+-- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
+-- >>> type ImageUrl = T.Text
+-- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+--
+-- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
+-- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
+declareSchemaBoundedEnumKeyMapping :: forall map key value proxy.
+  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value)
+  => proxy (map key value) -> Declare (Definitions Schema) Schema
+declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key of
+  ToJSONKeyText keyToText _ -> objectSchema keyToText
+  ToJSONKeyValue _ _ -> declareSchema (Proxy :: Proxy [(key, value)])
+  where
+    objectSchema keyToText = do
+      valueRef <- declareSchemaRef (Proxy :: Proxy value)
+      let allKeys   = [minBound..maxBound :: key]
+          mkPair k  =  (keyToText k, valueRef)
+      return $ mempty
+        & type_ .~ SwaggerObject
+        & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
+
+-- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.
+-- This makes a much more useful schema when there aren't many options for key values.
+--
+-- >>> data ButtonState = Neutral | Focus | Active | Hover | Disabled deriving (Show, Bounded, Enum, Generic)
+-- >>> instance ToJSON ButtonState
+-- >>> instance ToSchema ButtonState
+-- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
+-- >>> type ImageUrl = T.Text
+-- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+--
+-- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
+-- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
+toSchemaBoundedEnumKeyMapping :: forall map key value proxy.
+  (Bounded key, Enum key, ToJSONKey key, ToSchema key, ToSchema value)
+  => proxy (map key value) -> Schema
+toSchemaBoundedEnumKeyMapping = flip evalDeclare mempty . declareSchemaBoundedEnumKeyMapping
 
 -- | A configurable generic @'Schema'@ creator.
 genericDeclareSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareSchemaUnrestricted") =>
@@ -618,6 +673,12 @@ genericDeclareNamedSchemaUnrestricted :: forall a proxy. (Generic a, GToSchema (
   SchemaOptions -> proxy a -> Declare (Definitions Schema) NamedSchema
 genericDeclareNamedSchemaUnrestricted opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
+-- | Derive a 'Generic'-based name for a datatype and assign it to a given 'Schema'.
+genericNameSchema :: forall a d f proxy.
+  (Generic a, Rep a ~ D1 d f, Datatype d)
+  => SchemaOptions -> proxy a -> Schema -> NamedSchema
+genericNameSchema opts _ = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d))
+
 gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe T.Text
 gdatatypeSchemaName opts _ = case name of
   (c:_) | isAlpha c && isUpper c -> Just (T.pack name)
@@ -629,7 +690,7 @@ gdatatypeSchemaName opts _ = case name of
 paramSchemaToNamedSchema :: forall a d f proxy.
   (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d)
   => SchemaOptions -> proxy a -> NamedSchema
-paramSchemaToNamedSchema opts proxy = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d)) (paramSchemaToSchema proxy)
+paramSchemaToNamedSchema opts proxy = genericNameSchema opts proxy (paramSchemaToSchema proxy)
 
 -- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
 paramSchemaToSchema :: forall a proxy. ToParamSchema a => proxy a -> Schema
@@ -797,3 +858,4 @@ data Proxy3 a b c = Proxy3
 -- $setup
 -- >>> import Data.Swagger
 -- >>> import Data.Aeson (encode)
+-- >>> import Data.Aeson.Types (toJSONKeyText)
