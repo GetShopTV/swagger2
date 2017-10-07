@@ -85,12 +85,14 @@ spec = do
     prop "Paint" $ shouldValidate (Proxy :: Proxy Paint)
     prop "MyRoseTree" $ shouldValidate (Proxy :: Proxy MyRoseTree)
     prop "Light" $ shouldValidate (Proxy :: Proxy Light)
+    prop "ButtonImages" $ shouldValidate (Proxy :: Proxy ButtonImages)
 
   describe "invalid cases" $ do
-    prop "invalidPersonToJSON"  $ shouldNotValidate invalidPersonToJSON
-    prop "invalidColorToJSON"   $ shouldNotValidate invalidColorToJSON
-    prop "invalidPaintToJSON"   $ shouldNotValidate invalidPaintToJSON
-    prop "invalidLightToJSON"   $ shouldNotValidate invalidLightToJSON
+    prop "invalidPersonToJSON"        $ shouldNotValidate invalidPersonToJSON
+    prop "invalidColorToJSON"         $ shouldNotValidate invalidColorToJSON
+    prop "invalidPaintToJSON"         $ shouldNotValidate invalidPaintToJSON
+    prop "invalidLightToJSON"         $ shouldNotValidate invalidLightToJSON
+    prop "invalidButtonImagesToJSON"  $ shouldNotValidate invalidButtonImagesToJSON
 
 main :: IO ()
 main = hspec spec
@@ -192,6 +194,38 @@ instance Arbitrary Light where
 
 invalidLightToJSON :: Light -> Value
 invalidLightToJSON = genericToJSON defaultOptions
+
+-- ========================================================================
+-- ButtonImages (bounded enum key mapping)
+-- ========================================================================
+
+data ButtonState = Neutral | Focus | Active | Hover | Disabled
+  deriving (Show, Eq, Ord, Bounded, Enum, Generic)
+
+instance ToJSON ButtonState
+instance ToSchema ButtonState
+instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
+
+instance Arbitrary ButtonState where
+  arbitrary = arbitraryBoundedEnum
+
+type ImageUrl = T.Text
+
+newtype ButtonImages = ButtonImages { getButtonImages :: Map ButtonState ImageUrl }
+  deriving (Show, Generic)
+
+instance ToJSON ButtonImages where
+  toJSON = toJSON . getButtonImages
+
+instance ToSchema ButtonImages where
+  declareNamedSchema = genericDeclareNamedSchemaNewtype defaultSchemaOptions
+    declareSchemaBoundedEnumKeyMapping
+
+invalidButtonImagesToJSON :: ButtonImages -> Value
+invalidButtonImagesToJSON = genericToJSON defaultOptions
+
+instance Arbitrary ButtonImages where
+  arbitrary = ButtonImages <$> arbitrary
 
 -- Arbitrary instances for common types
 
