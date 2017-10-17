@@ -17,8 +17,18 @@ module Data.Swagger.Schema (
   -- * Generic schema encoding
   genericDeclareNamedSchema,
   genericDeclareSchema,
+  genericDeclareNamedSchemaNewtype,
+  genericNameSchema,
+
+  -- ** 'Bounded' 'Integral'
   genericToNamedSchemaBoundedIntegral,
   toSchemaBoundedIntegral,
+
+  -- ** 'Bounded' 'Enum' key mappings
+  declareSchemaBoundedEnumKeyMapping,
+  toSchemaBoundedEnumKeyMapping,
+
+  -- ** Reusing 'ToParamSchema'
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 

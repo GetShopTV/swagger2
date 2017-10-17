@@ -8,12 +8,14 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Lens ((^.))
-import Data.Aeson (Value)
+import Data.Aeson (Value, ToJSON(..), ToJSONKey(..))
+import Data.Aeson.Types (toJSONKeyText)
 import Data.Aeson.QQ
 import Data.Char
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Proxy
 import Data.Set (Set)
+import Data.Map (Map)
 import qualified Data.Text as Text
 import GHC.Generics
 
@@ -101,6 +103,8 @@ spec = do
     context "Character (inlining only Player)" $ checkInlinedSchemas ["Player"] (Proxy :: Proxy Character) characterInlinedPlayerSchemaJSON
     context "Light" $ checkInlinedSchema (Proxy :: Proxy Light) lightInlinedSchemaJSON
     context "MyRoseTree (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
+  describe "Bounded Enum key mapping" $ do
+    context "ButtonImages" $ checkToSchema (Proxy :: Proxy ButtonImages) buttonImagesSchemaJSON
 
 main :: IO ()
 main = hspec spec
@@ -647,3 +651,42 @@ instance ToSchema Id
 
 newtype ResourceId = ResourceId Id deriving (Generic)
 instance ToSchema ResourceId
+
+-- ========================================================================
+-- ButtonImages (bounded enum key mapping)
+-- ========================================================================
+
+data ButtonState = Neutral | Focus | Active | Hover | Disabled
+  deriving (Show, Bounded, Enum, Generic)
+
+instance ToJSON ButtonState
+instance ToSchema ButtonState
+instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (Text.pack . show)
+
+type ImageUrl = Text.Text
+
+newtype ButtonImages = ButtonImages { getButtonImages :: Map ButtonState ImageUrl }
+  deriving (Generic)
+
+instance ToJSON ButtonImages where
+  toJSON = toJSON . getButtonImages
+
+instance ToSchema ButtonImages where
+  declareNamedSchema = genericDeclareNamedSchemaNewtype defaultSchemaOptions
+    declareSchemaBoundedEnumKeyMapping
+
+buttonImagesSchemaJSON :: Value
+buttonImagesSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "Neutral":  { "type": "string" },
+      "Focus":    { "type": "string" },
+      "Active":   { "type": "string" },
+      "Hover":    { "type": "string" },
+      "Disabled": { "type": "string" }
+    }
+}
+|]
+

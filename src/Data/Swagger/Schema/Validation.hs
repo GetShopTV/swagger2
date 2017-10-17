@@ -15,9 +15,16 @@ module Data.Swagger.Schema.Validation (
   -- $maybe
 
   -- * JSON validation
+
+  ValidationError,
+
+  -- ** Using 'ToJSON' and 'ToSchema'
   validateToJSON,
   validateToJSONWithPatternChecker,
-  ValidationError,
+
+  -- ** Using 'Value' and 'Schema'
+  validateJSON,
+  validateJSONWithPatternChecker,
 ) where
 
 import Data.Swagger.Internal.Schema.Validation
