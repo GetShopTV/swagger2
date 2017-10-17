@@ -1,3 +1,14 @@
+2.2
+---
+
+* Treat unknown properties as validation errors in `validateToJSON`;
+* Add `validateJSON` and `validateJSONWithPatternChecker` to validate JSON `Value` against `Schema` without classes;
+* Add more `Schema` helpers:
+    * `genericNameSchema` — to give a custom schema `Generic`-based name;
+    * `genericDeclareNamedSchemaNewtype` — to derive `NamedSchema` for `newtype`s;
+    * `declareSchemaBoundedEnumKeyMapping` — to derive more specific `Schema` for maps with `Bounded` `Enum` keys;
+* Add a few tests with invalid `Schema`.
+
 2.1.6
 -----
 
