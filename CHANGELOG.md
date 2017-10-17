@@ -1,9 +1,9 @@
 2.2
 ---
 
-* Treat unknown properties as validation errors in `validateToJSON`;
-* Add `validateJSON` and `validateJSONWithPatternChecker` to validate JSON `Value` against `Schema` without classes;
-* Add more `Schema` helpers:
+* Treat unknown properties as validation errors in `validateToJSON` (see [#126](https://github.com/GetShopTV/swagger2/pull/126));
+* Add `validateJSON` and `validateJSONWithPatternChecker` to validate JSON `Value` against `Schema` without classes (see [#126](https://github.com/GetShopTV/swagger2/pull/126));
+* Add more `Schema` helpers (see [#126](https://github.com/GetShopTV/swagger2/pull/126)):
     * `genericNameSchema` — to give a custom schema `Generic`-based name;
     * `genericDeclareNamedSchemaNewtype` — to derive `NamedSchema` for `newtype`s;
     * `declareSchemaBoundedEnumKeyMapping` — to derive more specific `Schema` for maps with `Bounded` `Enum` keys;
