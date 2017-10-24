@@ -80,6 +80,7 @@ spec = do
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
     context "Players (inlining schema)" $ checkToSchema (Proxy :: Proxy Players) playersSchemaJSON
     context "MyRoseTree (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
+    context "MyRoseTree' (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
     context "Sum types" $ do
       context "Status (sum of unary constructors)" $ checkToSchema (Proxy :: Proxy Status) statusSchemaJSON
       context "Character (ref and record sum)" $ checkToSchema (Proxy :: Proxy Character) characterSchemaJSON
@@ -95,6 +96,7 @@ spec = do
     context "Light" $ checkDefs (Proxy :: Proxy Light) ["Color"]
     context "Character" $ checkDefs (Proxy :: Proxy Character) ["Player", "Point"]
     context "MyRoseTree" $ checkDefs (Proxy :: Proxy MyRoseTree) ["RoseTree"]
+    context "MyRoseTree'" $ checkDefs (Proxy :: Proxy MyRoseTree') ["myrosetree'"]
     context "[Set (Unit, Maybe Color)]" $ checkDefs (Proxy :: Proxy [Set (Unit, Maybe Color)]) ["Unit", "Color"]
     context "ResourceId" $ checkDefs (Proxy :: Proxy ResourceId) []
   describe "Inlining Schemas" $ do
@@ -103,6 +105,7 @@ spec = do
     context "Character (inlining only Player)" $ checkInlinedSchemas ["Player"] (Proxy :: Proxy Character) characterInlinedPlayerSchemaJSON
     context "Light" $ checkInlinedSchema (Proxy :: Proxy Light) lightInlinedSchemaJSON
     context "MyRoseTree (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
+    context "MyRoseTree' (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
   describe "Bounded Enum key mapping" $ do
     context "ButtonImages" $ checkToSchema (Proxy :: Proxy ButtonImages) buttonImagesSchemaJSON
 
@@ -395,6 +398,35 @@ myRoseTreeSchemaJSON = [aesonQQ|
         }
     },
   "required": ["root", "trees"]
+}
+|]
+
+data MyRoseTree' = MyRoseTree'
+  { root'  :: String
+  , trees' :: [MyRoseTree']
+  } deriving (Generic)
+
+instance ToSchema MyRoseTree' where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+    { datatypeNameModifier = map toLower }
+
+myRoseTreeSchemaJSON' :: Value
+myRoseTreeSchemaJSON' = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "root'": { "type": "string" },
+      "trees'":
+        {
+          "type": "array",
+          "items":
+            {
+              "$ref": "#/definitions/myrosetree'"
+            }
+        }
+    },
+  "required": ["root'", "trees'"]
 }
 |]
 
