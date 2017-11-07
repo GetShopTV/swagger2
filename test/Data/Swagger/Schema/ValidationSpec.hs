@@ -16,6 +16,7 @@ import "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
 import Data.Monoid (mempty)
 import Data.Proxy
@@ -69,6 +70,7 @@ spec = do
     -- prop "(Maybe [Int])" $ shouldValidate (Proxy :: Proxy (Maybe [Int]))
     prop "(IntMap String)" $ shouldValidate (Proxy :: Proxy (IntMap String))
     prop "(Set Bool)" $ shouldValidate (Proxy :: Proxy (Set Bool))
+    prop "(NonEmpty Bool)" $ shouldValidate (Proxy :: Proxy (NonEmpty Bool))
     prop "(HashSet Bool)" $ shouldValidate (Proxy :: Proxy (HashSet Bool))
     prop "(Either Int String)" $ shouldValidate (Proxy :: Proxy (Either Int String))
     prop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String))
