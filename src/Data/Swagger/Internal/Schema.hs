@@ -44,6 +44,7 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
 import Data.Proxy
 import Data.Scientific (Scientific)
@@ -73,7 +74,6 @@ import Data.Swagger.Internal.TypeShape
 #else
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Data.List.NonEmpty (NonEmpty)
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 #endif
 
@@ -562,14 +562,11 @@ instance ToSchema a => ToSchema (Set a) where
 
 instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
 
-#if __GLASGOW_HASKELL__ < 800
-#else
 instance ToSchema a => ToSchema (NonEmpty a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])
     return $ unnamed $ schema
       & minItems .~ Just 1
-#endif
 
 instance ToSchema All where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Any where declareNamedSchema = plain . paramSchemaToSchema
