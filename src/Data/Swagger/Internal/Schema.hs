@@ -687,11 +687,12 @@ genericNameSchema :: forall a d f proxy.
 genericNameSchema opts _ = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy d))
 
 gdatatypeSchemaName :: forall proxy d. Datatype d => SchemaOptions -> proxy d -> Maybe T.Text
-gdatatypeSchemaName opts _ = case name of
+gdatatypeSchemaName opts _ = case orig of
   (c:_) | isAlpha c && isUpper c -> Just (T.pack name)
   _ -> Nothing
   where
-    name = datatypeNameModifier opts (datatypeName (Proxy3 :: Proxy3 d f a))
+    orig = datatypeName (Proxy3 :: Proxy3 d f a)
+    name = datatypeNameModifier opts orig
 
 -- | Lift a plain @'ParamSchema'@ into a model @'NamedSchema'@.
 paramSchemaToNamedSchema :: forall a d f proxy.
