@@ -725,7 +725,7 @@ instance OVERLAPPING_ Constructor c => GToSchema (C1 c U1) where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
 -- | Single field constructor.
-instance (Selector s, GToSchema f) => GToSchema (C1 c (S1 s f)) where
+instance (Selector s, GToSchema f, GToSchema (S1 s f)) => GToSchema (C1 c (S1 s f)) where
   gdeclareNamedSchema opts _ s
     | unwrapUnaryRecords opts = fieldSchema
     | otherwise =

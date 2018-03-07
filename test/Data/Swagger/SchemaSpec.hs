@@ -78,6 +78,7 @@ spec = do
       context "Email (unwrapUnaryRecords)"  $ checkToSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToSchema (Proxy :: Proxy UserId) userIdSchemaJSON
       context "Player (unary record)" $ checkToSchema (Proxy :: Proxy Player) playerSchemaJSON
+      context "SingleMaybeField (unary record with Maybe)" $ checkToSchema (Proxy :: Proxy SingleMaybeField) singleMaybeFieldSchemaJSON
     context "Players (inlining schema)" $ checkToSchema (Proxy :: Proxy Players) playersSchemaJSON
     context "MyRoseTree (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree) myRoseTreeSchemaJSON
     context "MyRoseTree' (datatypeNameModifier)" $ checkToSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
@@ -722,3 +723,24 @@ buttonImagesSchemaJSON = [aesonQQ|
 }
 |]
 
+
+-- ========================================================================
+-- SingleMaybeField (single field data with optional field)
+-- ========================================================================
+
+data SingleMaybeField = SingleMaybeField { singleMaybeField :: Maybe String }
+  deriving (Show, Generic)
+
+instance ToJSON SingleMaybeField
+instance ToSchema SingleMaybeField
+
+singleMaybeFieldSchemaJSON :: Value
+singleMaybeFieldSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "singleMaybeField": { "type": "string" }
+    }
+}
+|]
