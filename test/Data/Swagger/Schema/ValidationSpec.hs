@@ -16,7 +16,7 @@ import "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Map (Map)
 import Data.Monoid (mempty)
 import Data.Proxy
@@ -262,3 +262,13 @@ instance Arbitrary ZonedTime where
 
 instance Arbitrary UTCTime where
   arbitrary = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
+
+#if MIN_VERSION_QuickCheck(2,10,0)
+-- This instance was removed in QuickCheck 2.10 because of dependencies.
+-- The instance is available in `quickcheck-instances` package, but that
+-- introduces a ton of conflicts with the other instances here.
+
+instance Arbitrary a => Arbitrary (NonEmpty a) where
+  arbitrary = liftA2 (:|) arbitrary arbitrary
+  shrink (x :| xs) = mapMaybe nonEmpty (shrink (x:xs))
+#endif
