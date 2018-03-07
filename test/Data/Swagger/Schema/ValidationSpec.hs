@@ -33,6 +33,7 @@ import Data.Swagger.Declare
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate _ x = validateToJSON x == []
@@ -230,6 +231,10 @@ invalidButtonImagesToJSON = genericToJSON defaultOptions
 instance Arbitrary ButtonImages where
   arbitrary = ButtonImages <$> arbitrary
 
+instance Eq ZonedTime where
+  ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
+
+{-
 -- Arbitrary instances for common types
 
 instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
@@ -252,9 +257,6 @@ instance Arbitrary LocalTime where
     <$> arbitrary
     <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
 
-instance Eq ZonedTime where
-  ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
-
 instance Arbitrary ZonedTime where
   arbitrary = ZonedTime
     <$> arbitrary
@@ -272,3 +274,5 @@ instance Arbitrary a => Arbitrary (NonEmpty a) where
   arbitrary = liftA2 (:|) arbitrary arbitrary
   shrink (x :| xs) = mapMaybe nonEmpty (shrink (x:xs))
 #endif
+
+-}
