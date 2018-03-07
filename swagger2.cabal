@@ -92,6 +92,7 @@ test-suite spec
                   , HUnit
                   , mtl
                   , QuickCheck >=2.8.2
+                  , quickcheck-instances
                   , swagger2
                   , text
                   , time
@@ -99,7 +100,7 @@ test-suite spec
                   , vector
                   , lens
   if !impl(ghc >= 8.0)
-     build-depends:    semigroups >= 0.18.3 && <0.19
+     build-depends:    semigroups
 
   other-modules:
     SpecCommon
