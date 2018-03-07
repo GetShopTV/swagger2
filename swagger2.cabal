@@ -98,6 +98,9 @@ test-suite spec
                   , unordered-containers
                   , vector
                   , lens
+  if !impl(ghc >= 8.0)
+     build-depends:    semigroups >= 0.18.3 && <0.19
+
   other-modules:
     SpecCommon
     Data.SwaggerSpec
