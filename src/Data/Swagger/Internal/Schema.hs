@@ -44,6 +44,7 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
 import Data.Proxy
 import Data.Scientific (Scientific)
@@ -560,6 +561,12 @@ instance ToSchema a => ToSchema (Set a) where
       & uniqueItems ?~ True
 
 instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
+
+instance ToSchema a => ToSchema (NonEmpty a) where
+  declareNamedSchema _ = do
+    schema <- declareSchema (Proxy :: Proxy [a])
+    return $ unnamed $ schema
+      & minItems .~ Just 1
 
 instance ToSchema All where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Any where declareNamedSchema = plain . paramSchemaToSchema

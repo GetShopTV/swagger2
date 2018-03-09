@@ -16,6 +16,7 @@ import "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
 import Data.Map (Map)
 import Data.Monoid (mempty)
 import Data.Proxy
@@ -32,6 +33,7 @@ import Data.Swagger.Declare
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate _ x = validateToJSON x == []
@@ -69,6 +71,7 @@ spec = do
     -- prop "(Maybe [Int])" $ shouldValidate (Proxy :: Proxy (Maybe [Int]))
     prop "(IntMap String)" $ shouldValidate (Proxy :: Proxy (IntMap String))
     prop "(Set Bool)" $ shouldValidate (Proxy :: Proxy (Set Bool))
+    prop "(NonEmpty Bool)" $ shouldValidate (Proxy :: Proxy (NonEmpty Bool))
     prop "(HashSet Bool)" $ shouldValidate (Proxy :: Proxy (HashSet Bool))
     prop "(Either Int String)" $ shouldValidate (Proxy :: Proxy (Either Int String))
     prop "(Int, String)" $ shouldValidate (Proxy :: Proxy (Int, String))
@@ -228,35 +231,5 @@ invalidButtonImagesToJSON = genericToJSON defaultOptions
 instance Arbitrary ButtonImages where
   arbitrary = ButtonImages <$> arbitrary
 
--- Arbitrary instances for common types
-
-instance (Eq k, Hashable k, Arbitrary k, Arbitrary v) => Arbitrary (HashMap k v) where
-  arbitrary = HashMap.fromList <$> arbitrary
-
-instance (Eq a, Hashable a, Arbitrary a) => Arbitrary (HashSet a) where
-  arbitrary = HashSet.fromList <$> arbitrary
-
-instance Arbitrary T.Text where
-  arbitrary = T.pack <$> arbitrary
-
-instance Arbitrary TL.Text where
-  arbitrary = TL.pack <$> arbitrary
-
-instance Arbitrary Day where
-  arbitrary = liftA3 fromGregorian (fmap ((+ 1) . abs) arbitrary) arbitrary arbitrary
-
-instance Arbitrary LocalTime where
-  arbitrary = LocalTime
-    <$> arbitrary
-    <*> liftA3 TimeOfDay (choose (0, 23)) (choose (0, 59)) (fromInteger <$> choose (0, 60))
-
 instance Eq ZonedTime where
   ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
-
-instance Arbitrary ZonedTime where
-  arbitrary = ZonedTime
-    <$> arbitrary
-    <*> liftA3 TimeZone arbitrary arbitrary (vectorOf 3 (elements ['A'..'Z']))
-
-instance Arbitrary UTCTime where
-  arbitrary = UTCTime <$> arbitrary <*> fmap fromInteger (choose (0, 86400))
