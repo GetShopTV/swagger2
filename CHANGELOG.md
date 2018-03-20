@@ -1,3 +1,9 @@
+next
+----
+
+* Add `Semigroup` instances
+* GHC-8.4 compatibility
+
 2.2
 ---
 
