@@ -562,6 +562,7 @@ instance ToSchema a => ToSchema (Set a) where
 
 instance ToSchema a => ToSchema (HashSet a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set a))
 
+-- | @since 2.2.1
 instance ToSchema a => ToSchema (NonEmpty a) where
   declareNamedSchema _ = do
     schema <- declareSchema (Proxy :: Proxy [a])

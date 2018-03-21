@@ -60,6 +60,9 @@ defaultSchemaOptions = SchemaOptions
 -- * 'Aeson.tagSingleConstructors'
 --
 -- The rest is defined as in 'defaultSchemaOptions'.
+--
+-- @since 2.2.1
+--
 fromAesonOptions :: Aeson.Options -> SchemaOptions
 fromAesonOptions opts = defaultSchemaOptions
   { fieldLabelModifier     = Aeson.fieldLabelModifier     opts
