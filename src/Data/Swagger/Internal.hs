@@ -935,6 +935,18 @@ instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
   swaggerMempty = InsOrdHashMap.empty
   swaggerMappend = InsOrdHashMap.unionWith mappend
 
+instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap Text SecurityScheme) where
+  swaggerMempty = InsOrdHashMap.empty
+  swaggerMappend = InsOrdHashMap.unionWith mergeFun
+    where
+      mergeFun s1@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 scopes1)) desc)
+               s2@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow2 scopes2)) _)
+        = if flow1 == flow2 then
+            SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 (scopes1 <> scopes2))) desc
+          else
+            s2
+      mergeFun _ ss = ss
+
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
   swaggerMappend (Inline x) (Inline y) = Inline (mappend x y)
