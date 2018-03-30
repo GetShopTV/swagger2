@@ -1,3 +1,13 @@
+2.2.1
+-----
+
+* Add `Semigroup` instances
+* GHC-8.4 compatibility
+* `Schema (NonEmpty a) instance (see [#141](https://github.com/GetShopTV/swagger2/pull/141))
+* Fix optional property for unary records (see [#142](https://github.com/GetShopTV/swagger2/issues/142))
+* Add `fromAesonOptions` helper (see [#146](https://github.com/GetShopTV/swagger2/issues/139))
+* Fix non-termination when using `datatypeNameModifier` with recursive data types (see [#132](https://github.com/GetShopTV/swagger2/issues/132))
+
 2.2
 ---
 

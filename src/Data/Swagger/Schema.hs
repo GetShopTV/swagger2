@@ -54,6 +54,7 @@ module Data.Swagger.Schema (
   -- * Generic encoding configuration
   SchemaOptions(..),
   defaultSchemaOptions,
+  fromAesonOptions,
 ) where
 
 import Data.Swagger.Internal.Schema
