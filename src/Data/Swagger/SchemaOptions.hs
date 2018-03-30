@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module:      Data.Swagger.SchemaOptions
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -5,6 +6,8 @@
 --
 -- Generic deriving options for @'ToParamSchema'@ and @'ToSchema'@.
 module Data.Swagger.SchemaOptions where
+
+import qualified Data.Aeson.Types as Aeson
 
 -- | Options that specify how to encode your type to Swagger schema.
 data SchemaOptions = SchemaOptions
@@ -41,3 +44,29 @@ defaultSchemaOptions = SchemaOptions
   , unwrapUnaryRecords = False
   }
 
+-- | Convert 'Aeson.Options' to 'SchemaOptions'.
+--
+-- Specifically the following fields get copied:
+--
+-- * 'fieldLabelModifier'
+-- * 'constructorTagModifier'
+-- * 'allNullaryToStringTag'
+-- * 'unwrapUnaryRecords'
+--
+-- Note that these fields have no effect on `SchemaOptions`:
+--
+-- * 'Aeson.omitNothingFields'
+-- * 'Aeson.sumEncoding'
+-- * 'Aeson.tagSingleConstructors'
+--
+-- The rest is defined as in 'defaultSchemaOptions'.
+--
+-- @since 2.2.1
+--
+fromAesonOptions :: Aeson.Options -> SchemaOptions
+fromAesonOptions opts = defaultSchemaOptions
+  { fieldLabelModifier     = Aeson.fieldLabelModifier     opts
+  , constructorTagModifier = Aeson.constructorTagModifier opts
+  , allNullaryToStringTag  = Aeson.allNullaryToStringTag  opts
+  , unwrapUnaryRecords     = Aeson.unwrapUnaryRecords     opts
+  }

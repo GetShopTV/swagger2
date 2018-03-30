@@ -32,7 +32,8 @@ import           Data.Data                (Data(..), Typeable, mkConstr, mkDataT
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
-import           Data.Monoid
+import           Data.Monoid              (Monoid (..))
+import           Data.Semigroup           (Semigroup (..))
 import           Data.Scientific          (Scientific)
 import           Data.Set                 (Set)
 import           Data.String              (IsString(..))
@@ -303,7 +304,7 @@ data Operation = Operation
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
-  deriving (Eq, Show, Monoid, Typeable)
+  deriving (Eq, Show, Semigroup, Monoid, Typeable)
 
 mimeListConstr :: Constr
 mimeListConstr = mkConstr mimeListDataType "MimeList" ["getMimeList"] Prefix
@@ -754,7 +755,7 @@ data SecurityScheme = SecurityScheme
 -- (that is, there is a logical AND between the schemes).
 newtype SecurityRequirement = SecurityRequirement
   { getSecurityRequirement :: InsOrdHashMap Text [Text]
-  } deriving (Eq, Read, Show, Monoid, ToJSON, FromJSON, Data, Typeable)
+  } deriving (Eq, Read, Show, Semigroup, Monoid, ToJSON, FromJSON, Data, Typeable)
 
 -- | Tag name.
 type TagName = Text
@@ -805,61 +806,89 @@ newtype URL = URL { getUrl :: Text } deriving (Eq, Ord, Show, ToJSON, FromJSON, 
 -- Monoid instances
 -- =======================================================================
 
+instance Semigroup Swagger where
+  (<>) = genericMappend
 instance Monoid Swagger where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Info where
+  (<>) = genericMappend
 instance Monoid Info where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Contact where
+  (<>) = genericMappend
 instance Monoid Contact where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup PathItem where
+  (<>) = genericMappend
 instance Monoid PathItem where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Schema where
+  (<>) = genericMappend
 instance Monoid Schema where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup (ParamSchema t) where
+  (<>) = genericMappend
 instance Monoid (ParamSchema t) where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Param where
+  (<>) = genericMappend
 instance Monoid Param where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup ParamOtherSchema where
+  (<>) = genericMappend
 instance Monoid ParamOtherSchema where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Header where
+  (<>) = genericMappend
 instance Monoid Header where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Responses where
+  (<>) = genericMappend
 instance Monoid Responses where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Response where
+  (<>) = genericMappend
 instance Monoid Response where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup ExternalDocs where
+  (<>) = genericMappend
 instance Monoid ExternalDocs where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Operation where
+  (<>) = genericMappend
 instance Monoid Operation where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
+instance Semigroup Example where
+  (<>) = genericMappend
 instance Monoid Example where
   mempty = genericMempty
-  mappend = genericMappend
+  mappend = (<>)
 
 -- =======================================================================
 -- SwaggerMonoid helper instances
@@ -893,7 +922,7 @@ instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
 
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
-  swaggerMappend (Inline x) (Inline y) = Inline (x <> y)
+  swaggerMappend (Inline x) (Inline y) = Inline (mappend x y)
   swaggerMappend _ y = y
 
 instance SwaggerMonoid ParamAnySchema where
