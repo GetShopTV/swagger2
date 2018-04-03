@@ -57,6 +57,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import Data.Version (Version)
 import Numeric.Natural
 import Data.Word
 import GHC.Generics
@@ -497,6 +498,8 @@ instance ToSchema UTCTime where
 
 instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
+
+instance ToSchema Version where declareNamedSchema = plain . paramSchemaToSchema
 
 #if __GLASGOW_HASKELL__ < 800
 #else

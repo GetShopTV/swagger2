@@ -23,6 +23,7 @@ import Data.Proxy
 import Data.Time
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import Data.Version (Version)
 import Data.Set (Set)
 import Data.Word
 import GHC.Generics
@@ -90,6 +91,7 @@ spec = do
     prop "MyRoseTree" $ shouldValidate (Proxy :: Proxy MyRoseTree)
     prop "Light" $ shouldValidate (Proxy :: Proxy Light)
     prop "ButtonImages" $ shouldValidate (Proxy :: Proxy ButtonImages)
+    prop "Version" $ shouldValidate (Proxy :: Proxy Version)
 
   describe "invalid cases" $ do
     prop "invalidPersonToJSON"        $ shouldNotValidate invalidPersonToJSON

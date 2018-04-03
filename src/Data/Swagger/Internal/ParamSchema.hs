@@ -39,6 +39,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
+import Data.Version (Version)
 import Numeric.Natural
 import Data.Word
 import Data.UUID.Types (UUID)
@@ -217,6 +218,11 @@ instance ToParamSchema T.Text where
 
 instance ToParamSchema TL.Text where
   toParamSchema _ = toParamSchema (Proxy :: Proxy String)
+
+instance ToParamSchema Version where
+  toParamSchema _ = mempty
+    & type_ .~ SwaggerString
+    & pattern ?~ "^\\d+(\\.\\d+)*$"
 
 #if __GLASGOW_HASKELL__ < 800
 #else
