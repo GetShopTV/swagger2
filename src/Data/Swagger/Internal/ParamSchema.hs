@@ -222,7 +222,7 @@ instance ToParamSchema TL.Text where
 instance ToParamSchema Version where
   toParamSchema _ = mempty
     & type_ .~ SwaggerString
-    & pattern ?~ "^\\d+[\\.\\d+]*$"
+    & pattern ?~ "^\\d+(\\.\\d+)*$"
 
 #if __GLASGOW_HASKELL__ < 800
 #else
