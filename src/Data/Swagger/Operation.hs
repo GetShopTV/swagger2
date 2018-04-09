@@ -37,7 +37,6 @@ import Control.Lens
 import Data.Data.Lens
 import Data.List.Compat
 import Data.Maybe (mapMaybe)
-import Data.Monoid
 import qualified Data.Set as Set
 
 import Data.Swagger.Declare

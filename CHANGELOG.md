@@ -1,3 +1,10 @@
+2.2.2
+-----
+
+* Add `ToSchema Version` instance
+* Use base-compat-batteries (0.10)
+* PVP bounds
+
 2.2.1
 -----
 

@@ -44,7 +44,7 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty.Compat (NonEmpty)
 import Data.Map (Map)
 import Data.Proxy
 import Data.Scientific (Scientific)
@@ -58,7 +58,7 @@ import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import Data.Version (Version)
-import Numeric.Natural
+import Numeric.Natural.Compat (Natural)
 import Data.Word
 import GHC.Generics
 import qualified Data.UUID.Types as UUID
