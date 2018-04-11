@@ -47,7 +47,6 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrd
 
 #if MIN_VERSION_aeson(0,10,0)
 import Data.Aeson (Encoding, pairs, (.=), Series)
-import Data.Monoid ((<>))
 #endif
 
 -------------------------------------------------------------------------------

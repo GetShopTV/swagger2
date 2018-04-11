@@ -33,7 +33,7 @@ import qualified Data.HashMap.Strict      as HashMap
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
 import           Data.Monoid              (Monoid (..))
-import           Data.Semigroup           (Semigroup (..))
+import           Data.Semigroup.Compat    (Semigroup (..))
 import           Data.Scientific          (Scientific)
 import           Data.Set                 (Set)
 import           Data.String              (IsString(..))

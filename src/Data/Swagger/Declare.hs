@@ -29,7 +29,6 @@ import Control.Monad.Trans.RWS.Strict as Strict
 import Control.Monad.Trans.Writer.Lazy as Lazy
 import Control.Monad.Trans.Writer.Strict as Strict
 import Data.Functor.Identity
-import Data.Monoid
 
 -- | A declare monad transformer parametrized by:
 --
@@ -50,15 +49,15 @@ instance (Applicative m, Monad m, Monoid d) => Applicative (DeclareT d m) where
   pure x = DeclareT (\_ -> pure (mempty, x))
   DeclareT df <*> DeclareT dx = DeclareT $ \d -> do
     ~(d',  f) <- df d
-    ~(d'', x) <- dx (d <> d')
-    return (d' <> d'', f x)
+    ~(d'', x) <- dx (mappend d d')
+    return (mappend d' d'', f x)
 
 instance (Applicative m, Monad m, Monoid d) => Monad (DeclareT d m) where
   return x = DeclareT (\_ -> pure (mempty, x))
   DeclareT dx >>= f = DeclareT $ \d -> do
     ~(d',  x) <- dx d
-    ~(d'', y) <- runDeclareT (f x) (d <> d')
-    return (d' <> d'', y)
+    ~(d'', y) <- runDeclareT (f x) (mappend d d')
+    return (mappend d' d'', y)
 
 instance Monoid d => MonadTrans (DeclareT d) where
   lift m = DeclareT (\_ -> (,) mempty `liftM` m)

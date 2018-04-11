@@ -21,7 +21,6 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Map (Map)
-import Data.Monoid
 import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics

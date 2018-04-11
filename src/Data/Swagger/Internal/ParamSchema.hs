@@ -40,7 +40,7 @@ import qualified Data.Vector.Primitive as VP
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import Data.Version (Version)
-import Numeric.Natural
+import Numeric.Natural.Compat (Natural)
 import Data.Word
 import Data.UUID.Types (UUID)
 

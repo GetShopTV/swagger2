@@ -16,7 +16,7 @@ import "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List.NonEmpty (NonEmpty(..), nonEmpty)
+import Data.List.NonEmpty.Compat (NonEmpty(..), nonEmpty)
 import Data.Map (Map)
 import Data.Monoid (mempty)
 import Data.Proxy
