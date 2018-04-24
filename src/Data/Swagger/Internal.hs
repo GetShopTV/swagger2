@@ -117,7 +117,7 @@ data Swagger = Swagger
   , _swaggerResponses :: Definitions Response
 
     -- | Security scheme definitions that can be used across the specification.
-  , _swaggerSecurityDefinitions :: Definitions SecurityScheme
+  , _swaggerSecurityDefinitions :: SecurityDefinitions
 
     -- | A declaration of which security schemes are applied for the API as a whole.
     -- The list of values describes alternative security schemes that can be used
@@ -755,6 +755,22 @@ data SecurityScheme = SecurityScheme
   , _securitySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+
+-- | merge scopes of two OAuth2 security schemes when their flows are identical.
+-- In other case returns first security scheme
+mergeSecurityScheme :: SecurityScheme -> SecurityScheme -> SecurityScheme
+mergeSecurityScheme s1@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 scopes1)) desc)
+                    s2@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow2 scopes2)) _)
+  = if flow1 == flow2 then
+      SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 (scopes1 <> scopes2))) desc
+    else
+      s1
+mergeSecurityScheme s1 _ = s1
+
+newtype SecurityDefinitions
+  = SecurityDefinitions (Definitions SecurityScheme)
+  deriving (Eq, Show, Generic, Data, Typeable)
+
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
@@ -904,6 +920,17 @@ instance Monoid Example where
   mempty = genericMempty
   mappend = (<>)
 
+instance Semigroup SecurityScheme where
+  (<>) = mergeSecurityScheme
+
+instance Semigroup SecurityDefinitions where
+  (SecurityDefinitions sd1) <> (SecurityDefinitions sd2) =
+     SecurityDefinitions $ InsOrdHashMap.unionWith (<>) sd1 sd2
+
+instance Monoid SecurityDefinitions where
+  mempty = SecurityDefinitions $ InsOrdHashMap.empty
+  mappend = (<>)
+
 -- =======================================================================
 -- SwaggerMonoid helper instances
 -- =======================================================================
@@ -918,6 +945,7 @@ instance SwaggerMonoid Responses
 instance SwaggerMonoid Response
 instance SwaggerMonoid ExternalDocs
 instance SwaggerMonoid Operation
+instance SwaggerMonoid SecurityDefinitions
 instance (Eq a, Hashable a) => SwaggerMonoid (InsOrdHashSet a)
 
 instance SwaggerMonoid MimeList
@@ -934,18 +962,6 @@ instance SwaggerMonoid ParamLocation where
 instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
   swaggerMempty = InsOrdHashMap.empty
   swaggerMappend = InsOrdHashMap.unionWith mappend
-
-instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap Text SecurityScheme) where
-  swaggerMempty = InsOrdHashMap.empty
-  swaggerMappend = InsOrdHashMap.unionWith mergeFun
-    where
-      mergeFun s1@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 scopes1)) desc)
-               s2@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow2 scopes2)) _)
-        = if flow1 == flow2 then
-            SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 (scopes1 <> scopes2))) desc
-          else
-            s2
-      mergeFun _ ss = ss
 
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
@@ -1130,6 +1146,9 @@ instance ToJSON PathItem where
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample
 
+instance ToJSON SecurityDefinitions where
+  toJSON (SecurityDefinitions sd) = toJSON sd
+
 instance ToJSON Reference where
   toJSON (Reference ref) = object [ "$ref" .= ref ]
 
@@ -1291,6 +1310,9 @@ instance FromJSON Operation where
 instance FromJSON PathItem where
   parseJSON = sopSwaggerGenericParseJSON
 
+instance FromJSON SecurityDefinitions where
+  parseJSON js = SecurityDefinitions <$> parseJSON js
+
 instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
   parseJSON _ = empty
@@ -1402,3 +1424,4 @@ instance AesonDefaultValue (SwaggerType a)
 instance AesonDefaultValue MimeList where defaultValue = Just mempty
 instance AesonDefaultValue Info
 instance AesonDefaultValue ParamLocation
+instance AesonDefaultValue SecurityDefinitions where defaultValue = Just $ SecurityDefinitions mempty

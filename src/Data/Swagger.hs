@@ -89,6 +89,7 @@ module Data.Swagger (
   SecurityScheme(..),
   SecuritySchemeType(..),
   SecurityRequirement(..),
+  SecurityDefinitions(..),
 
   -- *** API key
   ApiKeyParams(..),
@@ -279,7 +280,7 @@ import Data.Swagger.Internal
 -- >>> encode $ toSchema (Proxy :: Proxy Person)
 -- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"integer\"}},\"type\":\"object\"}"
 --
--- Please note that not all valid Haskell data types will have a proper swagger schema. For example while we can derive a 
+-- Please note that not all valid Haskell data types will have a proper swagger schema. For example while we can derive a
 -- schema for basic enums like
 --
 -- >>> data SampleEnum = ChoiceOne | ChoiceTwo deriving Generic
