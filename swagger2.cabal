@@ -73,7 +73,7 @@ library
     , http-media                >=0.7.1.2  && <0.8
     , insert-ordered-containers >=0.1.0.0  && <0.3
     , lens                      >=4.16.1   && <4.17
-    , network                   >=2.6.3.5  && <2.7
+    , network                   >=2.6.3.5  && <2.8
     , scientific                >=0.3.5.3  && <0.4
     , transformers-compat       >=0.3      && <0.7
     , unordered-containers      >=0.2.9.0  && <0.3
