@@ -1,6 +1,7 @@
 cabal-version:       >=1.10
 name:                swagger2
 version:             2.2.2
+x-revision:          1
 
 synopsis:            Swagger 2.0 data model
 description:
