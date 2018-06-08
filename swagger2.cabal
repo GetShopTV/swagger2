@@ -4,7 +4,7 @@ version:             2.2.2
 
 synopsis:            Swagger 2.0 data model
 description:
-  This library is inteded to be used for decoding and encoding Swagger 2.0 API
+  This library is intended to be used for decoding and encoding Swagger 2.0 API
   specifications as well as manipulating them.
   .
   The original Swagger 2.0 specification is available at http://swagger.io/specification/.
