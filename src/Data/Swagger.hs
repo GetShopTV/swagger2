@@ -77,6 +77,7 @@ module Data.Swagger (
   SwaggerItems(..),
   Xml(..),
   Pattern,
+  AdditionalProperties(..),
 
   -- ** Responses
   Responses(..),

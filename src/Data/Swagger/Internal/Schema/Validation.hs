@@ -312,8 +312,12 @@ validateObject o = withSchema $ \sch ->
           Null | not (k `elem` (sch ^. required)) -> valid  -- null is fine for non-required property
           _ ->
             case InsOrdHashMap.lookup k (sch ^. properties) of
-              Nothing -> checkMissing (unknownProperty k) additionalProperties $ \s -> validateWithSchemaRef s v
+              Nothing -> checkMissing (unknownProperty k) additionalProperties $ validateAdditional k v
               Just s  -> validateWithSchemaRef s v
+
+    validateAdditional _ _ (AdditionalPropertiesAllowed True) = valid
+    validateAdditional k _ (AdditionalPropertiesAllowed False) = invalid $ "additionalProperties=false but extra property " <> show k <> " found"
+    validateAdditional _ v (AdditionalPropertiesSchema s) = validateWithSchemaRef s v
 
     unknownProperty :: Text -> Validation s a
     unknownProperty name = invalid $

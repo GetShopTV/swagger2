@@ -37,6 +37,7 @@ spec = do
     context "Primitive Sample" $ schemaPrimitiveExample <=> schemaPrimitiveExampleJSON
     context "Simple Model" $ schemaSimpleModelExample <=> schemaSimpleModelExampleJSON
     context "Model with Map/Dictionary Properties" $ schemaModelDictExample <=> schemaModelDictExampleJSON
+    context "Model with Arbitrary Properties" $ schemaAdditionalExample <=> schemaAdditionalExampleJSON
     context "Model with Example" $ schemaWithExampleExample <=> schemaWithExampleExampleJSON
   describe "Definitions Object" $ definitionsExample <=> definitionsExampleJSON
   describe "Parameters Definition Object" $ paramsDefinitionExample <=> paramsDefinitionExampleJSON
@@ -272,7 +273,7 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
   & type_ .~ SwaggerObject
-  & additionalProperties ?~ Inline (mempty & type_ .~ SwaggerString)
+  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ .~ SwaggerString))
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -281,6 +282,19 @@ schemaModelDictExampleJSON = [aesonQQ|
   "additionalProperties": {
     "type": "string"
   }
+}
+|]
+
+schemaAdditionalExample :: Schema
+schemaAdditionalExample = mempty
+  & type_ .~ SwaggerObject
+  & additionalProperties ?~ AdditionalPropertiesAllowed True
+
+schemaAdditionalExampleJSON :: Value
+schemaAdditionalExampleJSON = [aesonQQ|
+{
+  "type": "object",
+  "additionalProperties": true
 }
 |]
 
