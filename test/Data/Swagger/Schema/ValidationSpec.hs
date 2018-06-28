@@ -7,6 +7,7 @@
 module Data.Swagger.Schema.ValidationSpec where
 
 import Control.Applicative
+import Control.Lens ((&), (.~), (?~))
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Int
@@ -17,7 +18,7 @@ import qualified "unordered-containers" Data.HashSet as HashSet
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.List.NonEmpty.Compat (NonEmpty(..), nonEmpty)
-import Data.Map (Map)
+import Data.Map (Map, fromList)
 import Data.Monoid (mempty)
 import Data.Proxy
 import Data.Time
@@ -92,6 +93,7 @@ spec = do
     prop "Light" $ shouldValidate (Proxy :: Proxy Light)
     prop "ButtonImages" $ shouldValidate (Proxy :: Proxy ButtonImages)
     prop "Version" $ shouldValidate (Proxy :: Proxy Version)
+    prop "FreeForm" $ shouldValidate (Proxy :: Proxy FreeForm)
 
   describe "invalid cases" $ do
     prop "invalidPersonToJSON"        $ shouldNotValidate invalidPersonToJSON
@@ -233,5 +235,29 @@ invalidButtonImagesToJSON = genericToJSON defaultOptions
 instance Arbitrary ButtonImages where
   arbitrary = ButtonImages <$> arbitrary
 
+-- ========================================================================
+-- FreeForm (wraps a raw JSON Value)
+-- ========================================================================
+
+data FreeForm = FreeForm { jsonContent :: Map T.Text Value }
+  deriving (Show, Generic)
+
+instance ToJSON FreeForm where
+  toJSON = toJSON . jsonContent
+
+instance ToSchema FreeForm where
+  declareNamedSchema _ = pure $ NamedSchema (Just $ T.pack "FreeForm") $ mempty
+    & type_ .~ SwaggerObject
+    & additionalProperties ?~ AdditionalPropertiesAllowed True
+
+instance Arbitrary FreeForm where
+  arbitrary = (FreeForm . fromList) <$> genObj
+    where
+      genObj = listOf $ do
+        k <- arbitrary
+        v <- oneof [ String <$> arbitrary, Number <$> arbitrary, Bool <$> arbitrary, pure Null ]
+        pure (k, v)
+
 instance Eq ZonedTime where
   ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
+
