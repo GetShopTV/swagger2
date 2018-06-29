@@ -557,7 +557,7 @@ data Schema = Schema
 
   , _schemaAllOf :: Maybe [Referenced Schema]
   , _schemaProperties :: InsOrdHashMap Text (Referenced Schema)
-  , _schemaAdditionalProperties :: Maybe (Referenced Schema)
+  , _schemaAdditionalProperties :: Maybe AdditionalProperties
 
   , _schemaDiscriminator :: Maybe Text
   , _schemaReadOnly :: Maybe Bool
@@ -801,6 +801,11 @@ instance IsString a => IsString (Referenced a) where
   fromString = Inline . fromString
 
 newtype URL = URL { getUrl :: Text } deriving (Eq, Ord, Show, ToJSON, FromJSON, Data, Typeable)
+
+data AdditionalProperties
+  = AdditionalPropertiesAllowed Bool
+  | AdditionalPropertiesSchema (Referenced Schema)
+  deriving (Eq, Show, Data, Typeable)
 
 -- =======================================================================
 -- Monoid instances
@@ -1125,6 +1130,10 @@ instance ToJSON (ParamSchema k) where
   toJSON = sopSwaggerGenericToJSONWithOpts $
       mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
 
+instance ToJSON AdditionalProperties where
+  toJSON (AdditionalPropertiesAllowed b) = toJSON b
+  toJSON (AdditionalPropertiesSchema s) = toJSON s
+
 -- =======================================================================
 -- Manual FromJSON instances
 -- =======================================================================
@@ -1279,6 +1288,10 @@ instance FromJSON (ParamSchema 'SwaggerKindParamOtherSchema) where
   parseJSON = sopSwaggerGenericParseJSON
 instance FromJSON (ParamSchema 'SwaggerKindSchema) where
   parseJSON = sopSwaggerGenericParseJSON
+
+instance FromJSON AdditionalProperties where
+  parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
+  parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
 
 -------------------------------------------------------------------------------
 -- TH splices

@@ -529,7 +529,7 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
         schema <- declareSchemaRef (Proxy :: Proxy v)
         return $ unnamed $ mempty
           & type_ .~ SwaggerObject
-          & additionalProperties ?~ schema
+          & additionalProperties ?~ AdditionalPropertiesSchema schema
 
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
