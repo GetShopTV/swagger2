@@ -1,41 +1,41 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE PackageImports      #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Swagger.Schema.ValidationSpec where
 
-import Control.Applicative
-import Control.Lens ((&), (.~), (?~))
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Int
-import Data.IntMap (IntMap)
-import Data.Hashable (Hashable)
-import "unordered-containers" Data.HashSet (HashSet)
+import           Control.Applicative
+import           Control.Lens                        ((&), (.~), (?~))
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.Hashable                       (Hashable)
+import           Data.HashMap.Strict                 (HashMap)
+import qualified Data.HashMap.Strict                 as HashMap
+import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
-import Data.List.NonEmpty.Compat (NonEmpty(..), nonEmpty)
-import Data.Map (Map, fromList)
-import Data.Monoid (mempty)
-import Data.Proxy
-import Data.Time
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import Data.Version (Version)
-import Data.Set (Set)
-import Data.Word
-import GHC.Generics
+import           Data.Int
+import           Data.IntMap                         (IntMap)
+import           Data.List.NonEmpty.Compat           (NonEmpty (..), nonEmpty)
+import           Data.Map                            (Map, fromList)
+import           Data.Monoid                         (mempty)
+import           Data.Proxy
+import           Data.Set                            (Set)
+import qualified Data.Text                           as T
+import qualified Data.Text.Lazy                      as TL
+import           Data.Time
+import           Data.Version                        (Version)
+import           Data.Word
+import           GHC.Generics
 
-import Data.Swagger
-import Data.Swagger.Declare
+import           Data.Swagger
+import           Data.Swagger.Declare
 
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
-import Test.QuickCheck.Instances ()
+import           Test.Hspec
+import           Test.Hspec.QuickCheck
+import           Test.QuickCheck
+import           Test.QuickCheck.Instances           ()
 
 shouldValidate :: (ToJSON a, ToSchema a) => Proxy a -> a -> Bool
 shouldValidate _ x = validateToJSON x == []
@@ -83,6 +83,7 @@ spec = do
     prop "(HashMap String Int)" $ shouldValidate (Proxy :: Proxy (HashMap String Int))
     prop "(HashMap T.Text Int)" $ shouldValidate (Proxy :: Proxy (HashMap T.Text Int))
     prop "(HashMap TL.Text Bool)" $ shouldValidate (Proxy :: Proxy (HashMap TL.Text Bool))
+    prop "Object" $ shouldValidate (Proxy :: Proxy Object)
     prop "(Int, String, Double)" $ shouldValidate (Proxy :: Proxy (Int, String, Double))
     prop "(Int, String, Double, [Int])" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int]))
     prop "(Int, String, Double, [Int], Int)" $ shouldValidate (Proxy :: Proxy (Int, String, Double, [Int], Int))
@@ -139,9 +140,9 @@ instance Arbitrary Color where
   arbitrary = arbitraryBoundedEnum
 
 invalidColorToJSON :: Color -> Value
-invalidColorToJSON Red    = toJSON "red"
-invalidColorToJSON Green  = toJSON "green"
-invalidColorToJSON Blue   = toJSON "blue"
+invalidColorToJSON Red   = toJSON "red"
+invalidColorToJSON Green = toJSON "green"
+invalidColorToJSON Blue  = toJSON "blue"
 
 -- ========================================================================
 -- Paint (record with bounded enum property)
@@ -261,3 +262,17 @@ instance Arbitrary FreeForm where
 instance Eq ZonedTime where
   ZonedTime t (TimeZone x _ _) == ZonedTime t' (TimeZone y _ _) = t == t' && x == y
 
+-- ========================================================================
+-- Arbitrary instance for Data.Aeson.Value
+-- ========================================================================
+
+instance Arbitrary Value where
+  -- Weights are almost random
+  -- Uniform oneof tends not to build complex objects cause of recursive call.
+  arbitrary = resize 4 $ frequency
+    [ (3, Object <$> arbitrary)
+    , (3, Array  <$> arbitrary)
+    , (3, String <$> arbitrary)
+    , (3, Number <$> arbitrary)
+    , (3, Bool   <$> arbitrary)
+    , (1, return Null) ]

@@ -1,25 +1,25 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Data.Swagger.CommonTestTypes where
 
-import Prelude ()
-import Prelude.Compat
+import           Prelude               ()
+import           Prelude.Compat
 
-import Data.Aeson (Value, ToJSON(..), ToJSONKey(..))
-import Data.Aeson.Types (toJSONKeyText)
-import Data.Aeson.QQ
-import Data.Char
-import Data.Proxy
-import Data.Set (Set)
-import Data.Map (Map)
-import qualified Data.Text as Text
-import GHC.Generics
+import           Data.Aeson            (ToJSON (..), ToJSONKey (..), Value)
+import           Data.Aeson.QQ
+import           Data.Aeson.Types      (toJSONKeyText)
+import           Data.Char
+import           Data.Map              (Map)
+import           Data.Proxy
+import           Data.Set              (Set)
+import qualified Data.Text             as Text
+import           GHC.Generics
 
-import Data.Swagger
-import Data.Swagger.Declare
-import Data.Swagger.Internal (SwaggerKind(..))
+import           Data.Swagger
+import           Data.Swagger.Declare
+import           Data.Swagger.Internal (SwaggerKind (..))
 
 -- ========================================================================
 -- Unit type
