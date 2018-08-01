@@ -32,7 +32,7 @@ import Data.Data.Lens (template)
 
 import Control.Monad
 import Control.Monad.Writer
-import Data.Aeson (ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..))
+import Data.Aeson (ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..), Object(..))
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
@@ -551,6 +551,12 @@ instance ToSchema a => ToSchema (HashMap T.Text  a) where declareNamedSchema _ =
 instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
 
 #endif
+
+instance OVERLAPPING_ ToSchema Object where
+  declareNamedSchema _ = pure $ NamedSchema (Just "Object") $ mempty
+    & type_ .~ SwaggerObject
+    & description ?~ "Arbitrary JSON object."
+    & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 instance ToSchema a => ToSchema (V.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
 instance ToSchema a => ToSchema (VU.Vector a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [a])
