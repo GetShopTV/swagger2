@@ -1,3 +1,18 @@
+2.3
+---
+
+Major changes:
+
+- Add support for `additionalProperties` with `Bool` value (see [#159](https://github.com/GetShopTV/swagger2/pull/159));
+- Add `ToSchema` `Object` instance (for aeson's `Object`) (see [`d72466a`](https://github.com/GetShopTV/swagger2/commit/d72466a));
+
+Dependencies and CI:
+
+- Aeson 1.4 (see [#158](https://github.com/GetShopTV/swagger2/pull/158));
+- Update .travis.yml (see [#160](https://github.com/GetShopTV/swagger2/pull/160));
+- Allow network 2.7 (see [#155](https://github.com/GetShopTV/swagger2/pull/155));
+- Allow lens-4.17 (see [#161](https://github.com/GetShopTV/swagger2/pull/161));
+
 2.2.2
 -----
 
