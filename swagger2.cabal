@@ -39,6 +39,7 @@ library
     Data.Swagger.Operation
     Data.Swagger.ParamSchema
     Data.Swagger.Schema
+    Data.Swagger.Schema.Generator
     Data.Swagger.Schema.Validation
     Data.Swagger.SchemaOptions
 
@@ -79,6 +80,7 @@ library
     , unordered-containers      >=0.2.9.0  && <0.3
     , uuid-types                >=1.0.2    && <1.1
     , vector                    >=0.12.0.1 && <0.13
+    , QuickCheck                >=2.10.1  && <2.12
 
   default-language:    Haskell2010
 
@@ -89,7 +91,7 @@ test-suite spec
 
   -- From library parat
  -- We need aeson's toEncoding for doctests too
-  build-depends: 
+  build-depends:
       base
     , swagger2
     , aeson
