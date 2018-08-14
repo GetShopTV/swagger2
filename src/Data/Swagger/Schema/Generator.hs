@@ -7,7 +7,7 @@ import           Prelude                    ()
 import           Prelude.Compat
 
 import           Control.Lens.Operators
-import           Control.Monad
+import           Control.Monad              (filterM)
 import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.HashMap.Strict.InsOrd as M
