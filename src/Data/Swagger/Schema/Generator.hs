@@ -3,6 +3,9 @@
 
 module Data.Swagger.Schema.Generator where
 
+import           Prelude                    ()
+import           Prelude.Compat
+
 import           Control.Lens.Operators
 import           Control.Monad
 import           Data.Aeson
