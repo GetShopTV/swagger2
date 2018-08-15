@@ -12,8 +12,10 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.HashMap.Strict.InsOrd as M
 import           Data.Maybe
+import           Data.Maybe
 import           Data.Proxy
 import           Data.Scientific
+import qualified Data.Set                   as S
 import           Data.Swagger
 import           Data.Swagger.Declare
 import qualified Data.Text                  as T
@@ -45,20 +47,35 @@ schemaGen defns schema =
         | Just 0 <- schema ^. maxLength -> pure $ Array V.empty
         | Just items <- schema ^. items ->
             case items of
-              SwaggerItemsObject ref ->
+              SwaggerItemsObject ref -> do
+                  size <- getSize
                   let itemSchema = dereference defns ref
-                  in fmap (Array . V.fromList) . listOf $ schemaGen defns itemSchema
+                      minLength' = fromMaybe 0 $ fromInteger <$> schema ^. minItems
+                      maxLength' = fromMaybe size $ fromInteger <$> schema ^. maxItems
+                  arrayLength <- choose (minLength', max minLength' maxLength')
+                  generatedArray <- vectorOf arrayLength $ schemaGen defns itemSchema
+                  return . Array $ V.fromList generatedArray
               SwaggerItemsArray refs ->
                   let itemGens = schemaGen defns . dereference defns <$> refs
                   in fmap (Array . V.fromList) $ sequence itemGens
-      SwaggerString -> String . T.pack <$> arbitrary
+      SwaggerString -> do
+        size <- getSize
+        let minLength' = fromMaybe 0 $ fromInteger <$> schema ^. minLength
+        let maxLength' = fromMaybe size $ fromInteger <$> schema ^. maxLength
+        length <- choose (minLength', max minLength' maxLength')
+        str <- vectorOf length arbitrary
+        return . String $ T.pack str
       SwaggerObject -> do
+          size <- getSize
           let props = dereference defns <$> schema ^. properties
-              reqKeys = schema ^. required
-              allKeys = M.keys $ schema ^. properties
-          presentKeys <- filterM (\key -> if key `elem` reqKeys
-                                          then return True
-                                          else arbitrary) allKeys
+              reqKeys = S.fromList $ schema ^. required
+              allKeys = S.fromList . M.keys $ schema ^. properties
+              optionalKeys = allKeys S.\\ reqKeys
+              minProps' = fromMaybe 0 $ fromInteger <$> schema ^. minProperties
+              maxProps' = fromMaybe size $ fromInteger <$> schema ^. maxProperties
+          shuffledOptional <- shuffle $ S.toList optionalKeys
+          numProps <- choose (minProps', max minProps' maxProps')
+          let presentKeys = take numProps $ S.toList reqKeys ++ shuffledOptional
           let presentProps = M.filterWithKey (\k _ -> k `elem` presentKeys) props
           let gens = schemaGen defns <$> presentProps
           x <- sequence gens

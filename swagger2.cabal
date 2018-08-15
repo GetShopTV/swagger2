@@ -126,6 +126,7 @@ test-suite spec
     Data.Swagger.ParamSchemaSpec
     Data.Swagger.SchemaSpec
     Data.Swagger.Schema.ValidationSpec
+    Data.Swagger.Schema.GeneratorSpec
   default-language: Haskell2010
 
 test-suite doctests
