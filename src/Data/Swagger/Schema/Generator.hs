@@ -71,7 +71,8 @@ schemaGen defns schema =
               reqKeys = S.fromList $ schema ^. required
               allKeys = S.fromList . M.keys $ schema ^. properties
               optionalKeys = allKeys S.\\ reqKeys
-              minProps' = fromMaybe 0 $ fromInteger <$> schema ^. minProperties
+              minProps' = fromMaybe (length reqKeys) $
+                            fromInteger <$> schema ^. minProperties
               maxProps' = fromMaybe size $ fromInteger <$> schema ^. maxProperties
           shuffledOptional <- shuffle $ S.toList optionalKeys
           numProps <- choose (minProps', max minProps' maxProps')

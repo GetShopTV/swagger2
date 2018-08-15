@@ -150,7 +150,7 @@ instance ToSchema MissingProperty where
         & required .~ ["propC"]
 
 data WrongPropType = WrongPropType
-    { propE :: Bool
+    { propE :: String
     }
 
 instance FromJSON WrongPropType where
@@ -160,8 +160,8 @@ instance FromJSON WrongPropType where
 
 instance ToSchema WrongPropType where
     declareNamedSchema _ = do
-      boolSchema <- declareSchemaRef (Proxy :: Proxy WrongPropType)
-      return . NamedSchema (Just "MissingRequired") $
+      boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
+      return . NamedSchema (Just "WrongPropType") $
         mempty
         & type_ .~ SwaggerObject
         & properties .~ [("propE", boolSchema)]
