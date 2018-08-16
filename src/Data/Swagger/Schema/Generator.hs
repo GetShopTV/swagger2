@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE OverloadedLists     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Swagger.Schema.Generator where
@@ -79,7 +80,12 @@ schemaGen defns schema =
           let presentKeys = take numProps $ S.toList reqKeys ++ shuffledOptional
           let presentProps = M.filterWithKey (\k _ -> k `elem` presentKeys) props
           let gens = schemaGen defns <$> presentProps
-          x <- sequence gens
+          additionalGens <- case schema ^. additionalProperties of
+            Just (AdditionalPropertiesSchema addlSchema) -> do
+              additionalKeys <- sequence . take (numProps - length presentProps) . repeat $ T.pack <$> arbitrary
+              return . M.fromList $ zip additionalKeys (repeat . schemaGen defns $ dereference defns addlSchema)
+            _                                      -> return []
+          x <- sequence $ gens <> additionalGens
           return . Object $ M.toHashMap x
   where
     dereference :: Definitions a -> Referenced a -> a
