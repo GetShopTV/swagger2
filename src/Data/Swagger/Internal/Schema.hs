@@ -111,7 +111,7 @@ rename name (NamedSchema _ schema) = NamedSchema name schema
 --   declareNamedSchema _ = do
 --     doubleSchema <- declareSchemaRef (Proxy :: Proxy Double)
 --     return $ NamedSchema (Just \"Coord\") $ mempty
---       & type_ .~ SwaggerObject
+--       & type_ ?~ SwaggerObject
 --       & properties .~
 --           [ (\"x\", doubleSchema)
 --           , (\"y\", doubleSchema)
@@ -294,20 +294,20 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
 -- | Default schema for binary data (any sequence of octets).
 binarySchema :: Schema
 binarySchema = mempty
-  & type_ .~ SwaggerString
+  & type_ ?~ SwaggerString
   & format ?~ "binary"
 
 -- | Default schema for binary data (base64 encoded).
 byteSchema :: Schema
 byteSchema = mempty
-  & type_ .~ SwaggerString
+  & type_ ?~ SwaggerString
   & format ?~ "byte"
 
 -- | Default schema for password string.
 -- @"password"@ format is used to hint UIs the input needs to be obscured.
 passwordSchema :: Schema
 passwordSchema = mempty
-  & type_ .~ SwaggerString
+  & type_ ?~ SwaggerString
   & format ?~ "password"
 
 -- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
@@ -333,12 +333,12 @@ sketchSchema = sketch . toJSON
     sketch js@(Bool _) = go js
     sketch js = go js & example ?~ js
 
-    go Null       = mempty & type_ .~ SwaggerNull
-    go (Bool _)   = mempty & type_ .~ SwaggerBoolean
-    go (String _) = mempty & type_   .~ SwaggerString
-    go (Number _) = mempty & type_ .~ SwaggerNumber
+    go Null       = mempty & type_ ?~ SwaggerNull
+    go (Bool _)   = mempty & type_ ?~ SwaggerBoolean
+    go (String _) = mempty & type_ ?~ SwaggerString
+    go (Number _) = mempty & type_ ?~ SwaggerNumber
     go (Array xs) = mempty
-      & type_   .~ SwaggerArray
+      & type_   ?~ SwaggerArray
       & items ?~ case ischema of
           Just s -> SwaggerItemsObject (Inline s)
           _      -> SwaggerItemsArray (map Inline ys)
@@ -350,7 +350,7 @@ sketchSchema = sketch . toJSON
           (z:_) | allSame -> Just z
           _               -> Nothing
     go (Object o) = mempty
-      & type_         .~ SwaggerObject
+      & type_         ?~ SwaggerObject
       & required      .~ HashMap.keys o
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
 
@@ -373,24 +373,24 @@ sketchSchema = sketch . toJSON
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
-    go Null       = mempty & type_ .~ SwaggerNull
+    go Null       = mempty & type_ ?~ SwaggerNull
     go js@(Bool _) = mempty
-      & type_ .~ SwaggerBoolean
+      & type_ ?~ SwaggerBoolean
       & enum_ ?~ [js]
     go js@(String s) = mempty
-      & type_ .~ SwaggerString
+      & type_ ?~ SwaggerString
       & maxLength ?~ fromIntegral (T.length s)
       & minLength ?~ fromIntegral (T.length s)
       & pattern   ?~ s
       & enum_     ?~ [js]
     go js@(Number n) = mempty
-      & type_       .~ SwaggerNumber
+      & type_       ?~ SwaggerNumber
       & maximum_    ?~ n
       & minimum_    ?~ n
       & multipleOf  ?~ n
       & enum_       ?~ [js]
     go js@(Array xs) = mempty
-      & type_       .~ SwaggerArray
+      & type_       ?~ SwaggerArray
       & maxItems    ?~ fromIntegral sz
       & minItems    ?~ fromIntegral sz
       & items       ?~ SwaggerItemsArray (map (Inline . go) (V.toList xs))
@@ -400,7 +400,7 @@ sketchStrictSchema = go . toJSON
         sz = length xs
         allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
     go js@(Object o) = mempty
-      & type_         .~ SwaggerObject
+      & type_         ?~ SwaggerObject
       & required      .~ names
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
       & maxProperties ?~ fromIntegral (length names)
@@ -416,7 +416,7 @@ instance OVERLAPPABLE_ ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
-      & type_ .~ SwaggerArray
+      & type_ ?~ SwaggerArray
       & items ?~ SwaggerItemsObject ref
 
 instance OVERLAPPING_ ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
@@ -466,7 +466,7 @@ instance (ToSchema a, ToSchema b, ToSchema c, ToSchema d, ToSchema e, ToSchema f
 
 timeSchema :: T.Text -> Schema
 timeSchema fmt = mempty
-  & type_ .~ SwaggerString
+  & type_ ?~ SwaggerString
   & format ?~ fmt
 
 -- | Format @"date"@ corresponds to @yyyy-mm-dd@ format.
@@ -528,7 +528,7 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
       declareObjectMapSchema = do
         schema <- declareSchemaRef (Proxy :: Proxy v)
         return $ unnamed $ mempty
-          & type_ .~ SwaggerObject
+          & type_ ?~ SwaggerObject
           & additionalProperties ?~ AdditionalPropertiesSchema schema
 
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
@@ -540,7 +540,7 @@ instance ToSchema a => ToSchema (Map String a) where
   declareNamedSchema _ = do
     schema <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
-      & type_ .~ SwaggerObject
+      & type_ ?~ SwaggerObject
       & additionalProperties ?~ schema
 
 instance ToSchema a => ToSchema (Map T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
@@ -554,7 +554,7 @@ instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ =
 
 instance OVERLAPPING_ ToSchema Object where
   declareNamedSchema _ = pure $ NamedSchema (Just "Object") $ mempty
-    & type_ .~ SwaggerObject
+    & type_ ?~ SwaggerObject
     & description ?~ "Arbitrary JSON object."
     & additionalProperties ?~ AdditionalPropertiesAllowed True
 
@@ -595,7 +595,7 @@ instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declar
 -- "{\"maximum\":32767,\"minimum\":-32768,\"type\":\"integer\"}"
 toSchemaBoundedIntegral :: forall a proxy. (Bounded a, Integral a) => proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
-  & type_ .~ SwaggerInteger
+  & type_ ?~ SwaggerInteger
   & minimum_ ?~ fromInteger (toInteger (minBound :: a))
   & maximum_ ?~ fromInteger (toInteger (maxBound :: a))
 
@@ -641,7 +641,7 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
       let allKeys   = [minBound..maxBound :: key]
           mkPair k  =  (keyToText k, valueRef)
       return $ mempty
-        & type_ .~ SwaggerObject
+        & type_ ?~ SwaggerObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
 
 -- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.
@@ -716,7 +716,7 @@ paramSchemaToSchema _ = mempty & paramSchema .~ toParamSchema (Proxy :: Proxy a)
 
 nullarySchema :: Schema
 nullarySchema = mempty
-  & type_ .~ SwaggerArray
+  & type_ ?~ SwaggerArray
   & items ?~ SwaggerItemsArray []
 
 gtoNamedSchema :: GToSchema f => SchemaOptions -> proxy f -> NamedSchema
@@ -787,12 +787,12 @@ withFieldSchema opts _ isRequiredField schema = do
   return $
     if T.null fname
       then schema
-        & type_ .~ SwaggerArray
+        & type_ ?~ SwaggerArray
         & items %~ appendItem ref
         & maxItems %~ Just . maybe 1 (+1)   -- increment maxItems
         & minItems %~ Just . maybe 1 (+1)   -- increment minItems
       else schema
-        & type_ .~ SwaggerObject
+        & type_ ?~ SwaggerObject
         & properties . at fname ?~ ref
         & if isRequiredField
             then required %~ (++ [fname])
@@ -829,7 +829,7 @@ gdeclareNamedSumSchema opts proxy s
     (sumSchema, All allNullary) = undeclare (runWriterT declareSumSchema)
 
     toStringTag schema = mempty
-      & type_ .~ SwaggerString
+      & type_ ?~ SwaggerString
       & enum_ ?~ map toJSON  (schema ^.. properties.ifolded.asIndex)
 
 type AllNullary = All
@@ -843,7 +843,7 @@ instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
 gsumConToSchemaWith :: forall c f proxy. (GToSchema (C1 c f), Constructor c) =>
   Referenced Schema -> SchemaOptions -> proxy (C1 c f) -> Schema -> Schema
 gsumConToSchemaWith ref opts _ schema = schema
-  & type_ .~ SwaggerObject
+  & type_ ?~ SwaggerObject
   & properties . at tag ?~ ref
   & maxProperties ?~ 1
   & minProperties ?~ 1

@@ -332,22 +332,35 @@ validateEnum value = do
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
   case (sch ^. type_, value) of
-    (SwaggerNull,    Null)       -> valid
-    (SwaggerBoolean, Bool _)     -> valid
-    (SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
-    (SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
-    (SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
-    (SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
-    (SwaggerObject,  Object o)   -> validateObject o
+    (Just SwaggerNull,    Null)       -> valid
+    (Just SwaggerBoolean, Bool _)     -> valid
+    (Just SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
+    (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
+    (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
+    (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
+    (Just SwaggerObject,  Object o)   -> validateObject o
+    (Nothing, Null)                   -> valid
+    (Nothing, Bool _)                 -> valid
+    -- Number by default
+    (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
+    (Nothing, String s)               -> sub_ paramSchema (validateString s)
+    (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
+    (Nothing, Object o)               -> validateObject o
     (t, _) -> invalid $ "expected JSON value of type " ++ show t
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
   case (sch ^. type_, value) of
-    (SwaggerBoolean, Bool _)     -> valid
-    (SwaggerInteger, Number n)   -> validateInteger n
-    (SwaggerNumber,  Number n)   -> validateNumber n
-    (SwaggerString,  String s)   -> validateString s
-    (SwaggerArray,   Array xs)   -> validateArray xs
+    (Just SwaggerBoolean, Bool _)     -> valid
+    (Just SwaggerInteger, Number n)   -> validateInteger n
+    (Just SwaggerNumber,  Number n)   -> validateNumber n
+    (Just SwaggerString,  String s)   -> validateString s
+    (Just SwaggerArray,   Array xs)   -> validateArray xs
+    (Nothing, Null)                   -> valid
+    (Nothing, Bool _)                 -> valid
+    -- Number by default
+    (Nothing, Number n)               -> validateNumber n
+    (Nothing, String s)               -> validateString s
+    (Nothing, Array xs)               -> validateArray xs
     (t, _) -> invalid $ "expected JSON value of type " ++ show t
 

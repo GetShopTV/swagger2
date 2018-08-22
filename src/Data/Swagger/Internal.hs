@@ -589,7 +589,7 @@ data ParamSchema (t :: SwaggerKind *) = ParamSchema
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _paramSchemaDefault :: Maybe Value
 
-  , _paramSchemaType :: SwaggerType t
+  , _paramSchemaType :: Maybe (SwaggerType t)
   , _paramSchemaFormat :: Maybe Format
   , _paramSchemaItems :: Maybe (SwaggerItems t)
   , _paramSchemaMaximum :: Maybe Scientific
@@ -606,7 +606,7 @@ data ParamSchema (t :: SwaggerKind *) = ParamSchema
   , _paramSchemaMultipleOf :: Maybe Scientific
   } deriving (Eq, Show, Generic, Typeable)
 
-deriving instance (Typeable k, Data (SwaggerType k), Data (SwaggerItems k)) => Data (ParamSchema k)
+deriving instance (Typeable k, Data (Maybe (SwaggerType k)), Data (SwaggerItems k)) => Data (ParamSchema k)
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
