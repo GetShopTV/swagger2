@@ -335,7 +335,7 @@ sketchSchema = sketch . toJSON
 
     go Null       = mempty & type_ ?~ SwaggerNull
     go (Bool _)   = mempty & type_ ?~ SwaggerBoolean
-    go (String _) = mempty & type_   ?~ SwaggerString
+    go (String _) = mempty & type_ ?~ SwaggerString
     go (Number _) = mempty & type_ ?~ SwaggerNumber
     go (Array xs) = mempty
       & type_   ?~ SwaggerArray

@@ -382,45 +382,44 @@ inferParamSchemaTypes sch = concat
 
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
-  case sch ^. type_ of
-    Just explicitType -> validateSchemaTypeAs explicitType value
-    Nothing ->
-      case inferSchemaTypes sch of
-        [t] -> validateSchemaTypeAs t value
-        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
-        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
-
-validateSchemaTypeAs
-  :: SwaggerType 'SwaggerKindSchema -> Value -> Validation Schema ()
-validateSchemaTypeAs t value =
-  case (t, value) of
-    (SwaggerNull,    Null)       -> valid
-    (SwaggerBoolean, Bool _)     -> valid
-    (SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
-    (SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
-    (SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
-    (SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
-    (SwaggerObject,  Object o)   -> validateObject o
-    _ -> invalid $ "expected JSON value of type " ++ show t
+  case (sch ^. type_, value) of
+    (Just SwaggerNull,    Null)       -> valid
+    (Just SwaggerBoolean, Bool _)     -> valid
+    (Just SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
+    (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
+    (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
+    (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
+    (Just SwaggerObject,  Object o)   -> validateObject o
+    (Nothing, Null)                   -> valid
+    (Nothing, Bool _)                 -> valid
+    -- Number by default
+    (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
+    (Nothing, String s)               -> sub_ paramSchema (validateString s)
+    (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
+    (Nothing, Object o)               -> validateObject o
+    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
-  case sch ^. type_ of
-    Just explicitType -> validateParamSchemaTypeAs explicitType value
-    Nothing ->
-      case inferParamSchemaTypes sch of
-        [t] -> validateParamSchemaTypeAs t value
-        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
-        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
+  case (sch ^. type_, value) of
+    (Just SwaggerBoolean, Bool _)     -> valid
+    (Just SwaggerInteger, Number n)   -> validateInteger n
+    (Just SwaggerNumber,  Number n)   -> validateNumber n
+    (Just SwaggerString,  String s)   -> validateString s
+    (Just SwaggerArray,   Array xs)   -> validateArray xs
+    (Nothing, Bool _)                 -> valid
+    -- Number by default
+    (Nothing, Number n)               -> validateNumber n
+    (Nothing, String s)               -> validateString s
+    (Nothing, Array xs)               -> validateArray xs
+    (t, _) -> invalid $ "expected JSON value of type " ++ show t
+    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
 
-validateParamSchemaTypeAs
-  :: SwaggerType t -> Value -> Validation (ParamSchema t) ()
-validateParamSchemaTypeAs t value =
-  case (t, value) of
-    (SwaggerBoolean, Bool _)     -> valid
-    (SwaggerInteger, Number n)   -> validateInteger n
-    (SwaggerNumber,  Number n)   -> validateNumber n
-    (SwaggerString,  String s)   -> validateString s
-    (SwaggerArray,   Array xs)   -> validateArray xs
-    _ -> invalid $ "expected JSON value of type " ++ show t
-
+showType :: (Maybe (SwaggerType t), Value) -> String
+showType (Just type_, _)     = show type_
+showType (Nothing, Null)     = "SwaggerNull"
+showType (Nothing, Bool _)   = "SwaggerBoolean"
+showType (Nothing, Number _) = "SwaggerNumber"
+showType (Nothing, String _) = "SwaggerString"
+showType (Nothing, Array _)  = "SwaggerArray"
+showType (Nothing, Object _) = "SwaggerObject"
