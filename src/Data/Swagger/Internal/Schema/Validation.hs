@@ -1,15 +1,16 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PackageImports             #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE UndecidableInstances       #-}
 -- |
 -- Module:      Data.Swagger.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
@@ -20,28 +21,29 @@
 -- Validate JSON values with Swagger Schema.
 module Data.Swagger.Internal.Schema.Validation where
 
-import Control.Applicative
-import Control.Lens
-import Control.Monad (when)
+import           Control.Applicative
+import           Control.Lens
+import           Control.Monad                       (when)
 
-import Data.Aeson hiding (Result)
-import Data.Foldable (traverse_, for_, sequenceA_)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
+import           Data.Aeson                          hiding (Result)
+import           Data.Foldable                       (for_, sequenceA_,
+                                                      traverse_)
+import           Data.HashMap.Strict                 (HashMap)
+import qualified Data.HashMap.Strict                 as HashMap
+import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
-import Data.Monoid
-import Data.Proxy
-import Data.Scientific (Scientific, isInteger)
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
+import           Data.Monoid
+import           Data.Proxy
+import           Data.Scientific                     (Scientific, isInteger)
+import           Data.Text                           (Text)
+import qualified Data.Text                           as Text
+import           Data.Vector                         (Vector)
+import qualified Data.Vector                         as Vector
 
-import Data.Swagger.Declare
-import Data.Swagger.Internal
-import Data.Swagger.Internal.Schema
-import Data.Swagger.Lens
+import           Data.Swagger.Declare
+import           Data.Swagger.Internal
+import           Data.Swagger.Internal.Schema
+import           Data.Swagger.Lens
 
 -- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value.
 -- This can be used with QuickCheck to ensure those instances are coherent:
@@ -328,6 +330,42 @@ validateEnum value = do
   check enum_ $ \xs ->
     when (value `notElem` xs) $
       invalid ("expected one of " ++ show (encode xs) ++ " but got " ++ show value)
+
+-- | Infer schema type based on used properties.
+--
+-- >>> inferSchemaTypes <$> decode "{\"minLength\": 2}"
+-- Just [SwaggerString]
+inferSchemaTypes :: Schema -> [SwaggerType 'SwaggerKindSchema]
+inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
+  [ SwaggerObject | any ($ sch)
+       [ has (additionalProperties._Just)
+       , has (maxProperties._Just)
+       , has (minProperties._Just)
+       , has (properties.folded)
+       , has (required.folded) ] ]
+
+-- | Infer schema type based on used properties.
+--
+-- >>> inferSchemaTypes <$> decode "{\"minLength\": 2}"
+-- Just [SwaggerString]
+inferParamSchemaTypes :: ParamSchema t -> [SwaggerType t]
+inferParamSchemaTypes sch = concat
+  [ [ SwaggerArray | any ($ sch)
+        [ has (items._Just)
+        , has (maxItems._Just)
+        , has (minItems._Just)
+        , has (uniqueItems._Just) ] ]
+  , [ SwaggerInteger | any ($ sch)
+        [ has (exclusiveMaximum._Just)
+        , has (exclusiveMinimum._Just)
+        , has (maximum_._Just)
+        , has (minimum_._Just)
+        , has (multipleOf._Just) ] ]
+  , [ SwaggerString | any ($ sch)
+        [ has (maxLength._Just)
+        , has (minLength._Just)
+        , has (pattern._Just) ] ]
+  ]
 
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
