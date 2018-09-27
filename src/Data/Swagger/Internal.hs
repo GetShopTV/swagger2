@@ -65,6 +65,9 @@ import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToEncoding)
 #define DEFINE_TOENCODING
 #endif
 
+-- $setup
+-- >>> import Data.Aeson
+
 -- | A list of definitions that can be used in references.
 type Definitions = InsOrdHashMap Text
 
@@ -1050,11 +1053,21 @@ instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
   DEFINE_TOENCODING
 
+-- | As for nullary schema for 0-arity type constructors, see
+-- <https://github.com/GetShopTV/swagger2/issues/167>.
+--
+-- >>> encode (SwaggerItemsArray [])
+-- "{\"example\":[],\"items\":{},\"maxItems\":0}"
+--
 instance ToJSON (ParamSchema t) => ToJSON (SwaggerItems t) where
   toJSON (SwaggerItemsPrimitive fmt schema) = object
     [ "collectionFormat" .= fmt
     , "items"            .= schema ]
   toJSON (SwaggerItemsObject x) = object [ "items" .= x ]
+  toJSON (SwaggerItemsArray  []) = object
+    [ "items" .= object []
+    , "maxItems" .= (0 :: Int)
+    , "example" .= ([] :: [()]) ]
   toJSON (SwaggerItemsArray  x) = object [ "items" .= x ]
 
 instance ToJSON Host where
@@ -1171,7 +1184,13 @@ instance FromJSON SecurityScheme where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Schema where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON = fmap nullaryCleanup . sopSwaggerGenericParseJSON
+    where nullaryCleanup :: Schema -> Schema
+          nullaryCleanup s@Schema{_schemaParamSchema=ps} =
+            if _paramSchemaItems ps == Just (SwaggerItemsArray [])
+              then s { _schemaExample = Nothing
+                     , _schemaParamSchema = ps { _paramSchemaMaxItems = Nothing } }
+              else s
 
 instance FromJSON Header where
   parseJSON = sopSwaggerGenericParseJSON
@@ -1187,6 +1206,7 @@ instance FromJSON (SwaggerItems 'SwaggerKindParamOtherSchema) where
     <*> ((o .: "items" >>= parseJSON) <|> fail ("foo" ++ show o))
 
 instance FromJSON (SwaggerItems 'SwaggerKindSchema) where
+  parseJSON js | js == object [] = pure $ SwaggerItemsArray [] -- Nullary schema.
   parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
   parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
   parseJSON _ = empty
