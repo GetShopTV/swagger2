@@ -10,7 +10,7 @@ import Prelude.Compat
 import Control.Lens ((^.))
 import Data.Aeson (Value, ToJSON(..), ToJSONKey(..))
 import Data.Aeson.Types (toJSONKeyText)
-import Data.Aeson.QQ
+import Data.Aeson.QQ.Simple
 import Data.Char
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Proxy

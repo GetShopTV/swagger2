@@ -10,7 +10,7 @@ import Prelude.Compat
 import Control.Lens
 
 import Data.Aeson
-import Data.Aeson.QQ
+import Data.Aeson.QQ.Simple
 import Data.HashMap.Strict (HashMap)
 import qualified Data.Set as Set
 import Data.Text (Text)
