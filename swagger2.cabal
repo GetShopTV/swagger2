@@ -1,6 +1,7 @@
 cabal-version:       >=1.10
 name:                swagger2
 version:             2.3.0.1
+x-revision:          1
 
 synopsis:            Swagger 2.0 data model
 category:            Web, Swagger
@@ -28,7 +29,7 @@ tested-with:
    || ==7.10.3
    || ==8.0.2
    || ==8.2.2
-   || ==8.4.3
+   || ==8.4.4
    || ==8.6.1
 
 custom-setup
@@ -79,7 +80,7 @@ library
     , http-media                >=0.7.1.2  && <0.8
     , insert-ordered-containers >=0.2.1.0  && <0.3
     , lens                      >=4.16.1   && <4.18
-    , network                   >=2.6.3.5  && <2.8
+    , network                   >=2.6.3.5  && <2.9
     , scientific                >=0.3.6.2  && <0.4
     , transformers-compat       >=0.3      && <0.7
     , unordered-containers      >=0.2.9.0  && <0.3
@@ -116,7 +117,7 @@ test-suite spec
   build-depends:
       hspec                >=2.5.5   && <2.6
     , HUnit                >=1.6.0.0 && <1.7
-    , QuickCheck           >=2.11.3  && <2.12
+    , QuickCheck           >=2.11.3  && <2.13
     , quickcheck-instances >=0.3.19  && <0.14
     , utf8-string          >=1.0.1.1 && <1.1
 
