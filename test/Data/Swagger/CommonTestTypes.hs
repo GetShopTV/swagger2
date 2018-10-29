@@ -8,7 +8,7 @@ import           Prelude               ()
 import           Prelude.Compat
 
 import           Data.Aeson            (ToJSON (..), ToJSONKey (..), Value)
-import           Data.Aeson.QQ
+import           Data.Aeson.QQ.Simple
 import           Data.Aeson.Types      (toJSONKeyText)
 import           Data.Char
 import           Data.Map              (Map)

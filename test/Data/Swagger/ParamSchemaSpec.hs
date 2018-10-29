@@ -6,7 +6,7 @@
 module Data.Swagger.ParamSchemaSpec where
 
 import Data.Aeson (Value)
-import Data.Aeson.QQ
+import Data.Aeson.QQ.Simple
 import Data.Char
 import Data.Proxy
 import GHC.Generics
