@@ -43,6 +43,7 @@ import Data.Version (Version)
 import Numeric.Natural.Compat (Natural)
 import Data.Word
 import Data.UUID.Types (UUID)
+import Web.Cookie (SetCookie)
 
 import Data.Swagger.Internal
 import Data.Swagger.Lens
@@ -223,6 +224,11 @@ instance ToParamSchema Version where
   toParamSchema _ = mempty
     & type_ .~ SwaggerString
     & pattern ?~ "^\\d+(\\.\\d+)*$"
+
+instance ToParamSchema SetCookie where
+  toParamSchema _ = mempty
+    & type_ .~ SwaggerString
+
 
 #if __GLASGOW_HASKELL__ < 800
 #else
