@@ -6,7 +6,7 @@ x-revision:          2
 synopsis:            Swagger 2.0 data model
 category:            Web, Swagger
 description:
-  This library is inteded to be used for decoding and encoding Swagger 2.0 API
+  This library is intended to be used for decoding and encoding Swagger 2.0 API
   specifications as well as manipulating them.
   .
   The original Swagger 2.0 specification is available at http://swagger.io/specification/.
@@ -119,7 +119,7 @@ test-suite spec
 
   -- test-suite only dependencies
   build-depends:
-      hspec                >=2.5.5   && <2.6
+      hspec                >=2.5.5   && <2.7.0
     , HUnit                >=1.6.0.0 && <1.7
     , QuickCheck           >=2.11.3  && <2.13
     , quickcheck-instances >=0.3.19  && <0.14
@@ -127,7 +127,7 @@ test-suite spec
 
   -- https://github.com/haskell/cabal/issues/3708
   build-tool-depends:
-    hspec-discover:hspec-discover >=2.5.5 && <2.6
+    hspec-discover:hspec-discover >=2.5.5 && <2.7
 
   other-modules:
     SpecCommon
