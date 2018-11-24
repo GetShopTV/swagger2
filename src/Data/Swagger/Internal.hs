@@ -66,6 +66,7 @@ import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToEncoding)
 #endif
 
 -- $setup
+-- >>> :seti -XDataKinds
 -- >>> import Data.Aeson
 
 -- | A list of definitions that can be used in references.
@@ -1067,7 +1068,8 @@ instance ToJSON (ParamSchema t) => ToJSON (SwaggerItems t) where
   toJSON (SwaggerItemsArray  []) = object
     [ "items" .= object []
     , "maxItems" .= (0 :: Int)
-    , "example" .= ([] :: [()]) ]
+    , "example" .= Array mempty
+    ]
   toJSON (SwaggerItemsArray  x) = object [ "items" .= x ]
 
 instance ToJSON Host where
@@ -1205,9 +1207,21 @@ instance FromJSON (SwaggerItems 'SwaggerKindParamOtherSchema) where
     <$> o .:? "collectionFormat"
     <*> ((o .: "items" >>= parseJSON) <|> fail ("foo" ++ show o))
 
+-- |
+--
+-- >>> decode "{}" :: Maybe (SwaggerItems 'SwaggerKindSchema)
+-- Just (SwaggerItemsArray [])
+--
+-- >>> eitherDecode "{\"$ref\":\"#/definitions/example\"}" :: Either String (SwaggerItems 'SwaggerKindSchema)
+-- Right (SwaggerItemsObject (Ref (Reference {getReference = "example"})))
+--
+-- >>> eitherDecode "[{\"$ref\":\"#/definitions/example\"}]" :: Either String (SwaggerItems 'SwaggerKindSchema)
+-- Right (SwaggerItemsArray [Ref (Reference {getReference = "example"})])
+--
 instance FromJSON (SwaggerItems 'SwaggerKindSchema) where
-  parseJSON js | js == object [] = pure $ SwaggerItemsArray [] -- Nullary schema.
-  parseJSON js@(Object _) = SwaggerItemsObject <$> parseJSON js
+  parseJSON js@(Object obj)
+      | null obj  = pure $ SwaggerItemsArray [] -- Nullary schema.
+      | otherwise = SwaggerItemsObject <$> parseJSON js
   parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
   parseJSON _ = empty
 
