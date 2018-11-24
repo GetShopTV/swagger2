@@ -552,7 +552,7 @@ lightSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "NoLight": { "type": "array", "items": [] },
+      "NoLight": { "type": "array", "items": {}, "maxItems": 0, "example": [] },
       "LightFreq": { "type": "number", "format": "double" },
       "LightColor": { "$ref": "#/definitions/Color" },
       "LightWaveLength": { "type": "number", "format": "double" }
@@ -568,7 +568,7 @@ lightInlinedSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "NoLight": { "type": "array", "items": [] },
+      "NoLight": { "type": "array", "items": {}, "maxItems": 0, "example": [] },
       "LightFreq": { "type": "number", "format": "double" },
       "LightColor":
         {
