@@ -1,7 +1,6 @@
 cabal-version:       >=1.10
 name:                swagger2
-version:             2.3.0.1
-x-revision:          2
+version:             2.3.1
 
 synopsis:            Swagger 2.0 data model
 category:            Web, Swagger

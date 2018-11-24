@@ -1,3 +1,13 @@
+2.3.1
+-----
+
+- Add a quickcheck generator for aeson Values that match a swagger schema
+  (see [#162](https://github.com/GetShopTV/swagger2/pull/162))
+- Add `ToParamSchema` instance for `SetCookie`
+  (see [#173](https://github.com/GetShopTV/swagger2/pull/173))
+- Make nullary schemas valid
+  (see [#168](https://github.com/GetShopTV/swagger2/pull/168))
+
 2.3.0.1
 -------
 
