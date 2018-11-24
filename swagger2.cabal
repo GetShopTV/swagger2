@@ -30,11 +30,11 @@ tested-with:
    || ==8.0.2
    || ==8.2.2
    || ==8.4.4
-   || ==8.6.1
+   || ==8.6.2
 
 custom-setup
   setup-depends:
-    base, Cabal, cabal-doctest >=1.0.2 && <1.1
+    base, Cabal, cabal-doctest >=1.0.6 && <1.1
 
 library
   hs-source-dirs:      src
