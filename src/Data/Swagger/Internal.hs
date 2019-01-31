@@ -40,7 +40,7 @@ import           Data.String              (IsString(..))
 import           Data.Text                (Text)
 import qualified Data.Text                as Text
 import           GHC.Generics             (Generic)
-import           Network                  (HostName, PortNumber)
+import           Network.Socket           (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
 import           Text.Read                (readMaybe)
 
