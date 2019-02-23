@@ -142,14 +142,14 @@ class ToSchema a where
   -- together with all used definitions.
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
-  declareNamedSchema :: proxy a -> Declare (Definitions Schema) NamedSchema
+  declareNamedSchema :: Proxy a -> Declare (Definitions Schema) NamedSchema
   default declareNamedSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
-    proxy a -> Declare (Definitions Schema) NamedSchema
+    Proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
 -- | Convert a type into a schema and declare all used schema definitions.
-declareSchema :: ToSchema a => proxy a -> Declare (Definitions Schema) Schema
-declareSchema = fmap _namedSchemaSchema . declareNamedSchema
+declareSchema :: forall a proxy. ToSchema a => proxy a -> Declare (Definitions Schema) Schema
+declareSchema _ = fmap _namedSchemaSchema $ declareNamedSchema (Proxy :: Proxy a)
 
 -- | Convert a type into an optionally named schema.
 --
@@ -162,8 +162,8 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 -- Just "Day"
 -- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
 -- "{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}"
-toNamedSchema :: ToSchema a => proxy a -> NamedSchema
-toNamedSchema = undeclare . declareNamedSchema
+toNamedSchema :: forall a proxy. ToSchema a => proxy a -> NamedSchema
+toNamedSchema _ = undeclare $ declareNamedSchema (Proxy :: Proxy a)
 
 -- | Get type's schema name according to its @'ToSchema'@ instance.
 --
@@ -203,7 +203,7 @@ toSchemaRef = undeclare . declareSchemaRef
 -- Schema definitions are typically declared for every referenced schema.
 -- If @'declareSchemaRef'@ returns a reference, a corresponding schema
 -- will be declared (regardless of whether it is recusive or not).
-declareSchemaRef :: ToSchema a => proxy a -> Declare (Definitions Schema) (Referenced Schema)
+declareSchemaRef :: forall a proxy. ToSchema a => proxy a -> Declare (Definitions Schema) (Referenced Schema)
 declareSchemaRef proxy = do
   case toNamedSchema proxy of
     NamedSchema (Just name) schema -> do
@@ -218,7 +218,7 @@ declareSchemaRef proxy = do
       known <- looks (InsOrdHashMap.member name)
       when (not known) $ do
         declare [(name, schema)]
-        void $ declareNamedSchema proxy
+        void $ declareNamedSchema (Proxy :: Proxy a)
       return $ Ref (Reference name)
     _ -> Inline <$> declareSchema proxy
 
