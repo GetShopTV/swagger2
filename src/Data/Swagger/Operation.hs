@@ -37,6 +37,7 @@ import Control.Lens
 import Data.Data.Lens
 import Data.List.Compat
 import Data.Maybe (mapMaybe)
+import Data.Proxy
 import qualified Data.Set as Set
 
 import Data.Swagger.Declare
@@ -118,7 +119,7 @@ applyTagsFor ops ts swag = swag
 --
 -- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
 -- "[{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
-declareResponse :: ToSchema a => proxy a -> Declare (Definitions Schema) Response
+declareResponse :: ToSchema a => Proxy a -> Declare (Definitions Schema) Response
 declareResponse proxy = do
   s <- declareSchemaRef proxy
   return (mempty & schema ?~ s)
@@ -189,4 +190,3 @@ setResponseForWith ops f code dres swag = swag
       Nothing  -> new -- response name can't be dereferenced, replacing with new response
     combine (Just (Inline old)) = f old new
     combine Nothing = new
-
