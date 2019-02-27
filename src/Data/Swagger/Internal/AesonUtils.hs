@@ -67,10 +67,10 @@ mkSwaggerAesonOptions pfx = SwaggerAesonOptions pfx [] Nothing
 makeLenses ''SwaggerAesonOptions
 
 class (Generic a, All2 AesonDefaultValue (Code a)) => HasSwaggerAesonOptions a where
-    swaggerAesonOptions :: proxy a -> SwaggerAesonOptions
+    swaggerAesonOptions :: Proxy a -> SwaggerAesonOptions
 
     -- So far we use only default definitions
-    aesonDefaults :: proxy a -> POP Maybe (Code a)
+    aesonDefaults :: Proxy a -> POP Maybe (Code a)
     aesonDefaults _ = hcpure (Proxy :: Proxy AesonDefaultValue) defaultValue
 
 -------------------------------------------------------------------------------
