@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wall                  #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -33,7 +32,6 @@ import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
 import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import           Data.List                           (intercalate)
 import           Data.Monoid
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
@@ -324,8 +322,8 @@ validateObject o = withSchema $ \sch ->
     validateAdditional _ v (AdditionalPropertiesSchema s) = validateWithSchemaRef s v
 
     unknownProperty :: Text -> Validation s a
-    unknownProperty pname = invalid $
-      "property " <> show pname <> " is found in JSON value, but it is not mentioned in Swagger schema"
+    unknownProperty name = invalid $
+      "property " <> show name <> " is found in JSON value, but it is not mentioned in Swagger schema"
 
 validateEnum :: Value -> Validation (ParamSchema t) ()
 validateEnum value = do
@@ -335,10 +333,8 @@ validateEnum value = do
 
 -- | Infer schema type based on used properties.
 --
--- This is like 'inferParamSchemaTypes', but also works for objects:
---
--- >>> inferSchemaTypes <$> decode "{\"minProperties\": 1}"
--- Just [SwaggerObject]
+-- >>> inferSchemaTypes <$> decode "{\"minLength\": 2}"
+-- Just [SwaggerString]
 inferSchemaTypes :: Schema -> [SwaggerType 'SwaggerKindSchema]
 inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
   [ SwaggerObject | any ($ sch)
@@ -352,15 +348,6 @@ inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
 --
 -- >>> inferSchemaTypes <$> decode "{\"minLength\": 2}"
 -- Just [SwaggerString]
---
--- >>> inferSchemaTypes <$> decode "{\"maxItems\": 0}"
--- Just [SwaggerArray]
---
--- From numeric properties 'SwaggerInteger' type is inferred.
--- If you want 'SwaggerNumber' instead, you must specify it explicitly.
---
--- >>> inferSchemaTypes <$> decode "{\"minimum\": 1}"
--- Just [SwaggerInteger]
 inferParamSchemaTypes :: ParamSchema t -> [SwaggerType t]
 inferParamSchemaTypes sch = concat
   [ [ SwaggerArray | any ($ sch)
@@ -382,18 +369,7 @@ inferParamSchemaTypes sch = concat
 
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
-  case sch ^. type_ of
-    Just explicitType -> validateSchemaTypeAs explicitType value
-    Nothing ->
-      case inferSchemaTypes sch of
-        [t] -> validateSchemaTypeAs t value
-        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
-        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
-
-validateSchemaTypeAs
-  :: SwaggerType 'SwaggerKindSchema -> Value -> Validation Schema ()
-validateSchemaTypeAs t value =
-  case (t, value) of
+  case (sch ^. type_, value) of
     (SwaggerNull,    Null)       -> valid
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
@@ -401,26 +377,15 @@ validateSchemaTypeAs t value =
     (SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
     (SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
     (SwaggerObject,  Object o)   -> validateObject o
-    _ -> invalid $ "expected JSON value of type " ++ show t
+    (t, _) -> invalid $ "expected JSON value of type " ++ show t
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
-  case sch ^. type_ of
-    Just explicitType -> validateParamSchemaTypeAs explicitType value
-    Nothing ->
-      case inferParamSchemaTypes sch of
-        [t] -> validateParamSchemaTypeAs t value
-        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
-        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
-
-validateParamSchemaTypeAs
-  :: SwaggerType t -> Value -> Validation (ParamSchema t) ()
-validateParamSchemaTypeAs t value =
-  case (t, value) of
+  case (sch ^. type_, value) of
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> validateInteger n
     (SwaggerNumber,  Number n)   -> validateNumber n
     (SwaggerString,  String s)   -> validateString s
     (SwaggerArray,   Array xs)   -> validateArray xs
-    _ -> invalid $ "expected JSON value of type " ++ show t
+    (t, _) -> invalid $ "expected JSON value of type " ++ show t
 

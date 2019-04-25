@@ -158,7 +158,7 @@ operationExample = mempty
     stringSchema :: ParamLocation -> ParamOtherSchema
     stringSchema loc = mempty
       & in_ .~ loc
-      & type_ ?~ SwaggerString
+      & type_ .~ SwaggerString
 
 operationExampleJSON :: Value
 operationExampleJSON = [aesonQQ|
@@ -224,7 +224,7 @@ operationExampleJSON = [aesonQQ|
 
 schemaPrimitiveExample :: Schema
 schemaPrimitiveExample = mempty
-  & type_  ?~ SwaggerString
+  & type_  .~ SwaggerString
   & format ?~ "email"
 
 schemaPrimitiveExampleJSON :: Value
@@ -237,14 +237,14 @@ schemaPrimitiveExampleJSON = [aesonQQ|
 
 schemaSimpleModelExample :: Schema
 schemaSimpleModelExample = mempty
-  & type_ ?~ SwaggerObject
+  & type_ .~ SwaggerObject
   & required .~ [ "name" ]
   & properties .~
-      [ ("name", Inline (mempty & type_ ?~ SwaggerString))
+      [ ("name", Inline (mempty & type_ .~ SwaggerString))
       , ("address", Ref (Reference "Address"))
       , ("age", Inline $ mempty
             & minimum_ ?~ 0
-            & type_    ?~ SwaggerInteger
+            & type_    .~ SwaggerInteger
             & format   ?~ "int32" ) ]
 
 schemaSimpleModelExampleJSON :: Value
@@ -272,8 +272,8 @@ schemaSimpleModelExampleJSON = [aesonQQ|
 
 schemaModelDictExample :: Schema
 schemaModelDictExample = mempty
-  & type_ ?~ SwaggerObject
-  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ ?~ SwaggerString))
+  & type_ .~ SwaggerObject
+  & additionalProperties ?~ AdditionalPropertiesSchema (Inline (mempty & type_ .~ SwaggerString))
 
 schemaModelDictExampleJSON :: Value
 schemaModelDictExampleJSON = [aesonQQ|
@@ -287,7 +287,7 @@ schemaModelDictExampleJSON = [aesonQQ|
 
 schemaAdditionalExample :: Schema
 schemaAdditionalExample = mempty
-  & type_ ?~ SwaggerObject
+  & type_ .~ SwaggerObject
   & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 schemaAdditionalExampleJSON :: Value
@@ -300,13 +300,13 @@ schemaAdditionalExampleJSON = [aesonQQ|
 
 schemaWithExampleExample :: Schema
 schemaWithExampleExample = mempty
-  & type_ ?~ SwaggerObject
+  & type_ .~ SwaggerObject
   & properties .~
       [ ("id", Inline $ mempty
-            & type_  ?~ SwaggerInteger
+            & type_  .~ SwaggerInteger
             & format ?~ "int64" )
       , ("name", Inline $ mempty
-            & type_ ?~ SwaggerString) ]
+            & type_ .~ SwaggerString) ]
   & required .~ [ "name" ]
   & example ?~ [aesonQQ|
     {
@@ -345,19 +345,19 @@ schemaWithExampleExampleJSON = [aesonQQ|
 definitionsExample :: HashMap Text Schema
 definitionsExample =
   [ ("Category", mempty
-      & type_ ?~ SwaggerObject
+      & type_ .~ SwaggerObject
       & properties .~
           [ ("id", Inline $ mempty
-              & type_  ?~ SwaggerInteger
+              & type_  .~ SwaggerInteger
               & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ SwaggerString)) ] )
+          , ("name", Inline (mempty & type_ .~ SwaggerString)) ] )
   , ("Tag", mempty
-      & type_ ?~ SwaggerObject
+      & type_ .~ SwaggerObject
       & properties .~
           [ ("id", Inline $ mempty
-              & type_  ?~ SwaggerInteger
+              & type_  .~ SwaggerInteger
               & format ?~ "int64")
-          , ("name", Inline (mempty & type_ ?~ SwaggerString)) ] ) ]
+          , ("name", Inline (mempty & type_ .~ SwaggerString)) ] ) ]
 
 definitionsExampleJSON :: Value
 definitionsExampleJSON = [aesonQQ|
@@ -401,7 +401,7 @@ paramsDefinitionExample =
       & required ?~ True
       & schema .~ ParamOther (mempty
           & in_    .~ ParamQuery
-          & type_  ?~ SwaggerInteger
+          & type_  .~ SwaggerInteger
           & format ?~ "int32" ))
   , ("limitParam", mempty
       & name .~ "limit"
@@ -409,7 +409,7 @@ paramsDefinitionExample =
       & required ?~ True
       & schema .~ ParamOther (mempty
           & in_    .~ ParamQuery
-          & type_  ?~ SwaggerInteger
+          & type_  .~ SwaggerInteger
           & format ?~ "int32" )) ]
 
 paramsDefinitionExampleJSON :: Value
@@ -510,7 +510,7 @@ swaggerExample = mempty
       & at 200 ?~ Inline (mempty
           & description .~ "OK"
           & schema ?~ Inline (mempty
-              & type_ ?~ SwaggerObject
+              & type_ .~ SwaggerObject
               & example ?~ [aesonQQ|
                   {
                     "created": 100,
@@ -519,9 +519,9 @@ swaggerExample = mempty
               & description ?~ "This is some real Todo right here"
               & properties .~
                   [ ("created", Inline $ mempty
-                      & type_  ?~ SwaggerInteger
+                      & type_  .~ SwaggerInteger
                       & format ?~ "int32")
-                  , ("description", Inline (mempty & type_ ?~ SwaggerString))]))
+                  , ("description", Inline (mempty & type_ .~ SwaggerString))]))
       & produces ?~ MimeList [ "application/json" ]
       & parameters .~
           [ Inline $ mempty
@@ -530,7 +530,7 @@ swaggerExample = mempty
               & description ?~ "TodoId param"
               & schema .~ ParamOther (mempty
                   & in_ .~ ParamPath
-                  & type_ ?~ SwaggerString ) ]
+                  & type_ .~ SwaggerString ) ]
       & tags .~ Set.fromList [ "todo" ] ))
 
 swaggerExampleJSON :: Value
@@ -1632,14 +1632,14 @@ petstoreExampleJSON = [aesonQQ|
 
 compositionSchemaExample :: Schema
 compositionSchemaExample = mempty
-  & type_ ?~ SwaggerObject
+  & type_ .~ SwaggerObject
   & Data.Swagger.allOf ?~ [
       Ref (Reference "Other")
     , Inline (mempty
-             & type_ ?~ SwaggerObject
+             & type_ .~ SwaggerObject
              & properties .~
                   [ ("greet", Inline $ mempty
-                            & type_ ?~ SwaggerString) ])
+                            & type_ .~ SwaggerString) ])
   ]
 
 compositionSchemaExampleJSON :: Value

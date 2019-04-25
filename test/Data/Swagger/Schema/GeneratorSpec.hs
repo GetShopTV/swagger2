@@ -103,7 +103,7 @@ instance FromJSON WrongType where
 instance ToSchema WrongType where
     declareNamedSchema _ = return . NamedSchema (Just "WrongType") $
                            mempty
-                            & type_ ?~ SwaggerObject
+                            & type_ .~ SwaggerObject
 
 
 data MissingRequired = MissingRequired
@@ -123,7 +123,7 @@ instance ToSchema MissingRequired where
       boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
       return . NamedSchema (Just "MissingRequired") $
         mempty
-        & type_ ?~ SwaggerObject
+        & type_ .~ SwaggerObject
         & properties .~ [("propA", stringSchema)
                         ,("propB", boolSchema)
                         ]
@@ -145,7 +145,7 @@ instance ToSchema MissingProperty where
       stringSchema <- declareSchemaRef (Proxy :: Proxy String)
       return . NamedSchema (Just "MissingProperty") $
         mempty
-        & type_ ?~ SwaggerObject
+        & type_ .~ SwaggerObject
         & properties .~ [("propC", stringSchema)]
         & required .~ ["propC"]
 
@@ -163,6 +163,6 @@ instance ToSchema WrongPropType where
       boolSchema <- declareSchemaRef (Proxy :: Proxy Bool)
       return . NamedSchema (Just "WrongPropType") $
         mempty
-        & type_ ?~ SwaggerObject
+        & type_ .~ SwaggerObject
         & properties .~ [("propE", boolSchema)]
         & required .~ ["propE"]

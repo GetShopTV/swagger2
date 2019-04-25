@@ -4,25 +4,24 @@
 
 module Data.Swagger.Schema.Generator where
 
-import           Prelude                                 ()
+import           Prelude                    ()
 import           Prelude.Compat
 
 import           Control.Lens.Operators
-import           Control.Monad                           (filterM)
+import           Control.Monad              (filterM)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict.InsOrd              as M
+import qualified Data.HashMap.Strict.InsOrd as M
 import           Data.Maybe
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Scientific
-import qualified Data.Set                                as S
+import qualified Data.Set                   as S
 import           Data.Swagger
 import           Data.Swagger.Declare
-import           Data.Swagger.Internal.Schema.Validation (inferSchemaTypes)
-import qualified Data.Text                               as T
-import qualified Data.Vector                             as V
-import           Test.QuickCheck                         (arbitrary)
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V
+import           Test.QuickCheck            (arbitrary)
 import           Test.QuickCheck.Gen
 import           Test.QuickCheck.Property
 
@@ -31,25 +30,21 @@ schemaGen _ schema
     | Just cases <- schema  ^. paramSchema . enum_  = elements cases
 schemaGen defns schema =
     case schema ^. type_ of
-      Nothing ->
-        case inferSchemaTypes schema of
-          [ inferredType ] -> schemaGen defns (schema & type_ ?~ inferredType)
-          _ -> fail "unable to infer schema type"
-      Just SwaggerBoolean -> Bool <$> elements [True, False]
-      Just SwaggerNull    -> pure Null
-      Just SwaggerNumber
+      SwaggerBoolean -> Bool <$> elements [True, False]
+      SwaggerNull    -> pure Null
+      SwaggerNumber
         | Just min <- schema ^. minimum_
         , Just max <- schema ^. maximum_ ->
             Number . fromFloatDigits <$>
                    choose (toRealFloat min, toRealFloat max :: Double)
         | otherwise -> Number .fromFloatDigits <$> (arbitrary :: Gen Double)
-      Just SwaggerInteger
+      SwaggerInteger
         | Just min <- schema ^. minimum_
         , Just max <- schema ^. maximum_ ->
             Number . fromInteger <$>
                    choose (truncate min, truncate max)
         | otherwise -> Number . fromInteger <$> arbitrary
-      Just SwaggerArray
+      SwaggerArray
         | Just 0 <- schema ^. maxLength -> pure $ Array V.empty
         | Just items <- schema ^. items ->
             case items of
@@ -64,14 +59,14 @@ schemaGen defns schema =
               SwaggerItemsArray refs ->
                   let itemGens = schemaGen defns . dereference defns <$> refs
                   in fmap (Array . V.fromList) $ sequence itemGens
-      Just SwaggerString -> do
+      SwaggerString -> do
         size <- getSize
         let minLength' = fromMaybe 0 $ fromInteger <$> schema ^. minLength
         let maxLength' = fromMaybe size $ fromInteger <$> schema ^. maxLength
         length <- choose (minLength', max minLength' maxLength')
         str <- vectorOf length arbitrary
         return . String $ T.pack str
-      Just SwaggerObject -> do
+      SwaggerObject -> do
           size <- getSize
           let props = dereference defns <$> schema ^. properties
               reqKeys = S.fromList $ schema ^. required
