@@ -1,15 +1,17 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
+{-# OPTIONS_GHC -Wall                  #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PackageImports #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PackageImports             #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE UndecidableInstances       #-}
 -- |
 -- Module:      Data.Swagger.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
@@ -20,28 +22,30 @@
 -- Validate JSON values with Swagger Schema.
 module Data.Swagger.Internal.Schema.Validation where
 
-import Control.Applicative
-import Control.Lens
-import Control.Monad (when)
+import           Control.Applicative
+import           Control.Lens
+import           Control.Monad                       (when)
 
-import Data.Aeson hiding (Result)
-import Data.Foldable (traverse_, for_, sequenceA_)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
+import           Data.Aeson                          hiding (Result)
+import           Data.Foldable                       (for_, sequenceA_,
+                                                      traverse_)
+import           Data.HashMap.Strict                 (HashMap)
+import qualified Data.HashMap.Strict                 as HashMap
+import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
-import Data.Monoid
-import Data.Proxy
-import Data.Scientific (Scientific, isInteger)
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
+import           Data.List                           (intercalate)
+import           Data.Monoid
+import           Data.Proxy
+import           Data.Scientific                     (Scientific, isInteger)
+import           Data.Text                           (Text)
+import qualified Data.Text                           as Text
+import           Data.Vector                         (Vector)
+import qualified Data.Vector                         as Vector
 
-import Data.Swagger.Declare
-import Data.Swagger.Internal
-import Data.Swagger.Internal.Schema
-import Data.Swagger.Lens
+import           Data.Swagger.Declare
+import           Data.Swagger.Internal
+import           Data.Swagger.Internal.Schema
+import           Data.Swagger.Lens
 
 -- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value.
 -- This can be used with QuickCheck to ensure those instances are coherent:
@@ -320,8 +324,8 @@ validateObject o = withSchema $ \sch ->
     validateAdditional _ v (AdditionalPropertiesSchema s) = validateWithSchemaRef s v
 
     unknownProperty :: Text -> Validation s a
-    unknownProperty name = invalid $
-      "property " <> show name <> " is found in JSON value, but it is not mentioned in Swagger schema"
+    unknownProperty pname = invalid $
+      "property " <> show pname <> " is found in JSON value, but it is not mentioned in Swagger schema"
 
 validateEnum :: Value -> Validation (ParamSchema t) ()
 validateEnum value = do
@@ -329,9 +333,67 @@ validateEnum value = do
     when (value `notElem` xs) $
       invalid ("expected one of " ++ show (encode xs) ++ " but got " ++ show value)
 
+-- | Infer schema type based on used properties.
+--
+-- This is like 'inferParamSchemaTypes', but also works for objects:
+--
+-- >>> inferSchemaTypes <$> decode "{\"minProperties\": 1}"
+-- Just [SwaggerObject]
+inferSchemaTypes :: Schema -> [SwaggerType 'SwaggerKindSchema]
+inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
+  [ SwaggerObject | any ($ sch)
+       [ has (additionalProperties._Just)
+       , has (maxProperties._Just)
+       , has (minProperties._Just)
+       , has (properties.folded)
+       , has (required.folded) ] ]
+
+-- | Infer schema type based on used properties.
+--
+-- >>> inferSchemaTypes <$> decode "{\"minLength\": 2}"
+-- Just [SwaggerString]
+--
+-- >>> inferSchemaTypes <$> decode "{\"maxItems\": 0}"
+-- Just [SwaggerArray]
+--
+-- From numeric properties 'SwaggerInteger' type is inferred.
+-- If you want 'SwaggerNumber' instead, you must specify it explicitly.
+--
+-- >>> inferSchemaTypes <$> decode "{\"minimum\": 1}"
+-- Just [SwaggerInteger]
+inferParamSchemaTypes :: ParamSchema t -> [SwaggerType t]
+inferParamSchemaTypes sch = concat
+  [ [ SwaggerArray | any ($ sch)
+        [ has (items._Just)
+        , has (maxItems._Just)
+        , has (minItems._Just)
+        , has (uniqueItems._Just) ] ]
+  , [ SwaggerInteger | any ($ sch)
+        [ has (exclusiveMaximum._Just)
+        , has (exclusiveMinimum._Just)
+        , has (maximum_._Just)
+        , has (minimum_._Just)
+        , has (multipleOf._Just) ] ]
+  , [ SwaggerString | any ($ sch)
+        [ has (maxLength._Just)
+        , has (minLength._Just)
+        , has (pattern._Just) ] ]
+  ]
+
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
-  case (sch ^. type_, value) of
+  case sch ^. type_ of
+    Just explicitType -> validateSchemaTypeAs explicitType value
+    Nothing ->
+      case inferSchemaTypes sch of
+        [t] -> validateSchemaTypeAs t value
+        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
+        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
+
+validateSchemaTypeAs
+  :: SwaggerType 'SwaggerKindSchema -> Value -> Validation Schema ()
+validateSchemaTypeAs t value =
+  case (t, value) of
     (SwaggerNull,    Null)       -> valid
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
@@ -339,15 +401,26 @@ validateSchemaType value = withSchema $ \sch ->
     (SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
     (SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
     (SwaggerObject,  Object o)   -> validateObject o
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t
+    _ -> invalid $ "expected JSON value of type " ++ show t
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
-  case (sch ^. type_, value) of
+  case sch ^. type_ of
+    Just explicitType -> validateParamSchemaTypeAs explicitType value
+    Nothing ->
+      case inferParamSchemaTypes sch of
+        [t] -> validateParamSchemaTypeAs t value
+        []  -> invalid $ "unable to infer type for schema, please provide type explicitly"
+        ts  -> invalid $ "unable to infer type for schema, possible candidates: " ++ intercalate ", " (map show ts)
+
+validateParamSchemaTypeAs
+  :: SwaggerType t -> Value -> Validation (ParamSchema t) ()
+validateParamSchemaTypeAs t value =
+  case (t, value) of
     (SwaggerBoolean, Bool _)     -> valid
     (SwaggerInteger, Number n)   -> validateInteger n
     (SwaggerNumber,  Number n)   -> validateNumber n
     (SwaggerString,  String s)   -> validateString s
     (SwaggerArray,   Array xs)   -> validateArray xs
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t
+    _ -> invalid $ "expected JSON value of type " ++ show t
 

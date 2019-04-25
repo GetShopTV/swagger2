@@ -181,7 +181,7 @@ import Data.Swagger.Internal
 --
 -- >>> :{
 -- encode $ (mempty :: Swagger)
---   & definitions .~ [ ("User", mempty & type_ .~ SwaggerString) ]
+--   & definitions .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
 --   & paths .~
 --     [ ("/user", mempty & get ?~ (mempty
 --         & produces ?~ MimeList ["application/json"]
@@ -204,7 +204,7 @@ import Data.Swagger.Internal
 -- "{\"description\":\"No content\"}"
 -- >>> :{
 -- encode $ (mempty :: Schema)
---   & type_       .~ SwaggerBoolean
+--   & type_       ?~ SwaggerBoolean
 --   & description ?~ "To be or not to be"
 -- :}
 -- "{\"description\":\"To be or not to be\",\"type\":\"boolean\"}"
@@ -213,7 +213,7 @@ import Data.Swagger.Internal
 -- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
 -- For example, you can use @'type_'@ to access @'SwaggerType'@ of @'Header'@ schema without having to use @'paramSchema'@:
 --
--- >>> encode $ (mempty :: Header) & type_ .~ SwaggerNumber
+-- >>> encode $ (mempty :: Header) & type_ ?~ SwaggerNumber
 -- "{\"type\":\"number\"}"
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@

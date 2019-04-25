@@ -593,7 +593,7 @@ data ParamSchema (t :: SwaggerKind *) = ParamSchema
     -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
     _paramSchemaDefault :: Maybe Value
 
-  , _paramSchemaType :: SwaggerType t
+  , _paramSchemaType :: Maybe (SwaggerType t)
   , _paramSchemaFormat :: Maybe Format
   , _paramSchemaItems :: Maybe (SwaggerItems t)
   , _paramSchemaMaximum :: Maybe Scientific
