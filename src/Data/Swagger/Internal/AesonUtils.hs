@@ -144,7 +144,11 @@ sopSwaggerGenericToJSON'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> [Pair]
+#if MIN_VERSION_generics_sop(0,5,0)
+sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
+#else
 sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
+#endif
     sopSwaggerGenericToJSON'' opts fields fieldsInfo defs
 sopSwaggerGenericToJSON' _ _ _ _ = error "sopSwaggerGenericToJSON: unsupported type"
 
@@ -220,7 +224,11 @@ sopSwaggerGenericParseJSON'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> Parser (SOP I '[xs])
+#if MIN_VERSION_generics_sop(0,5,0)
+sopSwaggerGenericParseJSON' opts obj (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
+#else
 sopSwaggerGenericParseJSON' opts obj (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
+#endif
     SOP . Z <$> sopSwaggerGenericParseJSON'' opts obj fieldsInfo defs
 sopSwaggerGenericParseJSON' _ _ _ _ = error "sopSwaggerGenericParseJSON: unsupported type"
 
@@ -292,7 +300,11 @@ sopSwaggerGenericToEncoding'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> Series
+#if MIN_VERSION_generics_sop(0,5,0)
+sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
+#else
 sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
+#endif
     sopSwaggerGenericToEncoding'' opts fields fieldsInfo defs
 sopSwaggerGenericToEncoding' _ _ _ _ = error "sopSwaggerGenericToEncoding: unsupported type"
 
