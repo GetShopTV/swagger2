@@ -27,7 +27,7 @@ instance ToSchema UserSummary where
     usernameSchema <- declareSchemaRef (Proxy :: Proxy Username)
     useridSchema   <- declareSchemaRef (Proxy :: Proxy Int)
     return $ NamedSchema (Just "UserSummary") $ mempty
-      & type_ .~ SwaggerObject
+      & type_ ?~ SwaggerObject
       & properties .~
           [ ("summaryUsername", usernameSchema )
           , ("summaryUserid"  , useridSchema   )

@@ -610,7 +610,7 @@ data ParamSchema (t :: SwaggerKind *) = ParamSchema
   , _paramSchemaMultipleOf :: Maybe Scientific
   } deriving (Eq, Show, Generic, Typeable)
 
-deriving instance (Typeable k, Data (SwaggerType k), Data (SwaggerItems k)) => Data (ParamSchema k)
+deriving instance (Typeable k, Data (Maybe (SwaggerType k)), Data (SwaggerItems k)) => Data (ParamSchema k)
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
