@@ -26,6 +26,8 @@ import           Test.QuickCheck                         (arbitrary)
 import           Test.QuickCheck.Gen
 import           Test.QuickCheck.Property
 
+-- | Note: 'schemaGen' may 'error', if schema type is not specified,
+-- and cannot be inferred.
 schemaGen :: Definitions Schema -> Schema -> Gen Value
 schemaGen _ schema
     | Just cases <- schema  ^. paramSchema . enum_  = elements cases
@@ -34,7 +36,8 @@ schemaGen defns schema =
       Nothing ->
         case inferSchemaTypes schema of
           [ inferredType ] -> schemaGen defns (schema & type_ ?~ inferredType)
-          _ -> fail "unable to infer schema type"
+          -- Gen is not MonadFail
+          _ -> error "unable to infer schema type"
       Just SwaggerBoolean -> Bool <$> elements [True, False]
       Just SwaggerNull    -> pure Null
       Just SwaggerNumber
