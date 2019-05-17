@@ -5,3 +5,4 @@ extra-deps:
 - aeson-1.4.2.0
 - base-compat-batteries-0.10.4
 - contravariant-1.5
+- insert-ordered-containers-0.2.2

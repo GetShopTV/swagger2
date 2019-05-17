@@ -44,6 +44,7 @@ import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
+import qualified Data.HashSet.InsOrd as InsOrdHS
 
 #if MIN_VERSION_aeson(0,10,0)
 import Data.Aeson (Encoding, pairs, (.=), Series)
@@ -85,6 +86,7 @@ instance AesonDefaultValue Text where defaultValue = Nothing
 instance AesonDefaultValue (Maybe a) where defaultValue = Just Nothing
 instance AesonDefaultValue [a] where defaultValue = Just []
 instance AesonDefaultValue (Set.Set a) where defaultValue = Just Set.empty
+instance AesonDefaultValue (InsOrdHS.InsOrdHashSet k) where defaultValue = Just InsOrdHS.empty
 instance AesonDefaultValue (InsOrd.InsOrdHashMap k v) where defaultValue = Just InsOrd.empty
 
 -------------------------------------------------------------------------------
