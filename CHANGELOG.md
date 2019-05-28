@@ -8,9 +8,11 @@
   (see [#138](https://github.com/GetShopTV/swagger2/issues/138), [#164](https://github.com/GetShopTV/swagger2/pull/164))
 - Take concrete 'Proxy' as argument
   (see [#180](https://github.com/GetShopTV/swagger2/pull/180))
+- GHC-8.8 preparations
 
 2.3.1.1
 -------
+
 - Allow `network-3.0`
 
 2.3.1
