@@ -46,6 +46,7 @@ import Data.Swagger.Lens
 import Data.Swagger.Schema
 
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashSet.InsOrd as InsOrdHS
 
 -- $setup
 -- >>> import Data.Aeson
@@ -111,8 +112,8 @@ applyTags = applyTagsFor allOperations
 -- list of tags.
 applyTagsFor :: Traversal' Swagger Operation -> [Tag] -> Swagger -> Swagger
 applyTagsFor ops ts swag = swag
-  & ops . tags %~ (<> Set.fromList (map _tagName ts))
-  & tags %~ (<> Set.fromList ts)
+  & ops . tags %~ (<> InsOrdHS.fromList (map _tagName ts))
+  & tags %~ (<> InsOrdHS.fromList ts)
 
 -- | Construct a response with @'Schema'@ while declaring all
 -- necessary schema definitions.

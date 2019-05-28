@@ -1,3 +1,14 @@
+2.4
+---
+
+- Allow hashable-1.3, semigroups-0.19, network-3.1, time-1.9, generics-sop-0.5
+- Tags aren't sorted
+  (see [#165](https://github.com/GetShopTV/swagger2/issues/165))
+- Schema type is optional
+  (see [#138](https://github.com/GetShopTV/swagger2/issues/138), [#164](https://github.com/GetShopTV/swagger2/pull/164))
+- Take concrete 'Proxy' as argument
+  (see [#180](https://github.com/GetShopTV/swagger2/pull/180))
+
 2.3.1.1
 -------
 - Allow `network-3.0`
