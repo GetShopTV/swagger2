@@ -162,10 +162,6 @@ instance MonadDeclare d m => MonadDeclare d (IdentityT m) where
   declare = lift . declare
   look = lift look
 
-instance MonadDeclare d m => MonadDeclare d (ListT m) where
-  declare = lift . declare
-  look = lift look
-
 instance MonadDeclare d m => MonadDeclare d (MaybeT m) where
   declare = lift . declare
   look = lift look
