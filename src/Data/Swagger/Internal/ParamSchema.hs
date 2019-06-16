@@ -193,6 +193,9 @@ timeParamSchema fmt = mempty
 instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "date"
 
+instance ToParamSchema TimeOfDay where
+  toParamSchema _ = timeParamSchema "hh:MM:ss"
+
 -- |
 -- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
