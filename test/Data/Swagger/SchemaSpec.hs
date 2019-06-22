@@ -1,14 +1,16 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Data.Swagger.SchemaSpec where
 
 import Prelude ()
 import Prelude.Compat
 
 import Control.Lens ((^.))
-import Data.Aeson (Value, ToJSON(..), ToJSONKey(..))
+import Data.Aeson (Value, ToJSON(..), ToJSONKey(..), Value(Object), Value(String))
 import Data.Aeson.Types (toJSONKeyText)
 import Data.Aeson.QQ.Simple
 import Data.Char
@@ -25,6 +27,9 @@ import Data.Swagger.Declare
 import Data.Swagger.CommonTestTypes
 import SpecCommon
 import Test.Hspec
+
+import qualified Data.HashMap.Strict as HM
+import Data.Time
 
 checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkToSchema proxy js = toSchema proxy <=> js
@@ -110,6 +115,7 @@ spec = do
     context "MyRoseTree' (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
   describe "Bounded Enum key mapping" $ do
     context "ButtonImages" $ checkToSchema (Proxy :: Proxy ButtonImages) buttonImagesSchemaJSON
+    context "TimeOfDay" $ checkToSchema (Proxy :: Proxy TimeOfDay ) (Object (HM.fromList [("example",String "12:33:15"),("format",String "hh:MM:ss"),("type",String "string")]))
 
 main :: IO ()
 main = hspec spec
