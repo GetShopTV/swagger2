@@ -29,7 +29,7 @@ import SpecCommon
 import Test.Hspec
 
 import qualified Data.HashMap.Strict as HM
-import Data.Time
+import Data.Time.LocalTime
 
 checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
 checkToSchema proxy js = toSchema proxy <=> js
@@ -115,7 +115,7 @@ spec = do
     context "MyRoseTree' (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
   describe "Bounded Enum key mapping" $ do
     context "ButtonImages" $ checkToSchema (Proxy :: Proxy ButtonImages) buttonImagesSchemaJSON
-    context "TimeOfDay" $ checkToSchema (Proxy :: Proxy TimeOfDay ) (Object (HM.fromList [("example",String "12:33:15"),("format",String "hh:MM:ss"),("type",String "string")]))
+    context "TimeOfDay" $ checkToSchema (Proxy :: Proxy Data.Time.LocalTime.TimeOfDay ) timeOfDaySchemaJSON
 
 main :: IO ()
 main = hspec spec

@@ -34,7 +34,7 @@ spec = do
     context "Unary records" $ do
       context "Email (unary record)"  $ checkToParamSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToParamSchema (Proxy :: Proxy UserId) userIdSchemaJSON
-    context "TimeOfDay" $ checkToParamSchema (Proxy :: Proxy TimeOfDay) (Object (HM.fromList [("format",String "hh:MM:ss"),("type",String "string")]))
+    context "TimeOfDay" $ checkToParamSchema (Proxy :: Proxy Data.Time.LocalTime.TimeOfDay) timeOfDayParamSchemaJSON
 
 main :: IO ()
 main = hspec spec
