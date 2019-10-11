@@ -18,8 +18,6 @@ import qualified Data.Text             as Text
 import           GHC.Generics
 
 import           Data.Swagger
-import           Data.Swagger.Declare
-import           Data.Swagger.Internal (SwaggerKind (..))
 
 -- ========================================================================
 -- Unit type

@@ -22,6 +22,9 @@
 -- Validate JSON values with Swagger Schema.
 module Data.Swagger.Internal.Schema.Validation where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Control.Applicative
 import           Control.Lens
 import           Control.Monad                       (when)
@@ -34,8 +37,6 @@ import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
 import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import           Data.List                           (intercalate)
-import           Data.Monoid
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
 import           Data.Text                           (Text)
