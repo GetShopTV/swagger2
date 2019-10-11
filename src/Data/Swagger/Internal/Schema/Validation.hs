@@ -484,7 +484,7 @@ validateSchemaType value = withSchema $ \sch ->
     (Nothing, String s)               -> sub_ paramSchema (validateString s)
     (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
     (Nothing, Object o)               -> validateObject o
-    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
+    bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
@@ -499,8 +499,7 @@ validateParamSchemaType value = withSchema $ \sch ->
     (Nothing, Number n)               -> validateNumber n
     (Nothing, String s)               -> validateString s
     (Nothing, Array xs)               -> validateArray xs
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t
-    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
+    bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 showType :: (Maybe (SwaggerType t), Value) -> String
 showType (Just type_, _)     = show type_
