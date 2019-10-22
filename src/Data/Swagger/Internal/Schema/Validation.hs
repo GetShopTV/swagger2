@@ -27,6 +27,7 @@ import           Control.Lens
 import           Control.Monad                       (when)
 
 import           Data.Aeson                          hiding (Result)
+import           Data.Aeson.Encode.Pretty            (encodePretty)
 import           Data.Foldable                       (for_, sequenceA_,
                                                       traverse_)
 import           Data.HashMap.Strict                 (HashMap)
@@ -39,6 +40,8 @@ import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
+import qualified Data.Text.Lazy                      as TL
+import qualified Data.Text.Lazy.Encoding             as TL
 import           Data.Vector                         (Vector)
 import qualified Data.Vector                         as Vector
 
@@ -54,17 +57,100 @@ import           Data.Swagger.Lens
 --
 -- /NOTE:/ @'validateToJSON'@ does not perform string pattern validation.
 -- See @'validateToJSONWithPatternChecker'@.
+--
+-- See 'renderValidationErrors' on how the output is structured.
+validatePrettyToJSON :: forall a. (ToJSON a, ToSchema a) => a -> Maybe String
+validatePrettyToJSON = renderValidationErrors validateToJSON
+
+-- | Variant of 'validatePrettyToJSON' with typed output.
 validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [ValidationError]
 validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 
 -- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value and pattern checker.
 -- This can be used with QuickCheck to ensure those instances are coherent.
 --
--- For validation without patterns see @'validateToJSON'@.
+-- For validation without patterns see @'validateToJSON'@.  See also:
+-- 'renderValidationErrors'.
 validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) => (Pattern -> Text -> Bool) -> a -> [ValidationError]
 validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checker defs sch . toJSON
   where
     (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
+
+-- | Pretty print validation errors
+-- together with actual JSON and Swagger Schema
+-- (using 'encodePretty').
+--
+-- >>> import Data.Aeson as Aeson
+-- >>> import Data.Foldable (traverse_)
+-- >>> import GHC.Generics
+-- >>> data Phone = Phone { value :: String } deriving (Generic)
+-- >>> data Person = Person { name :: String, phone :: Phone } deriving (Generic)
+-- >>> instance ToJSON Person where toJSON p = object [ "name" Aeson..= name p ]
+-- >>> instance ToSchema Phone
+-- >>> instance ToSchema Person
+-- >>> let person = Person { name = "John", phone = Phone "123456" }
+-- >>> traverse_ putStrLn $ renderValidationErrors validateToJSON person
+-- Validation against the schema fails:
+--   * property "phone" is required, but not found in "{\"name\":\"John\"}"
+-- <BLANKLINE>
+-- JSON value:
+-- {
+--     "name": "John"
+-- }
+-- <BLANKLINE>
+-- Swagger Schema:
+-- {
+--     "required": [
+--         "name",
+--         "phone"
+--     ],
+--     "type": "object",
+--     "properties": {
+--         "phone": {
+--             "$ref": "#/definitions/Phone"
+--         },
+--         "name": {
+--             "type": "string"
+--         }
+--     }
+-- }
+-- <BLANKLINE>
+-- Swagger Description Context:
+-- {
+--     "Phone": {
+--         "required": [
+--             "value"
+--         ],
+--         "type": "object",
+--         "properties": {
+--             "value": {
+--                 "type": "string"
+--             }
+--         }
+--     }
+-- }
+-- <BLANKLINE>
+renderValidationErrors
+  :: forall a. (ToJSON a, ToSchema a)
+  => (a -> [ValidationError]) -> a -> Maybe String
+renderValidationErrors f x =
+  case f x of
+    []      -> Nothing
+    errors  -> Just $ unlines
+      [ "Validation against the schema fails:"
+      , unlines (map ("  * " ++) errors)
+      , "JSON value:"
+      , ppJSONString (toJSON x)
+      , ""
+      , "Swagger Schema:"
+      , ppJSONString (toJSON schema_)
+      , ""
+      , "Swagger Description Context:"
+      , ppJSONString (toJSON refs_)
+      ]
+  where
+    ppJSONString = TL.unpack . TL.decodeUtf8 . encodePretty
+    (refs_, schema_) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
 
 -- | Validate JSON @'Value'@ against Swagger @'Schema'@.
 --

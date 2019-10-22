@@ -19,8 +19,10 @@ module Data.Swagger.Schema.Validation (
   ValidationError,
 
   -- ** Using 'ToJSON' and 'ToSchema'
+  validatePrettyToJSON,
   validateToJSON,
   validateToJSONWithPatternChecker,
+  renderValidationErrors,
 
   -- ** Using 'Value' and 'Schema'
   validateJSON,
