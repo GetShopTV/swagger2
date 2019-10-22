@@ -22,6 +22,9 @@
 -- Validate JSON values with Swagger Schema.
 module Data.Swagger.Internal.Schema.Validation where
 
+import           Prelude ()
+import           Prelude.Compat
+
 import           Control.Applicative
 import           Control.Lens
 import           Control.Monad                       (when)
@@ -34,8 +37,6 @@ import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
 import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
-import           Data.List                           (intercalate)
-import           Data.Monoid
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
 import           Data.Text                           (Text)
@@ -483,7 +484,7 @@ validateSchemaType value = withSchema $ \sch ->
     (Nothing, String s)               -> sub_ paramSchema (validateString s)
     (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
     (Nothing, Object o)               -> validateObject o
-    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
+    bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
@@ -498,8 +499,7 @@ validateParamSchemaType value = withSchema $ \sch ->
     (Nothing, Number n)               -> validateNumber n
     (Nothing, String s)               -> validateString s
     (Nothing, Array xs)               -> validateArray xs
-    (t, _) -> invalid $ "expected JSON value of type " ++ show t
-    param@(t, _) -> invalid $ "expected JSON value of type " ++ showType param
+    bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 showType :: (Maybe (SwaggerType t), Value) -> String
 showType (Just type_, _)     = show type_
