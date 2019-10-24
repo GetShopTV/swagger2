@@ -1,25 +1,18 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Data.Swagger.SchemaSpec where
 
 import Prelude ()
 import Prelude.Compat
 
 import Control.Lens ((^.))
-import Data.Aeson (Value, ToJSON(..), ToJSONKey(..), Value(Object), Value(String))
-import Data.Aeson.Types (toJSONKeyText)
-import Data.Aeson.QQ.Simple
-import Data.Char
+import Data.Aeson (Value)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Proxy
 import Data.Set (Set)
-import Data.Map (Map)
 import qualified Data.Text as Text
-import GHC.Generics
 
 import Data.Swagger
 import Data.Swagger.Declare
