@@ -108,7 +108,7 @@ spec = do
     context "MyRoseTree' (inlineNonRecursiveSchemas)" $ checkInlinedRecSchema (Proxy :: Proxy MyRoseTree') myRoseTreeSchemaJSON'
   describe "Bounded Enum key mapping" $ do
     context "ButtonImages" $ checkToSchema (Proxy :: Proxy ButtonImages) buttonImagesSchemaJSON
-    context "TimeOfDay" $ checkToSchema (Proxy :: Proxy Data.Time.LocalTime.TimeOfDay ) timeOfDaySchemaJSON
+    context "TimeOfDay" $ checkToSchema (Proxy :: Proxy Data.Time.LocalTime.TimeOfDay) timeOfDaySchemaJSON
 
 main :: IO ()
 main = hspec spec
