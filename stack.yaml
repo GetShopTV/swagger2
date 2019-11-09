@@ -1,8 +1,9 @@
-resolver: lts-12.10
+resolver: lts-14.3
 packages:
 - '.'
 extra-deps:
-- aeson-1.4.2.0
-- base-compat-batteries-0.10.4
-- contravariant-1.5
-- insert-ordered-containers-0.2.2
+- optics-core-0.2
+- optics-th-0.2
+- optics-extra-0.2
+- indexed-profunctors-0.1
+- insert-ordered-containers-0.2.3
