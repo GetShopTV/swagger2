@@ -3,9 +3,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Data.Swagger.ParamSchemaSpec where
 
-import Data.Aeson (Value)
+import Data.Aeson
 import Data.Aeson.QQ.Simple
 import Data.Char
 import Data.Proxy
@@ -17,6 +18,9 @@ import Data.Swagger.Internal (SwaggerKind(..))
 import Data.Swagger.CommonTestTypes
 import SpecCommon
 import Test.Hspec
+import Data.Time.LocalTime
+
+import qualified Data.HashMap.Strict as HM
 
 checkToParamSchema :: ToParamSchema a => Proxy a -> Value -> Spec
 checkToParamSchema proxy js = (toParamSchema proxy :: ParamSchema ('SwaggerKindNormal Param)) <=> js
@@ -30,6 +34,7 @@ spec = do
     context "Unary records" $ do
       context "Email (unary record)"  $ checkToParamSchema (Proxy :: Proxy Email)  emailSchemaJSON
       context "UserId (non-record newtype)" $ checkToParamSchema (Proxy :: Proxy UserId) userIdSchemaJSON
+    context "TimeOfDay" $ checkToParamSchema (Proxy :: Proxy Data.Time.LocalTime.TimeOfDay) timeOfDayParamSchemaJSON
 
 main :: IO ()
 main = hspec spec

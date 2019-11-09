@@ -194,6 +194,12 @@ instance ToParamSchema Day where
   toParamSchema _ = timeParamSchema "date"
 
 -- |
+-- >>> toParamSchema (Proxy :: Proxy TimeOfDay) ^. format
+-- Just "hh:MM:ss"
+instance ToParamSchema TimeOfDay where
+  toParamSchema _ = timeParamSchema "hh:MM:ss"
+
+-- |
 -- >>> toParamSchema (Proxy :: Proxy LocalTime) ^. format
 -- Just "yyyy-mm-ddThh:MM:ss"
 instance ToParamSchema LocalTime where

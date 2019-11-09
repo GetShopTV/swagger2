@@ -648,3 +648,32 @@ singleMaybeFieldSchemaJSON = [aesonQQ|
     }
 }
 |]
+
+
+-- ========================================================================
+-- TimeOfDay
+-- ========================================================================
+data TimeOfDay
+  = Int
+  | Pico
+  deriving (Generic)
+instance ToSchema TimeOfDay
+instance ToParamSchema TimeOfDay
+
+
+timeOfDaySchemaJSON :: Value
+timeOfDaySchemaJSON = [aesonQQ|
+{
+  "example": "12:33:15",
+  "type": "string",
+  "format": "hh:MM:ss"
+}
+|]
+
+timeOfDayParamSchemaJSON :: Value
+timeOfDayParamSchemaJSON = [aesonQQ|
+{
+  "type": "string",
+  "format": "hh:MM:ss"
+}
+|]

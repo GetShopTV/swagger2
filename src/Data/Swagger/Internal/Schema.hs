@@ -147,6 +147,10 @@ class ToSchema a where
     Proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
+instance ToSchema TimeOfDay where
+  declareNamedSchema _ = pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
+    & example ?~ toJSON (TimeOfDay 12 33 15)
+
 -- | Convert a type into a schema and declare all used schema definitions.
 declareSchema :: ToSchema a => Proxy a -> Declare (Definitions Schema) Schema
 declareSchema = fmap _namedSchemaSchema . declareNamedSchema
