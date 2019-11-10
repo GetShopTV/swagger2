@@ -31,6 +31,7 @@ module Data.Swagger (
 
   -- * Re-exports
   module Data.Swagger.Lens,
+  module Data.Swagger.Optics,
   module Data.Swagger.Operation,
   module Data.Swagger.ParamSchema,
   module Data.Swagger.Schema,
@@ -112,6 +113,7 @@ module Data.Swagger (
 ) where
 
 import Data.Swagger.Lens
+import Data.Swagger.Optics ()
 import Data.Swagger.Operation
 import Data.Swagger.ParamSchema
 import Data.Swagger.Schema
@@ -174,6 +176,8 @@ import Data.Swagger.Internal
 -- @
 
 -- $lens
+--
+-- Note: if you're working with the <https://hackage.haskell.org/package/optics optics> library, take a look at "Data.Swagger.Optics".
 --
 -- Since @'Swagger'@ has a fairly complex structure, lenses and prisms are used
 -- to work comfortably with it. In combination with @'Monoid'@ instances, lenses
