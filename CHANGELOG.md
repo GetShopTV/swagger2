@@ -1,3 +1,16 @@
+2.5
+---
+
+Highlights:
+- Add instance for `TimeOfDay` (see [#196]( https://github.com/GetShopTV/swagger2/pull/196 ));
+- Add support for [`optics`](https://hackage.haskell.org/package/optics) (see [#200]( https://github.com/GetShopTV/swagger2/pull/200 ));
+- Slightly better validation errors (see [#195]( https://github.com/GetShopTV/swagger2/pull/195 ));
+
+Fixes and minor changes:
+- Minor cleanup (see [#194]( https://github.com/GetShopTV/swagger2/pull/194 ));
+- Allow base-4.13 and other GHC-8.8 related stuff (see [#198]( https://github.com/GetShopTV/swagger2/pull/198 ));
+- Fix `stack.yaml` (see [#201]( https://github.com/GetShopTV/swagger2/pull/201 ));
+
 2.4
 ---
 
