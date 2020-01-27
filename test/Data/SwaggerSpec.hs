@@ -43,6 +43,7 @@ spec = do
   describe "Parameters Definition Object" $ paramsDefinitionExample <=> paramsDefinitionExampleJSON
   describe "Responses Definition Object" $ responsesDefinitionExample <=> responsesDefinitionExampleJSON
   describe "Security Definitions Object" $ securityDefinitionsExample <=> securityDefinitionsExampleJSON
+  describe "OAuth2 Security Definitions with merged Scope" $ oAuth2SecurityDefinitionsExample <=> oAuth2SecurityDefinitionsExampleJSON
   describe "Composition Schema Example" $ compositionSchemaExample <=> compositionSchemaExampleJSON
   describe "Swagger Object" $ do
     context "Todo Example" $ swaggerExample <=> swaggerExampleJSON
@@ -459,8 +460,8 @@ responsesDefinitionExampleJSON = [aesonQQ|
 -- Responses Definition object
 -- =======================================================================
 
-securityDefinitionsExample :: HashMap Text SecurityScheme
-securityDefinitionsExample =
+securityDefinitionsExample :: SecurityDefinitions
+securityDefinitionsExample = SecurityDefinitions
   [ ("api_key", SecurityScheme
       { _securitySchemeType = SecuritySchemeApiKey (ApiKeyParams "api_key" ApiKeyHeader)
       , _securitySchemeDescription = Nothing })
@@ -480,6 +481,46 @@ securityDefinitionsExampleJSON = [aesonQQ|
     "name": "api_key",
     "in": "header"
   },
+  "petstore_auth": {
+    "type": "oauth2",
+    "authorizationUrl": "http://swagger.io/api/oauth/dialog",
+    "flow": "implicit",
+    "scopes": {
+      "write:pets": "modify pets in your account",
+      "read:pets": "read your pets"
+    }
+  }
+}
+|]
+
+oAuth2SecurityDefinitionsReadExample :: SecurityDefinitions
+oAuth2SecurityDefinitionsReadExample = SecurityDefinitions
+  [ ("petstore_auth", SecurityScheme
+      { _securitySchemeType = SecuritySchemeOAuth2 (OAuth2Params
+          { _oauth2Flow = OAuth2Implicit "http://swagger.io/api/oauth/dialog"
+          , _oauth2Scopes =
+              [ ("read:pets", "read your pets") ] } )
+      , _securitySchemeDescription = Nothing })
+  ]
+
+oAuth2SecurityDefinitionsWriteExample :: SecurityDefinitions
+oAuth2SecurityDefinitionsWriteExample = SecurityDefinitions
+  [ ("petstore_auth", SecurityScheme
+      { _securitySchemeType = SecuritySchemeOAuth2 (OAuth2Params
+          { _oauth2Flow = OAuth2Implicit "http://swagger.io/api/oauth/dialog"
+          , _oauth2Scopes =
+              [ ("write:pets", "modify pets in your account") ] } )
+      , _securitySchemeDescription = Nothing })
+  ]
+
+oAuth2SecurityDefinitionsExample :: SecurityDefinitions
+oAuth2SecurityDefinitionsExample =
+  oAuth2SecurityDefinitionsWriteExample <>
+  oAuth2SecurityDefinitionsReadExample
+
+oAuth2SecurityDefinitionsExampleJSON :: Value
+oAuth2SecurityDefinitionsExampleJSON = [aesonQQ|
+{
   "petstore_auth": {
     "type": "oauth2",
     "authorizationUrl": "http://swagger.io/api/oauth/dialog",

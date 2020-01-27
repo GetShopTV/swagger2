@@ -96,6 +96,12 @@ instance At   Responses where at n = responses . at n
 instance Ixed Operation where ix n = responses . ix n
 instance At   Operation where at n = responses . at n
 
+type instance Index SecurityDefinitions = Text
+type instance IxValue SecurityDefinitions = SecurityScheme
+
+instance Ixed SecurityDefinitions where ix n = (coerced :: Lens' SecurityDefinitions (Definitions SecurityScheme)). ix n
+instance At   SecurityDefinitions where at n = (coerced :: Lens' SecurityDefinitions (Definitions SecurityScheme)). at n
+
 instance HasParamSchema NamedSchema (ParamSchema 'SwaggerKindSchema) where paramSchema = schema.paramSchema
 
 -- HasType instances
