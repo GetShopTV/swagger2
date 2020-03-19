@@ -1076,21 +1076,8 @@ instance ToJSON SecuritySchemeType where
     <+> object [ "type" .= ("oauth2" :: Text) ]
 
 instance ToJSON Swagger where
-  toJSON = sopSwaggerGenericToJSON . percentEncodeSwagger
-  toEncoding = sopSwaggerGenericToEncoding . percentEncodeSwagger
-
-percentEncodeSwagger :: Swagger -> Swagger
-percentEncodeSwagger s = s
-  { _swaggerDefinitions =
-    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerDefinitions s
-  , _swaggerParameters =
-    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerParameters s
-  , _swaggerResponses =
-    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerResponses s
-  , _swaggerSecurityDefinitions =
-    SecurityDefinitions . InsOrdHashMap.mapKeys percentEncodeT . coerce
-      $ _swaggerSecurityDefinitions s
-  }
+  toJSON = sopSwaggerGenericToJSON
+  DEFINE_TOENCODING
 
 instance ToJSON SecurityScheme where
   toJSON = sopSwaggerGenericToJSON
@@ -1234,20 +1221,7 @@ instance FromJSON SecuritySchemeType where
   parseJSON _ = empty
 
 instance FromJSON Swagger where
-  parseJSON = fmap percentDecodeSwagger . sopSwaggerGenericParseJSON
-
-percentDecodeSwagger :: Swagger -> Swagger
-percentDecodeSwagger s = s
-  { _swaggerDefinitions =
-    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerDefinitions s
-  , _swaggerParameters =
-    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerParameters s
-  , _swaggerResponses =
-    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerResponses s
-  , _swaggerSecurityDefinitions =
-    SecurityDefinitions . InsOrdHashMap.mapKeys percentDecodeT . coerce
-      $ _swaggerSecurityDefinitions s
-  }
+  parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON SecurityScheme where
   parseJSON = sopSwaggerGenericParseJSON
