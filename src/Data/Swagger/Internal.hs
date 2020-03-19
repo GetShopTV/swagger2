@@ -28,6 +28,7 @@ import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
 import           Data.Aeson
 import qualified Data.Aeson.Types         as JSON
+import           Data.Coerce
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.Hashable            (Hashable)
 import qualified Data.HashMap.Strict      as HashMap
@@ -1082,6 +1083,13 @@ percentEncodeSwagger :: Swagger -> Swagger
 percentEncodeSwagger s = s
   { _swaggerDefinitions =
     InsOrdHashMap.mapKeys percentEncodeT $ _swaggerDefinitions s
+  , _swaggerParameters =
+    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerParameters s
+  , _swaggerResponses =
+    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerResponses s
+  , _swaggerSecurityDefinitions =
+    SecurityDefinitions . InsOrdHashMap.mapKeys percentEncodeT . coerce
+      $ _swaggerSecurityDefinitions s
   }
 
 instance ToJSON SecurityScheme where
@@ -1158,10 +1166,11 @@ instance ToJSON SecurityDefinitions where
   toJSON (SecurityDefinitions sd) = toJSON sd
 
 instance ToJSON Reference where
-  toJSON (Reference ref) = object [ "$ref" .= ref ]
+  toJSON (Reference ref) = object [ "$ref" .= percentEncodeT ref ]
 
 referencedToJSON :: ToJSON a => Text -> Referenced a -> Value
-referencedToJSON prefix (Ref (Reference ref)) = object [ "$ref" .= (prefix <> ref) ]
+referencedToJSON prefix (Ref (Reference ref)) =
+  object [ "$ref" .= (prefix <> percentEncodeT ref) ]
 referencedToJSON _ (Inline x) = toJSON x
 
 instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/definitions/"
@@ -1230,7 +1239,14 @@ instance FromJSON Swagger where
 percentDecodeSwagger :: Swagger -> Swagger
 percentDecodeSwagger s = s
   { _swaggerDefinitions =
-    InsOrdHashMap.mapKeys percentEncodeT $ _swaggerDefinitions s
+    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerDefinitions s
+  , _swaggerParameters =
+    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerParameters s
+  , _swaggerResponses =
+    InsOrdHashMap.mapKeys percentDecodeT $ _swaggerResponses s
+  , _swaggerSecurityDefinitions =
+    SecurityDefinitions . InsOrdHashMap.mapKeys percentDecodeT . coerce
+      $ _swaggerSecurityDefinitions s
   }
 
 instance FromJSON SecurityScheme where
@@ -1328,7 +1344,7 @@ instance FromJSON SecurityDefinitions where
   parseJSON js = SecurityDefinitions <$> parseJSON js
 
 instance FromJSON Reference where
-  parseJSON (Object o) = Reference <$> o .: "$ref"
+  parseJSON (Object o) = Reference . percentDecodeT <$> o .: "$ref"
   parseJSON _ = empty
 
 referencedParseJSON :: FromJSON a => Text -> Value -> JSON.Parser (Referenced a)
