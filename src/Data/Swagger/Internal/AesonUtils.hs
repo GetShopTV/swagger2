@@ -24,6 +24,11 @@ module Data.Swagger.Internal.AesonUtils (
     saoPrefix,
     saoAdditionalPairs,
     saoSubObject,
+    -- * Percent encoding
+    percentEncodeS,
+    percentEncodeT,
+    percentDecodeS,
+    percentDecodeT,
     ) where
 
 import Prelude ()
@@ -344,3 +349,55 @@ sopSwaggerGenericToEncoding'' (SwaggerAesonOptions prefix _ sub) = go
       where (x, y) = span isUpper s
 
 #endif
+
+percentEncodeS :: String -> String
+percentEncodeS "" = ""
+percentEncodeS ('!' : s) = "%21" <> percentEncodeS s
+percentEncodeS ('#' : s) = "%23" <> percentEncodeS s
+percentEncodeS ('$' : s) = "%24" <> percentEncodeS s
+percentEncodeS ('%' : s) = "%25" <> percentEncodeS s
+percentEncodeS ('&' : s) = "%26" <> percentEncodeS s
+percentEncodeS ('\'' : s) = "%27" <> percentEncodeS s
+percentEncodeS ('(' : s) = "%28" <> percentEncodeS s
+percentEncodeS (')' : s) = "%29" <> percentEncodeS s
+percentEncodeS ('*' : s) = "%2A" <> percentEncodeS s
+percentEncodeS ('+' : s) = "%2B" <> percentEncodeS s
+percentEncodeS (',' : s) = "%2C" <> percentEncodeS s
+percentEncodeS ('/' : s) = "%2F" <> percentEncodeS s
+percentEncodeS (':' : s) = "%3A" <> percentEncodeS s
+percentEncodeS (';' : s) = "%3B" <> percentEncodeS s
+percentEncodeS ('=' : s) = "%3D" <> percentEncodeS s
+percentEncodeS ('?' : s) = "%3F" <> percentEncodeS s
+percentEncodeS ('@' : s) = "%40" <> percentEncodeS s
+percentEncodeS ('[' : s) = "%5B" <> percentEncodeS s
+percentEncodeS (']' : s) = "%5D" <> percentEncodeS s
+percentEncodeS (c : s) = c : percentEncodeS s
+
+percentEncodeT :: Text -> Text
+percentEncodeT = T.pack . percentEncodeS . T.unpack
+
+percentDecodeS :: String -> String
+percentDecodeS "" = ""
+percentDecodeS ('%':'2':'1':s) = '!' : percentDecodeS s
+percentDecodeS ('%':'2':'3':s) = '#' : percentDecodeS s
+percentDecodeS ('%':'2':'4':s) = '$' : percentDecodeS s
+percentDecodeS ('%':'2':'5':s) = '%' : percentDecodeS s
+percentDecodeS ('%':'2':'6':s) = '&' : percentDecodeS s
+percentDecodeS ('%':'2':'7':s) = '\'' : percentDecodeS s
+percentDecodeS ('%':'2':'8':s) = '(' : percentDecodeS s
+percentDecodeS ('%':'2':'9':s) = ')' : percentDecodeS s
+percentDecodeS ('%':'2':'A':s) = '*' : percentDecodeS s
+percentDecodeS ('%':'2':'B':s) = '+' : percentDecodeS s
+percentDecodeS ('%':'2':'C':s) = ',' : percentDecodeS s
+percentDecodeS ('%':'2':'F':s) = '/' : percentDecodeS s
+percentDecodeS ('%':'3':'A':s) = ':' : percentDecodeS s
+percentDecodeS ('%':'3':'B':s) = ';' : percentDecodeS s
+percentDecodeS ('%':'3':'D':s) = '=' : percentDecodeS s
+percentDecodeS ('%':'3':'F':s) = '?' : percentDecodeS s
+percentDecodeS ('%':'4':'0':s) = '@' : percentDecodeS s
+percentDecodeS ('%':'5':'B':s) = '[' : percentDecodeS s
+percentDecodeS ('%':'5':'D':s) = ']' : percentDecodeS s
+percentDecodeS (c : s) = c : percentDecodeS s
+
+percentDecodeT :: Text -> Text
+percentDecodeT = T.pack . percentDecodeS . T.unpack
