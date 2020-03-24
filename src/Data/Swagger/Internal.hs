@@ -28,7 +28,6 @@ import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
 import           Data.Aeson
 import qualified Data.Aeson.Types         as JSON
-import           Data.Coerce
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.Hashable            (Hashable)
 import qualified Data.HashMap.Strict      as HashMap
