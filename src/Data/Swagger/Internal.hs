@@ -56,7 +56,9 @@ import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
                                         ,AesonDefaultValue(..)
                                         ,mkSwaggerAesonOptions
                                         ,saoAdditionalPairs
-                                        ,saoSubObject)
+                                        ,saoSubObject
+                                        ,percentEncodeT
+                                        ,percentDecodeT)
 import Data.Swagger.Internal.Utils
 
 #if MIN_VERSION_aeson(0,10,0)
@@ -1150,10 +1152,11 @@ instance ToJSON SecurityDefinitions where
   toJSON (SecurityDefinitions sd) = toJSON sd
 
 instance ToJSON Reference where
-  toJSON (Reference ref) = object [ "$ref" .= ref ]
+  toJSON (Reference ref) = object [ "$ref" .= percentEncodeT ref ]
 
 referencedToJSON :: ToJSON a => Text -> Referenced a -> Value
-referencedToJSON prefix (Ref (Reference ref)) = object [ "$ref" .= (prefix <> ref) ]
+referencedToJSON prefix (Ref (Reference ref)) =
+  object [ "$ref" .= (prefix <> percentEncodeT ref) ]
 referencedToJSON _ (Inline x) = toJSON x
 
 instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/definitions/"
@@ -1314,7 +1317,7 @@ instance FromJSON SecurityDefinitions where
   parseJSON js = SecurityDefinitions <$> parseJSON js
 
 instance FromJSON Reference where
-  parseJSON (Object o) = Reference <$> o .: "$ref"
+  parseJSON (Object o) = Reference . percentDecodeT <$> o .: "$ref"
   parseJSON _ = empty
 
 referencedParseJSON :: FromJSON a => Text -> Value -> JSON.Parser (Referenced a)
