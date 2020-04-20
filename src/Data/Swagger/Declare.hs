@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFunctor          #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -- |
 -- Module:      Data.Swagger.Declare
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -11,24 +11,24 @@
 -- Declare monad transformer and associated functions.
 module Data.Swagger.Declare where
 
-import Prelude ()
-import Prelude.Compat
+import           Prelude                           ()
+import           Prelude.Compat
 
-import Control.Monad
-import Control.Monad.Cont (ContT)
-import Control.Monad.List (ListT)
-import Control.Monad.Reader (ReaderT)
-import Control.Monad.Trans
-import Control.Monad.Trans.Except (ExceptT)
-import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Trans.Maybe (MaybeT)
-import Control.Monad.Trans.State.Lazy as Lazy
-import Control.Monad.Trans.State.Strict as Strict
-import Control.Monad.Trans.RWS.Lazy as Lazy
-import Control.Monad.Trans.RWS.Strict as Strict
-import Control.Monad.Trans.Writer.Lazy as Lazy
-import Control.Monad.Trans.Writer.Strict as Strict
-import Data.Functor.Identity
+import           Control.Monad
+import           Control.Monad.Cont                (ContT)
+import           Control.Monad.List                (ListT)
+import           Control.Monad.Reader              (ReaderT)
+import           Control.Monad.Trans
+import           Control.Monad.Trans.Except        (ExceptT)
+import           Control.Monad.Trans.Identity      (IdentityT)
+import           Control.Monad.Trans.Maybe         (MaybeT)
+import           Control.Monad.Trans.RWS.Lazy      as Lazy
+import           Control.Monad.Trans.RWS.Strict    as Strict
+import           Control.Monad.Trans.State.Lazy    as Lazy
+import           Control.Monad.Trans.State.Strict  as Strict
+import           Control.Monad.Trans.Writer.Lazy   as Lazy
+import           Control.Monad.Trans.Writer.Strict as Strict
+import           Data.Functor.Identity
 
 -- | A declare monad transformer parametrized by:
 --
@@ -159,10 +159,6 @@ instance MonadDeclare d m => MonadDeclare d (ExceptT e m) where
   look = lift look
 
 instance MonadDeclare d m => MonadDeclare d (IdentityT m) where
-  declare = lift . declare
-  look = lift look
-
-instance MonadDeclare d m => MonadDeclare d (ListT m) where
   declare = lift . declare
   look = lift look
 
