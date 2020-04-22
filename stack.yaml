@@ -1,9 +1,9 @@
-resolver: lts-14.3
+resolver: lts-15.1
 packages:
 - '.'
 extra-deps:
-- optics-core-0.2
-- optics-th-0.2
-- optics-extra-0.2
+- optics-core-0.3
+- optics-th-0.3
+- optics-extra-0.3
 - indexed-profunctors-0.1
-- insert-ordered-containers-0.2.3
+- insert-ordered-containers-0.2.3.1
