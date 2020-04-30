@@ -22,7 +22,7 @@
 -- Validate JSON values with Swagger Schema.
 module Data.Swagger.Internal.Schema.Validation where
 
-import           Prelude ()
+import           Prelude                             ()
 import           Prelude.Compat
 
 import           Control.Applicative
@@ -502,7 +502,7 @@ validateParamSchemaType value = withSchema $ \sch ->
     bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 showType :: (Maybe (SwaggerType t), Value) -> String
-showType (Just type_, _)     = show type_
+showType (Just ty, _)        = show ty
 showType (Nothing, Null)     = "SwaggerNull"
 showType (Nothing, Bool _)   = "SwaggerBoolean"
 showType (Nothing, Number _) = "SwaggerNumber"

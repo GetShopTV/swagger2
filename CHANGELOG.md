@@ -1,3 +1,10 @@
+2.6
+---
+
+- GHC 8.10 support (see [#210]( https://github.com/GetShopTV/swagger2/pull/210 ));
+- Move `aeson-pretty` to other dependencies (see [#206]( https://github.com/GetShopTV/swagger2/pull/206 ));
+- Merge OAuth2 scopes (see [#151]( https://github.com/GetShopTV/swagger2/pull/151 ));
+
 2.5
 ---
 
