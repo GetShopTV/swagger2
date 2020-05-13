@@ -15,6 +15,7 @@ import           Data.Map              (Map)
 import           Data.Proxy
 import           Data.Set              (Set)
 import qualified Data.Text             as Text
+import           Data.Word
 import           GHC.Generics
 
 import           Data.Swagger
@@ -675,5 +676,31 @@ timeOfDayParamSchemaJSON = [aesonQQ|
 {
   "type": "string",
   "format": "hh:MM:ss"
+}
+|]
+
+
+-- ========================================================================
+-- UnsignedInts
+-- ========================================================================
+data UnsignedInts = UnsignedInts
+  { unsignedIntsUint32 :: Word32
+  , unsignedIntsUint64 :: Word64
+  } deriving (Generic)
+
+instance ToSchema UnsignedInts where
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
+    { fieldLabelModifier = map toLower . drop (length "unsignedInts") }
+
+unsignedIntsSchemaJSON :: Value
+unsignedIntsSchemaJSON = [aesonQQ|
+{
+  "type": "object",
+  "properties":
+    {
+      "uint32": { "type": "integer", "format": "int32", "minimum": 0, "maximum": 4294967295 },
+      "uint64": { "type": "integer", "format": "int64", "minimum": 0, "maximum": 18446744073709551615 }
+    },
+  "required": ["uint32", "uint64"]
 }
 |]
