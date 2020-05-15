@@ -147,8 +147,12 @@ instance ToParamSchema Int64 where
 instance ToParamSchema Word   where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word8  where toParamSchema = toParamSchemaBoundedIntegral
 instance ToParamSchema Word16 where toParamSchema = toParamSchemaBoundedIntegral
-instance ToParamSchema Word32 where toParamSchema = toParamSchemaBoundedIntegral
-instance ToParamSchema Word64 where toParamSchema = toParamSchemaBoundedIntegral
+
+instance ToParamSchema Word32 where
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & format ?~ "int32"
+
+instance ToParamSchema Word64 where
+  toParamSchema proxy = toParamSchemaBoundedIntegral proxy & format ?~ "int64"
 
 -- | Default plain schema for @'Bounded'@, @'Integral'@ types.
 --
