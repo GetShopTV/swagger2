@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -10,7 +9,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-#include "overlapping-compat.h"
 -- |
 -- Module:      Data.Swagger.Lens
 -- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
@@ -118,69 +116,63 @@ instance HasDefault ParamOtherSchema (Maybe Value) where default_ = paramSchema.
 -- OVERLAPPABLE instances
 
 instance
-#if __GLASGOW_HASKELL__ >= 710
-  OVERLAPPABLE_
-#endif
+  {-# OVERLAPPABLE #-}
   HasParamSchema s (ParamSchema t)
   => HasFormat s (Maybe Format) where
   format = paramSchema.format
 
 instance
-#if __GLASGOW_HASKELL__ >= 710
-  OVERLAPPABLE_
-#endif
+  {-# OVERLAPPABLE #-}
   HasParamSchema s (ParamSchema t)
   => HasItems s (Maybe (SwaggerItems t)) where
   items = paramSchema.items
 
 instance
-#if __GLASGOW_HASKELL__ >= 710
-  OVERLAPPABLE_
-#endif
+  {-# OVERLAPPABLE #-}
   HasParamSchema s (ParamSchema t)
   => HasMaximum s (Maybe Scientific) where
   maximum_ = paramSchema.maximum_
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasExclusiveMaximum s (Maybe Bool) where
   exclusiveMaximum = paramSchema.exclusiveMaximum
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMinimum s (Maybe Scientific) where
   minimum_ = paramSchema.minimum_
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasExclusiveMinimum s (Maybe Bool) where
   exclusiveMinimum = paramSchema.exclusiveMinimum
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMaxLength s (Maybe Integer) where
   maxLength = paramSchema.maxLength
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMinLength s (Maybe Integer) where
   minLength = paramSchema.minLength
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasPattern s (Maybe Text) where
   pattern = paramSchema.pattern
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMaxItems s (Maybe Integer) where
   maxItems = paramSchema.maxItems
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMinItems s (Maybe Integer) where
   minItems = paramSchema.minItems
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasUniqueItems s (Maybe Bool) where
   uniqueItems = paramSchema.uniqueItems
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasEnum s (Maybe [Value]) where
   enum_ = paramSchema.enum_
 
-instance OVERLAPPABLE_ HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
   => HasMultipleOf s (Maybe Scientific) where
   multipleOf = paramSchema.multipleOf

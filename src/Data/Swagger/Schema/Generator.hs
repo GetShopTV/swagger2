@@ -13,7 +13,6 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import qualified Data.HashMap.Strict.InsOrd              as M
 import           Data.Maybe
-import           Data.Maybe
 import           Data.Proxy
 import           Data.Scientific
 import qualified Data.Set                                as S

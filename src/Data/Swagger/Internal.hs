@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -15,10 +14,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-#if __GLASGOW_HASKELL__ <710
-{-# LANGUAGE PolyKinds #-}
-#endif
-#include "overlapping-compat.h"
 module Data.Swagger.Internal where
 
 import Prelude ()
@@ -58,13 +53,7 @@ import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
                                         ,saoAdditionalPairs
                                         ,saoSubObject)
 import Data.Swagger.Internal.Utils
-
-#if MIN_VERSION_aeson(0,10,0)
 import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToEncoding)
-#define DEFINE_TOENCODING toEncoding = sopSwaggerGenericToEncoding
-#else
-#define DEFINE_TOENCODING
-#endif
 
 -- $setup
 -- >>> :seti -XDataKinds
@@ -416,7 +405,7 @@ instance Data (SwaggerItems 'SwaggerKindParamOtherSchema) where
   dataTypeOf _ = swaggerItemsDataType
 
 instance Data (SwaggerItems 'SwaggerKindSchema) where
-  gfoldl _ _ (SwaggerItemsPrimitive _ _) = error $ " Data.Data.gfoldl: Constructor SwaggerItemsPrimitive used to construct SwaggerItems SwaggerKindSchema"
+  gfoldl _ _ (SwaggerItemsPrimitive _ _) = error " Data.Data.gfoldl: Constructor SwaggerItemsPrimitive used to construct SwaggerItems SwaggerKindSchema"
   gfoldl k z (SwaggerItemsObject ref)    = z SwaggerItemsObject `k` ref
   gfoldl k z (SwaggerItemsArray ref)     = z SwaggerItemsArray `k` ref
 
@@ -832,6 +821,23 @@ data AdditionalProperties
   | AdditionalPropertiesSchema (Referenced Schema)
   deriving (Eq, Show, Data, Typeable)
 
+-------------------------------------------------------------------------------
+-- Generic instances
+-------------------------------------------------------------------------------
+
+deriveGeneric ''Header
+deriveGeneric ''OAuth2Params
+deriveGeneric ''Operation
+deriveGeneric ''Param
+deriveGeneric ''ParamOtherSchema
+deriveGeneric ''PathItem
+deriveGeneric ''Response
+deriveGeneric ''Responses
+deriveGeneric ''SecurityScheme
+deriveGeneric ''Schema
+deriveGeneric ''ParamSchema
+deriveGeneric ''Swagger
+
 -- =======================================================================
 -- Monoid instances
 -- =======================================================================
@@ -928,7 +934,7 @@ instance Semigroup SecurityDefinitions where
      SecurityDefinitions $ InsOrdHashMap.unionWith (<>) sd1 sd2
 
 instance Monoid SecurityDefinitions where
-  mempty = SecurityDefinitions $ InsOrdHashMap.empty
+  mempty = SecurityDefinitions InsOrdHashMap.empty
   mappend = (<>)
 
 -- =======================================================================
@@ -959,7 +965,7 @@ instance SwaggerMonoid ParamLocation where
   swaggerMempty = ParamQuery
   swaggerMappend _ y = y
 
-instance OVERLAPPING_ SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
+instance {-# OVERLAPPING #-} SwaggerMonoid (InsOrdHashMap FilePath PathItem) where
   swaggerMempty = InsOrdHashMap.empty
   swaggerMappend = InsOrdHashMap.unionWith mappend
 
@@ -1060,7 +1066,7 @@ instance ToJSON OAuth2Flow where
 
 instance ToJSON OAuth2Params where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON SecuritySchemeType where
   toJSON SecuritySchemeBasic
@@ -1074,19 +1080,19 @@ instance ToJSON SecuritySchemeType where
 
 instance ToJSON Swagger where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON SecurityScheme where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Schema where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 -- | As for nullary schema for 0-arity type constructors, see
 -- <https://github.com/GetShopTV/swagger2/issues/167>.
@@ -1117,7 +1123,7 @@ instance ToJSON MimeList where
 
 instance ToJSON Param where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON ParamAnySchema where
   toJSON (ParamBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
@@ -1125,23 +1131,23 @@ instance ToJSON ParamAnySchema where
 
 instance ToJSON ParamOtherSchema where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Responses where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Response where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Operation where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON PathItem where
   toJSON = sopSwaggerGenericToJSON
-  DEFINE_TOENCODING
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample
@@ -1366,23 +1372,6 @@ instance FromJSON (ParamSchema 'SwaggerKindSchema) where
 instance FromJSON AdditionalProperties where
   parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
   parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
-
--------------------------------------------------------------------------------
--- TH splices
--------------------------------------------------------------------------------
-
-deriveGeneric ''Header
-deriveGeneric ''OAuth2Params
-deriveGeneric ''Operation
-deriveGeneric ''Param
-deriveGeneric ''ParamOtherSchema
-deriveGeneric ''PathItem
-deriveGeneric ''Response
-deriveGeneric ''Responses
-deriveGeneric ''SecurityScheme
-deriveGeneric ''Schema
-deriveGeneric ''ParamSchema
-deriveGeneric ''Swagger
 
 instance HasSwaggerAesonOptions Header where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "header" & saoSubObject ?~ "paramSchema"

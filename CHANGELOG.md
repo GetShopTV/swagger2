@@ -1,3 +1,11 @@
+2.6.1
+-----
+
+- More GHC-8.10 related cleanup, tighten lower bound on some dependencies.
+  (see [#216]( https://github.com/GetShopTV/swagger2/pull/216 ));
+- Add "format" field for uint32 and uint64
+  (see [#215]( https://github.com/GetShopTV/swagger2/pull/215 ));
+
 2.6
 ---
 

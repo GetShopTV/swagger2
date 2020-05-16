@@ -1,2 +1,0 @@
-:set -itest -isrc -optP-include -optP.stack-work/dist/x86_64-linux/Cabal-1.24.2.0/build/autogen/cabal_macros.h -optP-I -optPinclude
-:set -hide-package base-compat-0.10.4

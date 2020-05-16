@@ -60,7 +60,7 @@ instance (Applicative m, Monad m, Monoid d) => Monad (DeclareT d m) where
     return (mappend d' d'', y)
 
 instance Monoid d => MonadTrans (DeclareT d) where
-  lift m = DeclareT (\_ -> (,) mempty `liftM` m)
+  lift m = DeclareT (\_ -> (,) mempty <$> m)
 
 -- |
 -- Definitions of @declare@ and @look@ must satisfy the following laws:
@@ -103,12 +103,12 @@ looks f = f <$> look
 -- | Evaluate @'DeclareT' d m a@ computation,
 -- ignoring new output @d@.
 evalDeclareT :: Monad m => DeclareT d m a -> d -> m a
-evalDeclareT (DeclareT f) d = snd `liftM` f d
+evalDeclareT (DeclareT f) d = snd <$> f d
 
 -- | Execute @'DeclateT' d m a@ computation,
 -- ignoring result and only producing new output @d@.
 execDeclareT :: Monad m => DeclareT d m a -> d -> m d
-execDeclareT (DeclareT f) d = fst `liftM` f d
+execDeclareT (DeclareT f) d = fst <$> f d
 
 -- | Evaluate @'DeclareT' d m a@ computation,
 -- starting with empty output history.

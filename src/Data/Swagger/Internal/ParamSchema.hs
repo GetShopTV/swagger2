@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -12,13 +11,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-#if __GLASGOW_HASKELL__ >= 800
 -- Generic a is redundant in  ToParamSchema a default imple
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
-#endif
-#include "overlapping-compat.h"
 module Data.Swagger.Internal.ParamSchema where
 
 import Control.Lens
@@ -49,12 +45,9 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.SchemaOptions
 
-#if __GLASGOW_HASKELL__ < 800
-#else
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
-#endif
 
 -- | Default schema for binary data (any sequence of octets).
 binaryParamSchema :: ParamSchema t
@@ -119,7 +112,7 @@ class ToParamSchema a where
   default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => Proxy a -> ParamSchema t
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
-instance OVERLAPPING_ ToParamSchema String where
+instance {-# OVERLAPPING #-} ToParamSchema String where
   toParamSchema _ = mempty & type_ ?~ SwaggerString
 
 instance ToParamSchema Bool where
@@ -239,9 +232,6 @@ instance ToParamSchema SetCookie where
   toParamSchema _ = mempty
     & type_ ?~ SwaggerString
 
-
-#if __GLASGOW_HASKELL__ < 800
-#else
 type family ToParamSchemaByteStringError bs where
   ToParamSchemaByteStringError bs = TypeError
       ( 'Text "Impossible to have an instance " :<>: ShowType (ToParamSchema bs) :<>: Text "."
@@ -250,7 +240,6 @@ type family ToParamSchemaByteStringError bs where
 
 instance ToParamSchemaByteStringError BS.ByteString  => ToParamSchema BS.ByteString  where toParamSchema = error "impossible"
 instance ToParamSchemaByteStringError BSL.ByteString => ToParamSchema BSL.ByteString where toParamSchema = error "impossible"
-#endif
 
 instance ToParamSchema All where toParamSchema _ = toParamSchema (Proxy :: Proxy Bool)
 instance ToParamSchema Any where toParamSchema _ = toParamSchema (Proxy :: Proxy Bool)

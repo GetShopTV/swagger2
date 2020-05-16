@@ -1,20 +1,15 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE TemplateHaskell #-}
-#if __GLASGOW_HASKELL__ >= 800
 {-# LANGUAGE UndecidableSuperClasses #-}
-#endif
 module Data.Swagger.Internal.AesonUtils (
     -- * Generic functions
     AesonDefaultValue(..),
     sopSwaggerGenericToJSON,
-#if MIN_VERSION_aeson(0,10,0)
     sopSwaggerGenericToEncoding,
-#endif
     sopSwaggerGenericToJSONWithOpts,
     sopSwaggerGenericParseJSON,
     -- * Options
@@ -46,9 +41,7 @@ import qualified Data.Set as Set
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
-#if MIN_VERSION_aeson(0,10,0)
 import Data.Aeson (Encoding, pairs, (.=), Series)
-#endif
 
 -------------------------------------------------------------------------------
 -- SwaggerAesonOptions
@@ -146,11 +139,7 @@ sopSwaggerGenericToJSON'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> [Pair]
-#if MIN_VERSION_generics_sop(0,5,0)
 sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
-#else
-sopSwaggerGenericToJSON' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
-#endif
     sopSwaggerGenericToJSON'' opts fields fieldsInfo defs
 sopSwaggerGenericToJSON' _ _ _ _ = error "sopSwaggerGenericToJSON: unsupported type"
 
@@ -179,9 +168,6 @@ sopSwaggerGenericToJSON'' (SwaggerAesonOptions prefix _ sub) = go
         json  = toJSON x
         name' = fieldNameModifier name
         rest  = go xs names defs
-#if __GLASGOW_HASKELL__ < 800
-    go _ _ _ = error "not empty"
-#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)
@@ -226,11 +212,7 @@ sopSwaggerGenericParseJSON'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> Parser (SOP I '[xs])
-#if MIN_VERSION_generics_sop(0,5,0)
 sopSwaggerGenericParseJSON' opts obj (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
-#else
-sopSwaggerGenericParseJSON' opts obj (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
-#endif
     SOP . Z <$> sopSwaggerGenericParseJSON'' opts obj fieldsInfo defs
 sopSwaggerGenericParseJSON' _ _ _ _ = error "sopSwaggerGenericParseJSON: unsupported type"
 
@@ -260,9 +242,6 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
         withDef = case def of
             Just def' -> (<|> pure def')
             Nothing   -> id
-#if __GLASGOW_HASKELL__ < 800
-    go _ _ = error "not empty"
-#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)
@@ -272,8 +251,6 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
 -------------------------------------------------------------------------------
 -- ToEncoding
 -------------------------------------------------------------------------------
-
-#if MIN_VERSION_aeson(0,10,0)
 
 sopSwaggerGenericToEncoding
     :: forall a xs.
@@ -302,11 +279,7 @@ sopSwaggerGenericToEncoding'
     -> DatatypeInfo '[xs]
     -> POP Maybe '[xs]
     -> Series
-#if MIN_VERSION_generics_sop(0,5,0)
 sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil) _) (POP (defs :* Nil)) =
-#else
-sopSwaggerGenericToEncoding' opts (SOP (Z fields)) (ADT _ _ (Record _ fieldsInfo :* Nil)) (POP (defs :* Nil)) =
-#endif
     sopSwaggerGenericToEncoding'' opts fields fieldsInfo defs
 sopSwaggerGenericToEncoding' _ _ _ _ = error "sopSwaggerGenericToEncoding: unsupported type"
 
@@ -334,13 +307,8 @@ sopSwaggerGenericToEncoding'' (SwaggerAesonOptions prefix _ sub) = go
       where
         name' = fieldNameModifier name
         rest  = go xs names defs
-#if __GLASGOW_HASKELL__ < 800
-    go _ _ _ = error "not empty"
-#endif
 
     fieldNameModifier = modifier . drop 1
     modifier = lowerFirstUppers . drop (length prefix)
     lowerFirstUppers s = map toLower x ++ y
       where (x, y) = span isUpper s
-
-#endif
