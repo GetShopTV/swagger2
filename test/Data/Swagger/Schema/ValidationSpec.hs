@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE PackageImports      #-}
 {-# LANGUAGE RecordWildCards     #-}

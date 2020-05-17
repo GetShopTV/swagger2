@@ -1,7 +1,5 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -37,11 +35,6 @@ type family TypeHasSimpleShape t (f :: Symbol) :: Constraint where
 type family GenericHasSimpleShape t (f :: Symbol) (s :: TypeShape) :: Constraint where
   GenericHasSimpleShape t f Enumeration   = ()
   GenericHasSimpleShape t f SumOfProducts = ()
-#if __GLASGOW_HASKELL__ < 800
-  GenericHasSimpleShape t f Mixed = CannotDeriveSchemaForMixedSumType t
-
-class CannotDeriveSchemaForMixedSumType t where
-#else
   GenericHasSimpleShape t f Mixed =
     TypeError
       (     Text "Cannot derive Generic-based Swagger Schema for " :<>: ShowType t
@@ -51,7 +44,6 @@ class CannotDeriveSchemaForMixedSumType t where
       :$$:  Text "that matches aeson's Generic-based toJSON,"
       :$$:  Text "but that's not supported by some Swagger tools."
       )
-#endif
 
 -- | Infer a 'TypeShape' for a generic representation of a type.
 type family GenericShape (g :: * -> *) :: TypeShape
@@ -62,5 +54,3 @@ type instance GenericShape (D1  d f)        = GenericShape f
 type instance GenericShape (C1 c U1)        = Enumeration
 type instance GenericShape (C1 c (S1 s f))  = SumOfProducts
 type instance GenericShape (C1 c (f :*: g)) = SumOfProducts
-
-

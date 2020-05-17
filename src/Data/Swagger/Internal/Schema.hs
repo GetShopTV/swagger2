@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -15,13 +14,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-#if __GLASGOW_HASKELL__ >= 800
--- Few generics related redundant constraints
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 -- For TypeErrors
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
-#endif
-#include "overlapping-compat.h"
 module Data.Swagger.Internal.Schema where
 
 import Prelude ()
@@ -71,12 +66,9 @@ import qualified Data.Swagger.Lens as Swagger
 import Data.Swagger.SchemaOptions
 import Data.Swagger.Internal.TypeShape
 
-#if __GLASGOW_HASKELL__ < 800
-#else
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
-#endif
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -416,14 +408,14 @@ sketchStrictSchema = go . toJSON
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
 
-instance OVERLAPPABLE_ ToSchema a => ToSchema [a] where
+instance {-# OVERLAPPABLE #-} ToSchema a => ToSchema [a] where
   declareNamedSchema _ = do
     ref <- declareSchemaRef (Proxy :: Proxy a)
     return $ unnamed $ mempty
       & type_ ?~ SwaggerArray
       & items ?~ SwaggerItemsObject ref
 
-instance OVERLAPPING_ ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
+instance {-# OVERLAPPING #-} ToSchema String where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Bool    where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Integer where declareNamedSchema = plain . paramSchemaToSchema
 instance ToSchema Natural where declareNamedSchema = plain . paramSchemaToSchema
@@ -505,8 +497,6 @@ instance ToSchema TL.Text where declareNamedSchema = plain . paramSchemaToSchema
 
 instance ToSchema Version where declareNamedSchema = plain . paramSchemaToSchema
 
-#if __GLASGOW_HASKELL__ < 800
-#else
 type family ToSchemaByteStringError bs where
   ToSchemaByteStringError bs = TypeError
       ( Text "Impossible to have an instance " :<>: ShowType (ToSchema bs) :<>: Text "."
@@ -515,7 +505,6 @@ type family ToSchemaByteStringError bs where
 
 instance ToSchemaByteStringError BS.ByteString  => ToSchema BS.ByteString  where declareNamedSchema = error "impossible"
 instance ToSchemaByteStringError BSL.ByteString => ToSchema BSL.ByteString where declareNamedSchema = error "impossible"
-#endif
 
 instance ToSchema IntSet where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Set Int))
 
@@ -523,7 +512,6 @@ instance ToSchema IntSet where declareNamedSchema _ = declareNamedSchema (Proxy 
 instance ToSchema a => ToSchema (IntMap a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy [(Int, a)])
 
-#if MIN_VERSION_aeson(1,0,0)
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
   declareNamedSchema _ = case toJSONKey :: ToJSONKeyFunction k of
       ToJSONKeyText  _ _ -> declareObjectMapSchema
@@ -538,25 +526,7 @@ instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (Map k v) where
 instance (ToJSONKey k, ToSchema k, ToSchema v) => ToSchema (HashMap k v) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map k v))
 
-#else
-
-instance ToSchema a => ToSchema (Map String a) where
-  declareNamedSchema _ = do
-    schema <- declareSchemaRef (Proxy :: Proxy a)
-    return $ unnamed $ mempty
-      & type_ ?~ SwaggerObject
-      & additionalProperties ?~ schema
-
-instance ToSchema a => ToSchema (Map T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (Map TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-
-instance ToSchema a => ToSchema (HashMap String  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap T.Text  a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-instance ToSchema a => ToSchema (HashMap TL.Text a) where declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy (Map String a))
-
-#endif
-
-instance OVERLAPPING_ ToSchema Object where
+instance {-# OVERLAPPING #-} ToSchema Object where
   declareNamedSchema _ = pure $ NamedSchema (Just "Object") $ mempty
     & type_ ?~ SwaggerObject
     & description ?~ "Arbitrary JSON object."
@@ -738,10 +708,10 @@ instance (Datatype d, GToSchema f) => GToSchema (D1 d f) where
     where
       name = gdatatypeSchemaName opts (Proxy :: Proxy d)
 
-instance OVERLAPPABLE_ GToSchema f => GToSchema (C1 c f) where
+instance {-# OVERLAPPABLE #-} GToSchema f => GToSchema (C1 c f) where
   gdeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy f)
 
-instance OVERLAPPING_ Constructor c => GToSchema (C1 c U1) where
+instance {-# OVERLAPPING #-} Constructor c => GToSchema (C1 c U1) where
   gdeclareNamedSchema = gdeclareNamedSumSchema
 
 -- | Single field constructor.
@@ -804,17 +774,17 @@ withFieldSchema opts _ isRequiredField schema = do
     fname = T.pack (fieldLabelModifier opts (selName (Proxy3 :: Proxy3 s f p)))
 
 -- | Optional record fields.
-instance OVERLAPPING_ (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
+instance {-# OVERLAPPING #-} (Selector s, ToSchema c) => GToSchema (S1 s (K1 i (Maybe c))) where
   gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s (K1 i (Maybe c))) False
 
 -- | Record fields.
-instance OVERLAPPABLE_ (Selector s, GToSchema f) => GToSchema (S1 s f) where
+instance {-# OVERLAPPABLE #-} (Selector s, GToSchema f) => GToSchema (S1 s f) where
   gdeclareNamedSchema opts _ = fmap unnamed . withFieldSchema opts (Proxy2 :: Proxy2 s f) True
 
-instance OVERLAPPING_ ToSchema c => GToSchema (K1 i (Maybe c)) where
+instance {-# OVERLAPPING #-} ToSchema c => GToSchema (K1 i (Maybe c)) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
-instance OVERLAPPABLE_ ToSchema c => GToSchema (K1 i c) where
+instance {-# OVERLAPPABLE #-} ToSchema c => GToSchema (K1 i c) where
   gdeclareNamedSchema _ _ _ = declareNamedSchema (Proxy :: Proxy c)
 
 instance ( GSumToSchema f
@@ -859,7 +829,7 @@ gsumConToSchema opts proxy schema = do
   ref <- gdeclareSchemaRef opts proxy
   return $ gsumConToSchemaWith ref opts proxy schema
 
-instance OVERLAPPABLE_ (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
+instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
   gsumToSchema opts proxy schema = do
     tell (All False)
     lift $ gsumConToSchema opts proxy schema
