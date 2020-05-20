@@ -46,6 +46,7 @@ spec = do
   describe "OAuth2 Security Definitions with merged Scope" $ oAuth2SecurityDefinitionsExample <=> oAuth2SecurityDefinitionsExampleJSON
   describe "Composition Schema Example" $ compositionSchemaExample <=> compositionSchemaExampleJSON
   describe "Swagger Object" $ do
+    context "Example with no paths" $ emptyPathsFieldExample <=> emptyPathsFieldExampleJSON
     context "Todo Example" $ swaggerExample <=> swaggerExampleJSON
     context "PetStore Example" $
       it "decodes successfully" $ do
@@ -536,6 +537,18 @@ oAuth2SecurityDefinitionsExampleJSON = [aesonQQ|
 -- =======================================================================
 -- Swagger object
 -- =======================================================================
+
+emptyPathsFieldExample :: Swagger
+emptyPathsFieldExample = mempty
+
+emptyPathsFieldExampleJSON :: Value
+emptyPathsFieldExampleJSON = [aesonQQ|
+{
+  "swagger": "2.0",
+  "info": {"version": "", "title": ""},
+  "paths": {}
+}
+|]
 
 swaggerExample :: Swagger
 swaggerExample = mempty
