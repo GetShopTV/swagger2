@@ -73,7 +73,7 @@ library
   -- other dependencies
   build-depends:
       base-compat-batteries     >=0.11.1   && <0.12
-    , aeson                     >=1.4.2.0  && <1.5
+    , aeson                     >=1.4.2.0  && <1.6
     , aeson-pretty              >=0.8.7    && <0.9
     -- cookie 0.4.3 is needed by GHC 7.8 due to time>=1.4 constraint
     , cookie                    >=0.4.3    && <0.5
