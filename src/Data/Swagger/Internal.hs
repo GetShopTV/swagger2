@@ -183,7 +183,7 @@ data ServerVariable = ServerVariable
 -- All objects defined within the components object will have no effect on the API
 -- unless they are explicitly referenced from properties outside the components object.
 data Components = Components
-  { _componentsSchemas :: Definitions Schema -- TODO check Schema itself
+  { _componentsSchemas :: Definitions Schema
   , _componentsResponses :: Definitions Response
   , _componentsParameters :: Definitions Param
 --  , _componentsExamples
@@ -603,11 +603,15 @@ data Schema = Schema
   , _schemaDescription :: Maybe Text
   , _schemaRequired :: [ParamName]
 
+  , _schemaNullable :: Maybe Bool
   , _schemaAllOf :: Maybe [Referenced Schema]
+  , _schemaOneOf :: Maybe [Referenced Schema]
+  , _schemaNot :: Maybe (Referenced Schema)
+  , _schemaAnyOf :: Maybe [Referenced Schema]
   , _schemaProperties :: InsOrdHashMap Text (Referenced Schema)
   , _schemaAdditionalProperties :: Maybe AdditionalProperties
 
-  , _schemaDiscriminator :: Maybe Text
+  , _schemaDiscriminator :: Maybe Text -- FIXME Discriminator object
   , _schemaReadOnly :: Maybe Bool
   , _schemaXml :: Maybe Xml
   , _schemaExternalDocs :: Maybe ExternalDocs
