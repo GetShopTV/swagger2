@@ -1508,7 +1508,7 @@ instance HasSwaggerAesonOptions SecurityScheme where
 instance HasSwaggerAesonOptions Schema where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "schema" & saoSubObject ?~ "paramSchema"
 instance HasSwaggerAesonOptions Swagger where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0")]
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0.3")]
 
 instance HasSwaggerAesonOptions (ParamSchema ('SwaggerKindNormal t)) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
