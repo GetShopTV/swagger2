@@ -39,6 +39,7 @@ import Data.List.Compat
 import Data.Maybe (mapMaybe)
 import Data.Proxy
 import qualified Data.Set as Set
+import Data.Text (Text)
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -118,12 +119,14 @@ applyTagsFor ops ts swag = swag
 -- | Construct a response with @'Schema'@ while declaring all
 -- necessary schema definitions.
 --
+-- FIXME doc
+--
 -- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
 -- "[{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
-declareResponse :: ToSchema a => Proxy a -> Declare (Definitions Schema) Response
-declareResponse proxy = do
+declareResponse :: ToSchema a => Text -> Proxy a -> Declare (Definitions Schema) Response
+declareResponse cType proxy = do
   s <- declareSchemaRef proxy
-  return (mempty & schema ?~ s)
+  return (mempty & content.at cType ?~ (mempty & schema ?~ s))
 
 -- | Set response for all operations.
 -- This will also update global schema definitions.
@@ -167,7 +170,7 @@ setResponseWith = setResponseForWith allOperations
 -- See also @'setResponseForWith'@.
 setResponseFor :: Traversal' Swagger Operation -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
 setResponseFor ops code dres swag = swag
-  & definitions %~ (<> defs)
+  & components.schemas %~ (<> defs)
   & ops . at code ?~ Inline res
   where
     (defs, res) = runDeclare dres mempty
@@ -181,12 +184,12 @@ setResponseFor ops code dres swag = swag
 -- See also @'setResponseFor'@.
 setResponseForWith :: Traversal' Swagger Operation -> (Response -> Response -> Response) -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
 setResponseForWith ops f code dres swag = swag
-  & definitions %~ (<> defs)
+  & components.schemas %~ (<> defs)
   & ops . at code %~ Just . Inline . combine
   where
     (defs, new) = runDeclare dres mempty
 
-    combine (Just (Ref (Reference n))) = case swag ^. responses.at n of
+    combine (Just (Ref (Reference n))) = case swag ^. components.responses.at n of
       Just old -> f old new
       Nothing  -> new -- response name can't be dereferenced, replacing with new response
     combine (Just (Inline old)) = f old new
