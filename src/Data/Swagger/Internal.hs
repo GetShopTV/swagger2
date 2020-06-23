@@ -1257,11 +1257,10 @@ referencedToJSON :: ToJSON a => Text -> Referenced a -> Value
 referencedToJSON prefix (Ref (Reference ref)) = object [ "$ref" .= (prefix <> ref) ]
 referencedToJSON _ (Inline x) = toJSON x
 
--- FIXME this stuff
-instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/definitions/"
-instance ToJSON (Referenced Param)    where toJSON = referencedToJSON "#/parameters/"
-instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/responses/"
-instance ToJSON (Referenced RequestBody) where toJSON = referencedToJSON "#/!!!!/"
+instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/components/schemas/"
+instance ToJSON (Referenced Param)    where toJSON = referencedToJSON "#/components/parameters/"
+instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/components/responses/"
+instance ToJSON (Referenced RequestBody) where toJSON = referencedToJSON "#/components/requestBodies/"
 
 instance ToJSON (SwaggerType t) where
   toJSON SwaggerArray   = "array"
@@ -1442,11 +1441,10 @@ referencedParseJSON prefix js@(Object o) = do
         Just suffix -> pure (Reference suffix)
 referencedParseJSON _ _ = fail "referenceParseJSON: not an object"
 
--- FIXME this stuff
-instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/definitions/"
-instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/parameters/"
-instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#/responses/"
-instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/!!!!/"
+instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/components/schemas/"
+instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/components/parameters/"
+instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#/components/responses/"
+instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/components/requestBodies"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
