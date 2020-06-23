@@ -68,56 +68,28 @@ data Swagger = Swagger
     -- The metadata can be used by the clients if needed.
     _swaggerInfo :: Info
 
-    -- | The host (name or ip) serving the API. It MAY include a port.
-    -- If the host is not included, the host serving the documentation is to be used (including the port).
-  , _swaggerHost :: Maybe Host
-
-    -- | The base path on which the API is served, which is relative to the host.
-    -- If it is not included, the API is served directly under the host.
-    -- The value MUST start with a leading slash (/).
-  , _swaggerBasePath :: Maybe FilePath
-
-    -- | The transfer protocol of the API.
-    -- If the schemes is not included, the default scheme to be used is the one used to access the Swagger definition itself.
-  , _swaggerSchemes :: Maybe [Scheme]
-
-    -- | A list of MIME types the APIs can consume.
-    -- This is global to all APIs but can be overridden on specific API calls.
-  , _swaggerConsumes :: MimeList
-
-    -- | A list of MIME types the APIs can produce.
-    -- This is global to all APIs but can be overridden on specific API calls.
-  , _swaggerProduces :: MimeList
+    -- | An array of Server Objects, which provide connectivity information
+    -- to a target server. If the servers property is not provided, or is an empty array,
+    -- the default value would be a 'Server' object with a url value of @/@.
+  , _swaggerServers :: [Server]
 
     -- | The available paths and operations for the API.
-    -- Holds the relative paths to the individual endpoints.
-    -- The path is appended to the @'basePath'@ in order to construct the full URL.
   , _swaggerPaths :: InsOrdHashMap FilePath PathItem
 
-    -- | An object to hold data types produced and consumed by operations.
-  , _swaggerDefinitions :: Definitions Schema
+    -- | An element to hold various schemas for the specification.
+  , _swaggerComponents :: Components
 
-    -- | An object to hold parameters that can be used across operations.
-    -- This property does not define global parameters for all operations.
-  , _swaggerParameters :: Definitions Param
-
-    -- | An object to hold responses that can be used across operations.
-    -- This property does not define global responses for all operations.
-  , _swaggerResponses :: Definitions Response
-
-    -- | Security scheme definitions that can be used across the specification.
-  , _swaggerSecurityDefinitions :: SecurityDefinitions
-
-    -- | A declaration of which security schemes are applied for the API as a whole.
-    -- The list of values describes alternative security schemes that can be used
-    -- (that is, there is a logical OR between the security requirements).
+    -- | A declaration of which security mechanisms can be used across the API.
+    -- The list of values includes alternative security requirement objects that can be used.
+    -- Only one of the security requirement objects need to be satisfied to authorize a request.
     -- Individual operations can override this definition.
+    -- To make security optional, an empty security requirement can be included in the array.
   , _swaggerSecurity :: [SecurityRequirement]
 
     -- | A list of tags used by the specification with additional metadata.
     -- The order of the tags can be used to reflect on their order by the parsing tools.
-    -- Not all tags that are used by the Operation Object must be declared.
-    -- The tags that are not declared may be organized randomly or based on the tools' logic.
+    -- Not all tags that are used by the 'Operation' Object must be declared.
+    -- The tags that are not declared MAY be organized randomly or based on the tools' logic.
     -- Each tag name in the list MUST be unique.
   , _swaggerTags :: InsOrdHashSet Tag
 
@@ -126,17 +98,17 @@ data Swagger = Swagger
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The object provides metadata about the API.
--- The metadata can be used by the clients if needed,
--- and can be presented in the Swagger-UI for convenience.
+-- The metadata MAY be used by the clients if needed,
+-- and MAY be presented in editing or documentation generation tools for convenience.
 data Info = Info
-  { -- | The title of the application.
+  { -- | The title of the API.
     _infoTitle :: Text
 
-    -- | A short description of the application.
-    -- GFM syntax can be used for rich text representation.
+    -- | A short description of the API.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
   , _infoDescription :: Maybe Text
 
-    -- | The Terms of Service for the API.
+    -- | A URL to the Terms of Service for the API. MUST be in the format of a URL.
   , _infoTermsOfService :: Maybe Text
 
     -- | The contact information for the exposed API.
@@ -145,8 +117,8 @@ data Info = Info
     -- | The license information for the exposed API.
   , _infoLicense :: Maybe License
 
-    -- | Provides the version of the application API
-    -- (not to be confused with the specification version).
+    -- | The version of the OpenAPI document (which is distinct from the
+    -- OpenAPI Specification version or the API implementation version).
   , _infoVersion :: Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
@@ -173,6 +145,54 @@ data License = License
 
 instance IsString License where
   fromString s = License (fromString s) Nothing
+
+-- | An object representing a Server.
+data Server = Server
+  { -- | A URL to the target host. This URL supports Server Variables and MAY be relative,
+    -- to indicate that the host location is relative to the location where
+    -- the OpenAPI document is being served. Variable substitutions will be made when
+    -- a variable is named in @{brackets}@.
+    _serverUrl :: Text
+
+    -- | An optional string describing the host designated by the URL.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
+  , _serverDescription :: Maybe Text
+
+    -- | A map between a variable name and its value.
+    -- The value is used for substitution in the server's URL template.
+  , _serverVariables :: InsOrdHashMap Text ServerVariable
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data ServerVariable = ServerVariable
+  { -- | An enumeration of string values to be used if the substitution options
+    -- are from a limited set. The array SHOULD NOT be empty.
+    _serverVariableEnum :: Maybe (InsOrdHashSet Text) -- TODO NonEmpty
+
+    -- | The default value to use for substitution, which SHALL be sent if an alternate value
+    -- is not supplied. Note this behavior is different than the 'Schema\ Object's treatment
+    -- of default values, because in those cases parameter values are optional.
+    -- If the '_serverVariableEnum' is defined, the value SHOULD exist in the enum's values.
+  , _serverVariableDefault :: Text
+
+    -- | An optional description for the server variable.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
+  , _serverVariableDescription :: Maybe Text
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Holds a set of reusable objects for different aspects of the OAS.
+-- All objects defined within the components object will have no effect on the API
+-- unless they are explicitly referenced from properties outside the components object.
+data Components = Components
+  { _componentsSchemas :: Definitions Schema -- TODO check Schema itself
+  , _componentsResponses :: Definitions Response
+  , _componentsParameters :: Definitions Param
+--  , _componentsExamples
+  , _componentsRequestBodies :: Definitions RequestBody
+  , _componentsHeader :: Definitions Header
+  , _componentsSecuritySchemes :: Definitions SecurityScheme
+--  , _componentsLinks
+--  , _componentsCallbacks
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The host (name or ip) serving the API. It MAY include a port.
 data Host = Host
@@ -209,8 +229,15 @@ data Scheme
 -- The path itself is still exposed to the documentation viewer
 -- but they will not know which operations and parameters are available.
 data PathItem = PathItem
-  { -- | A definition of a GET operation on this path.
-    _pathItemGet :: Maybe Operation
+  { -- | An optional, string summary, intended to apply to all operations in this path.
+    _pathItemSummary :: Maybe Text
+
+    -- | An optional, string description, intended to apply to all operations in this path.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
+  , _pathItemDescription :: Maybe Text
+
+    -- | A definition of a GET operation on this path.
+  , _pathItemGet :: Maybe Operation
 
     -- | A definition of a PUT operation on this path.
   , _pathItemPut :: Maybe Operation
@@ -230,6 +257,12 @@ data PathItem = PathItem
     -- | A definition of a PATCH operation on this path.
   , _pathItemPatch :: Maybe Operation
 
+    -- | A definition of a TRACE operation on this path.
+  , _pathItemTrace :: Maybe Operation
+
+    -- | An alternative server array to service all operations in this path.
+  , _pathItemServers :: [Server]
+
     -- | A list of parameters that are applicable for all the operations described under this path.
     -- These parameters can be overridden at the operation level, but cannot be removed there.
     -- The list MUST NOT include duplicated parameters.
@@ -248,7 +281,7 @@ data Operation = Operation
   , _operationSummary :: Maybe Text
 
     -- | A verbose explanation of the operation behavior.
-    -- GFM syntax can be used for rich text representation.
+    -- [CommonMark syntax](https://spec.commonmark.org/) can be used for rich text representation.
   , _operationDescription :: Maybe Text
 
     -- | Additional external documentation for this operation.
@@ -256,19 +289,10 @@ data Operation = Operation
 
     -- | Unique string used to identify the operation.
     -- The id MUST be unique among all operations described in the API.
-    -- Tools and libraries MAY use the it to uniquely identify an operation,
-    -- therefore, it is recommended to follow common programming naming conventions.
+    -- The operationId value is **case-sensitive**.
+    -- Tools and libraries MAY use the operationId to uniquely identify an operation, therefore,
+    -- it is RECOMMENDED to follow common programming naming conventions.
   , _operationOperationId :: Maybe Text
-
-    -- | A list of MIME types the operation can consume.
-    -- This overrides the @'consumes'@.
-    -- @Just []@ MAY be used to clear the global definition.
-  , _operationConsumes :: Maybe MimeList
-
-    -- | A list of MIME types the operation can produce.
-    -- This overrides the @'produces'@.
-    -- @Just []@ MAY be used to clear the global definition.
-  , _operationProduces :: Maybe MimeList
 
     -- | A list of parameters that are applicable for this operation.
     -- If a parameter is already defined at the @'PathItem'@,
@@ -277,12 +301,17 @@ data Operation = Operation
     -- A unique parameter is defined by a combination of a name and location.
   , _operationParameters :: [Referenced Param]
 
+    -- | The request body applicable for this operation.
+    -- The requestBody is only supported in HTTP methods where the HTTP 1.1
+    -- specification [RFC7231](https://tools.ietf.org/html/rfc7231#section-4.3.1)
+    -- has explicitly defined semantics for request bodies.
+    -- In other cases where the HTTP spec is vague, requestBody SHALL be ignored by consumers.
+  , _operationRequestBody :: Maybe (Referenced RequestBody)
+
     -- | The list of possible responses as they are returned from executing this operation.
   , _operationResponses :: Responses
 
-    -- | The transfer protocol for the operation.
-    -- The value overrides @'schemes'@.
-  , _operationSchemes :: Maybe [Scheme]
+    -- TODO callbacks
 
     -- | Declares this operation to be deprecated.
     -- Usage of the declared operation should be refrained.
@@ -295,6 +324,37 @@ data Operation = Operation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , _operationSecurity :: [SecurityRequirement]
+
+    -- | An alternative server array to service this operation.
+    -- If an alternative server object is specified at the 'PathItem' Object or Root level,
+    -- it will be overridden by this value.
+  , _operationServers :: [Server]
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Describes a single request body.
+data RequestBody = RequestBody
+  { -- | A brief description of the request body. This could contain examples of use.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
+    _requestBodyDescription :: Maybe Text
+
+    -- | The content of the request body.
+    -- The key is a media type or media type range and the value describes it.
+    -- For requests that match multiple keys, only the most specific key is applicable.
+    -- e.g. @text/plain@ overrides @text/*@
+  , _requestBodyContent :: InsOrdHashMap {-MediaType-} Text MediaTypeObject -- FIXME Data MediaType
+
+  , _requestBodyRequired :: Maybe Bool
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Each Media Type Object provides schema and examples for the media type identified by its key.
+data MediaTypeObject = MediaTypeObject
+  { _mediaTypeSchema :: Maybe (Referenced Schema)
+
+-- TODO
+--  , _mediaTypeExample
+--  , _mediaTypeExamples
+
+--  , _mediaTypeEncoding :: InsOrdHashMap Text Encoding
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
@@ -494,14 +554,8 @@ data ParamLocation
     -- This does not include the host or base path of the API.
     -- For example, in @/items/{itemId}@, the path parameter is @itemId@.
   | ParamPath
-    -- | Used to describe the payload of an HTTP request when either @application/x-www-form-urlencoded@
-    -- or @multipart/form-data@ are used as the content type of the request
-    -- (in Swagger's definition, the @consumes@ property of an operation).
-    -- This is the only parameter type that can be used to send files, thus supporting the @'ParamFile'@ type.
-    -- Since form parameters are sent in the payload, they cannot be declared together with a body parameter for the same operation.
-    -- Form parameters have a different format based on the content-type used
-    -- (for further details, consult <http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4>).
-  | ParamFormData
+    -- | Used to pass a specific cookie value to the API.
+  | ParamCookie
   deriving (Eq, Show, Generic, Data, Typeable)
 
 type Format = Text
@@ -650,25 +704,23 @@ type HttpStatusCode = Int
 -- | Describes a single response from an API Operation.
 data Response = Response
   { -- | A short description of the response.
-    -- GFM syntax can be used for rich text representation.
+    -- [CommonMark syntax](https://spec.commonmark.org/) can be used for rich text representation.
     _responseDescription :: Text
 
-    -- | A definition of the response structure.
-    -- It can be a primitive, an array or an object.
-    -- If this field does not exist, it means no content is returned as part of the response.
-    -- As an extension to the Schema Object, its root type value may also be "file".
-    -- This SHOULD be accompanied by a relevant produces mime-type.
-  , _responseSchema :: Maybe (Referenced Schema)
+    -- | A map containing descriptions of potential response payloads.
+    -- The key is a media type or media type range and the value describes it.
+    -- For responses that match multiple keys, only the most specific key is applicable.
+    -- e.g. @text/plain@ overrides @text/*@.
+  , _responseContent :: InsOrdHashMap Text MediaTypeObject
 
-    -- | A list of headers that are sent with the response.
-  , _responseHeaders :: InsOrdHashMap HeaderName Header
+    -- | Maps a header name to its definition.
+  , _responseHeaders :: InsOrdHashMap HeaderName Header -- FIXME Referenced
 
-    -- | An example of the response message.
-  , _responseExamples :: Maybe Example
+  -- TODO links
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 instance IsString Response where
-  fromString s = Response (fromString s) Nothing mempty Nothing
+  fromString s = Response (fromString s) mempty mempty
 
 type HeaderName = Text
 
@@ -699,6 +751,7 @@ instance Data Example where
 data ApiKeyLocation
   = ApiKeyQuery
   | ApiKeyHeader
+  | ApiKeyCookie
   deriving (Eq, Show, Generic, Data, Typeable)
 
 data ApiKeyParams = ApiKeyParams
@@ -731,9 +784,10 @@ data OAuth2Params = OAuth2Params
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecuritySchemeType
-  = SecuritySchemeBasic
+  = SecuritySchemeHttp
   | SecuritySchemeApiKey ApiKeyParams
   | SecuritySchemeOAuth2 OAuth2Params
+--  | SecuritySchemeOpenIdConnect -- FIXME
   deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecurityScheme = SecurityScheme
@@ -825,6 +879,7 @@ data AdditionalProperties
 -- Generic instances
 -------------------------------------------------------------------------------
 
+deriveGeneric ''Components
 deriveGeneric ''Header
 deriveGeneric ''OAuth2Params
 deriveGeneric ''Operation
@@ -832,6 +887,8 @@ deriveGeneric ''Param
 deriveGeneric ''ParamOtherSchema
 deriveGeneric ''PathItem
 deriveGeneric ''Response
+deriveGeneric ''RequestBody
+deriveGeneric ''MediaTypeObject
 deriveGeneric ''Responses
 deriveGeneric ''SecurityScheme
 deriveGeneric ''Schema
@@ -857,6 +914,12 @@ instance Monoid Info where
 instance Semigroup Contact where
   (<>) = genericMappend
 instance Monoid Contact where
+  mempty = genericMempty
+  mappend = (<>)
+
+instance Semigroup Components where
+  (<>) = genericMappend
+instance Monoid Components where
   mempty = genericMempty
   mappend = (<>)
 
@@ -942,6 +1005,7 @@ instance Monoid SecurityDefinitions where
 -- =======================================================================
 
 instance SwaggerMonoid Info
+instance SwaggerMonoid Components
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
 instance SwaggerMonoid (ParamSchema t)
@@ -996,6 +1060,12 @@ instance ToJSON Contact where
 instance ToJSON License where
   toJSON = genericToJSON (jsonPrefix "License")
 
+instance ToJSON Server where
+  toJSON = genericToJSON (jsonPrefix "Server")
+
+instance ToJSON ServerVariable where
+  toJSON = genericToJSON (jsonPrefix "ServerVariable")
+
 instance ToJSON ApiKeyLocation where
   toJSON = genericToJSON (jsonPrefix "ApiKey")
 
@@ -1029,6 +1099,12 @@ instance FromJSON Contact where
 
 instance FromJSON License where
   parseJSON = genericParseJSON (jsonPrefix "License")
+
+instance FromJSON Server where
+  parseJSON = genericParseJSON (jsonPrefix "Server")
+
+instance FromJSON ServerVariable where
+  parseJSON = genericParseJSON (jsonPrefix "ServerVariable")
 
 instance FromJSON ApiKeyLocation where
   parseJSON = genericParseJSON (jsonPrefix "ApiKey")
@@ -1069,8 +1145,8 @@ instance ToJSON OAuth2Params where
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON SecuritySchemeType where
-  toJSON SecuritySchemeBasic
-      = object [ "type" .= ("basic" :: Text) ]
+  toJSON SecuritySchemeHttp
+      = object [ "type" .= ("http" :: Text) ]
   toJSON (SecuritySchemeApiKey params)
       = toJSON params
     <+> object [ "type" .= ("apiKey" :: Text) ]
@@ -1115,6 +1191,10 @@ instance ToJSON (ParamSchema t) => ToJSON (SwaggerItems t) where
     ]
   toJSON (SwaggerItemsArray  x) = object [ "items" .= x ]
 
+instance ToJSON Components where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
+
 instance ToJSON Host where
   toJSON (Host host mport) = toJSON $
     case mport of
@@ -1152,6 +1232,14 @@ instance ToJSON PathItem where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
+instance ToJSON RequestBody where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
+
+instance ToJSON MediaTypeObject where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
+
 instance ToJSON Example where
   toJSON = toJSON . Map.mapKeys show . getExample
 
@@ -1165,9 +1253,11 @@ referencedToJSON :: ToJSON a => Text -> Referenced a -> Value
 referencedToJSON prefix (Ref (Reference ref)) = object [ "$ref" .= (prefix <> ref) ]
 referencedToJSON _ (Inline x) = toJSON x
 
+-- FIXME this stuff
 instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/definitions/"
 instance ToJSON (Referenced Param)    where toJSON = referencedToJSON "#/parameters/"
 instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/responses/"
+instance ToJSON (Referenced RequestBody) where toJSON = referencedToJSON "#/!!!!/"
 
 instance ToJSON (SwaggerType t) where
   toJSON SwaggerArray   = "array"
@@ -1219,7 +1309,7 @@ instance FromJSON SecuritySchemeType where
   parseJSON js@(Object o) = do
     (t :: Text) <- o .: "type"
     case t of
-      "basic"  -> pure SecuritySchemeBasic
+      "http"   -> pure SecuritySchemeHttp
       "apiKey" -> SecuritySchemeApiKey <$> parseJSON js
       "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON js
       _ -> empty
@@ -1271,6 +1361,9 @@ instance FromJSON (SwaggerItems 'SwaggerKindSchema) where
   parseJSON js@(Array _)  = SwaggerItemsArray  <$> parseJSON js
   parseJSON _ = empty
 
+instance FromJSON Components where
+  parseJSON = sopSwaggerGenericParseJSON
+
 instance FromJSON Host where
   parseJSON (String s) = case map Text.unpack $ Text.split (== ':') s of
     [host] -> return $ Host host Nothing
@@ -1319,6 +1412,12 @@ instance FromJSON Operation where
 instance FromJSON PathItem where
   parseJSON = sopSwaggerGenericParseJSON
 
+instance FromJSON RequestBody where
+  parseJSON = sopSwaggerGenericParseJSON
+
+instance FromJSON MediaTypeObject where
+  parseJSON = sopSwaggerGenericParseJSON
+
 instance FromJSON SecurityDefinitions where
   parseJSON js = SecurityDefinitions <$> parseJSON js
 
@@ -1339,9 +1438,11 @@ referencedParseJSON prefix js@(Object o) = do
         Just suffix -> pure (Reference suffix)
 referencedParseJSON _ _ = fail "referenceParseJSON: not an object"
 
+-- FIXME this stuff
 instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/definitions/"
 instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/parameters/"
 instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#/responses/"
+instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/!!!!/"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
@@ -1376,6 +1477,8 @@ instance FromJSON AdditionalProperties where
   parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
   parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
 
+instance HasSwaggerAesonOptions Components where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "components"
 instance HasSwaggerAesonOptions Header where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "header" & saoSubObject ?~ "paramSchema"
 instance HasSwaggerAesonOptions OAuth2Params where
@@ -1390,6 +1493,10 @@ instance HasSwaggerAesonOptions PathItem where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "pathItem"
 instance HasSwaggerAesonOptions Response where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "response"
+instance HasSwaggerAesonOptions RequestBody where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "requestBody"
+instance HasSwaggerAesonOptions MediaTypeObject where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "mediaType"
 instance HasSwaggerAesonOptions Responses where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "responses" & saoSubObject ?~ "responses"
 instance HasSwaggerAesonOptions SecurityScheme where
@@ -1397,7 +1504,7 @@ instance HasSwaggerAesonOptions SecurityScheme where
 instance HasSwaggerAesonOptions Schema where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "schema" & saoSubObject ?~ "paramSchema"
 instance HasSwaggerAesonOptions Swagger where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("swagger", "2.0")]
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0")]
 
 instance HasSwaggerAesonOptions (ParamSchema ('SwaggerKindNormal t)) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
@@ -1407,6 +1514,7 @@ instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindParamOtherSchema) where
 instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindSchema) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema"
 
+instance AesonDefaultValue Components
 instance AesonDefaultValue (ParamSchema s)
 instance AesonDefaultValue OAuth2Flow
 instance AesonDefaultValue Responses
