@@ -348,7 +348,7 @@ data RequestBody = RequestBody
 
 -- | Each Media Type Object provides schema and examples for the media type identified by its key.
 data MediaTypeObject = MediaTypeObject
-  { _mediaTypeSchema :: Maybe (Referenced Schema)
+  { _mediaTypeObjectSchema :: Maybe (Referenced Schema)
 
 -- TODO
 --  , _mediaTypeExample
@@ -975,6 +975,12 @@ instance Monoid Response where
   mempty = genericMempty
   mappend = (<>)
 
+instance Semigroup MediaTypeObject where
+  (<>) = genericMappend
+instance Monoid MediaTypeObject where
+  mempty = genericMempty
+  mappend = (<>)
+
 instance Semigroup ExternalDocs where
   (<>) = genericMappend
 instance Monoid ExternalDocs where
@@ -1498,7 +1504,7 @@ instance HasSwaggerAesonOptions Response where
 instance HasSwaggerAesonOptions RequestBody where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "requestBody"
 instance HasSwaggerAesonOptions MediaTypeObject where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "mediaType"
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "mediaTypeObject"
 instance HasSwaggerAesonOptions Responses where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "responses" & saoSubObject ?~ "responses"
 instance HasSwaggerAesonOptions SecurityScheme where

@@ -27,6 +27,10 @@ import Data.Text (Text)
 -- * Classy lenses
 
 makeFields ''Swagger
+makeFields ''Components
+makeFields ''Server
+makeFields ''RequestBody
+makeFields ''MediaTypeObject
 makeFields ''Host
 makeFields ''Info
 makeFields ''Contact
