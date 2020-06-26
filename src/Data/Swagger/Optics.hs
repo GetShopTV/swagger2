@@ -75,6 +75,11 @@ import Optics.TH
 -- Lenses
 
 makeFieldLabels ''Swagger
+makeFieldLabels ''Components
+makeFieldLabels ''Server
+makeFieldLabels ''ServerVariable
+makeFieldLabels ''RequestBody
+makeFieldLabels ''MediaTypeObject
 makeFieldLabels ''Host
 makeFieldLabels ''Info
 makeFieldLabels ''Contact
@@ -95,6 +100,9 @@ makeFieldLabels ''SecurityScheme
 makeFieldLabels ''ApiKeyParams
 makeFieldLabels ''OAuth2Params
 makeFieldLabels ''ExternalDocs
+makeFieldLabels ''Encoding
+makeFieldLabels ''Example
+makeFieldLabels ''Discriminator
 
 -- Prisms
 
