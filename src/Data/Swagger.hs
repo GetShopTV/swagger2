@@ -38,8 +38,6 @@ module Data.Swagger (
 
   -- * Swagger specification
   Swagger(..),
-  Host(..),
-  Scheme(..),
   Server(..),
   ServerVariable(..),
   Components(..),
@@ -65,8 +63,6 @@ module Data.Swagger (
 
   -- ** Parameters
   Param(..),
-  ParamAnySchema(..),
-  ParamOtherSchema(..),
   ParamLocation(..),
   ParamName,
   Header(..),

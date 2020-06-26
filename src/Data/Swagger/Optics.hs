@@ -80,7 +80,6 @@ makeFieldLabels ''Server
 makeFieldLabels ''ServerVariable
 makeFieldLabels ''RequestBody
 makeFieldLabels ''MediaTypeObject
-makeFieldLabels ''Host
 makeFieldLabels ''Info
 makeFieldLabels ''Contact
 makeFieldLabels ''License
@@ -88,7 +87,6 @@ makeFieldLabels ''PathItem
 makeFieldLabels ''Tag
 makeFieldLabels ''Operation
 makeFieldLabels ''Param
-makeFieldLabels ''ParamOtherSchema
 makeFieldLabels ''Header
 makeFieldLabels ''Schema
 makeFieldLabels ''NamedSchema
@@ -111,7 +109,6 @@ makeFieldLabels ''Discriminator
 
 -- Prisms
 
-makePrismLabels ''ParamAnySchema
 makePrismLabels ''SecuritySchemeType
 makePrismLabels ''Referenced
 
@@ -208,13 +205,6 @@ instance
   labelOptic = #paramSchema % #type
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe (SwaggerType 'SwaggerKindParamOtherSchema)
-  , b ~ Maybe (SwaggerType 'SwaggerKindParamOtherSchema)
-  ) => LabelOptic "type" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #type
-  {-# INLINE labelOptic #-}
-
 -- #default
 
 instance
@@ -235,12 +225,6 @@ instance
   labelOptic = #paramSchema % #default
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Value, b ~ Maybe Value
-  ) => LabelOptic "default" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #default
-  {-# INLINE labelOptic #-}
-
 -- #format
 
 instance
@@ -258,12 +242,6 @@ instance
 instance
   ( a ~ Maybe Format, b ~ Maybe Format
   ) => LabelOptic "format" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #format
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Format, b ~ Maybe Format
-  ) => LabelOptic "format" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #format
   {-# INLINE labelOptic #-}
 
@@ -290,13 +268,6 @@ instance
   labelOptic = #paramSchema % #items
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe (SwaggerItems 'SwaggerKindParamOtherSchema)
-  , b ~ Maybe (SwaggerItems 'SwaggerKindParamOtherSchema)
-  ) => LabelOptic "items" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #items
-  {-# INLINE labelOptic #-}
-
 -- #maximum
 
 instance
@@ -314,12 +285,6 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "maximum" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #maximum
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "maximum" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #maximum
   {-# INLINE labelOptic #-}
 
@@ -343,12 +308,6 @@ instance
   labelOptic = #paramSchema % #exclusiveMaximum
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Bool, b ~ Maybe Bool
-  ) => LabelOptic "exclusiveMaximum" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #exclusiveMaximum
-  {-# INLINE labelOptic #-}
-
 -- #minimum
 
 instance
@@ -366,12 +325,6 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "minimum" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #minimum
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "minimum" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #minimum
   {-# INLINE labelOptic #-}
 
@@ -395,12 +348,6 @@ instance
   labelOptic = #paramSchema % #exclusiveMinimum
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Bool, b ~ Maybe Bool
-  ) => LabelOptic "exclusiveMinimum" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #exclusiveMinimum
-  {-# INLINE labelOptic #-}
-
 -- #maxLength
 
 instance
@@ -418,12 +365,6 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "maxLength" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #maxLength
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "maxLength" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #maxLength
   {-# INLINE labelOptic #-}
 
@@ -447,12 +388,6 @@ instance
   labelOptic = #paramSchema % #minLength
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "minLength" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #minLength
-  {-# INLINE labelOptic #-}
-
 -- #pattern
 
 instance
@@ -470,12 +405,6 @@ instance
 instance
   ( a ~ Maybe Text, b ~ Maybe Text
   ) => LabelOptic "pattern" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #pattern
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Text, b ~ Maybe Text
-  ) => LabelOptic "pattern" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #pattern
   {-# INLINE labelOptic #-}
 
@@ -499,12 +428,6 @@ instance
   labelOptic = #paramSchema % #maxItems
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "maxItems" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #maxItems
-  {-# INLINE labelOptic #-}
-
 -- #minItems
 
 instance
@@ -522,12 +445,6 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "minItems" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #minItems
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Integer, b ~ Maybe Integer
-  ) => LabelOptic "minItems" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #minItems
   {-# INLINE labelOptic #-}
 
@@ -551,12 +468,6 @@ instance
   labelOptic = #paramSchema % #uniqueItems
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe Bool, b ~ Maybe Bool
-  ) => LabelOptic "uniqueItems" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #uniqueItems
-  {-# INLINE labelOptic #-}
-
 -- #enum
 
 instance
@@ -577,12 +488,6 @@ instance
   labelOptic = #paramSchema % #enum
   {-# INLINE labelOptic #-}
 
-instance
-  ( a ~ Maybe [Value], b ~ Maybe [Value]
-  ) => LabelOptic "enum" A_Lens ParamOtherSchema ParamOtherSchema a b where
-  labelOptic = #paramSchema % #enum
-  {-# INLINE labelOptic #-}
-
 -- #multipleOf
 
 instance
@@ -600,11 +505,5 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "multipleOf" A_Lens NamedSchema NamedSchema a b where
-  labelOptic = #paramSchema % #multipleOf
-  {-# INLINE labelOptic #-}
-
-instance
-  ( a ~ Maybe Scientific, b ~ Maybe Scientific
-  ) => LabelOptic "multipleOf" A_Lens ParamOtherSchema ParamOtherSchema a b where
   labelOptic = #paramSchema % #multipleOf
   {-# INLINE labelOptic #-}

@@ -179,6 +179,9 @@ data ServerVariable = ServerVariable
   , _serverVariableDescription :: Maybe Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+instance IsString Server where
+  fromString s = Server (fromString s) Nothing mempty
+
 -- | Holds a set of reusable objects for different aspects of the OAS.
 -- All objects defined within the components object will have no effect on the API
 -- unless they are explicitly referenced from properties outside the components object.
@@ -193,36 +196,6 @@ data Components = Components
 --  , _componentsLinks
 --  , _componentsCallbacks
   } deriving (Eq, Show, Generic, Data, Typeable)
-
--- | The host (name or ip) serving the API. It MAY include a port.
-data Host = Host
-  { _hostName :: HostName         -- ^ Host name.
-  , _hostPort :: Maybe PortNumber -- ^ Optional port.
-  } deriving (Eq, Show, Generic, Typeable)
-
-instance IsString Host where
-  fromString s = Host s Nothing
-
-hostConstr :: Constr
-hostConstr = mkConstr hostDataType "Host" [] Prefix
-
-hostDataType :: DataType
-hostDataType = mkDataType "Data.Swagger.Host" [hostConstr]
-
-instance Data Host where
-  gunfold k z c = case constrIndex c of
-    1 -> k (k (z (\name mport -> Host name (fromInteger <$> mport))))
-    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type Host."
-  toConstr (Host _ _) = hostConstr
-  dataTypeOf _ = hostDataType
-
--- | The transfer protocol of the API.
-data Scheme
-  = Http
-  | Https
-  | Ws
-  | Wss
-  deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes the operations available on a single path.
 -- A @'PathItem'@ may be empty, due to ACL constraints.
@@ -421,6 +394,9 @@ instance Data MimeList where
   toConstr (MimeList _) = mimeListConstr
   dataTypeOf _ = mimeListDataType
 
+-- TODO style
+-- TODO example
+
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
 data Param = Param
@@ -438,27 +414,21 @@ data Param = Param
     -- Otherwise, the property MAY be included and its default value is @False@.
   , _paramRequired :: Maybe Bool
 
-    -- | Parameter schema.
-  , _paramSchema :: ParamAnySchema
-  } deriving (Eq, Show, Generic, Data, Typeable)
+    -- | Specifies that a parameter is deprecated and SHOULD be transitioned out of usage.
+    -- Default value is @false@.
+  , _paramDeprecated :: Maybe Bool
 
-data ParamAnySchema
-  = ParamBody (Referenced Schema)
-  | ParamOther ParamOtherSchema
-  deriving (Eq, Show, Generic, Data, Typeable)
-
-data ParamOtherSchema = ParamOtherSchema
-  { -- | The location of the parameter.
-    _paramOtherSchemaIn :: ParamLocation
+    -- | The location of the parameter.
+  , _paramIn :: ParamLocation
 
     -- | Sets the ability to pass empty-valued parameters.
-    -- This is valid only for either @'ParamQuery'@ or @'ParamFormData'@
-    -- and allows you to send a parameter with a name only or an empty value.
-    -- Default value is @False@.
+    -- This is valid only for 'ParamQuery' parameters and allows sending
+    -- a parameter with an empty value. Default value is @false@.
   , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
-  , _paramOtherSchemaParamSchema :: ParamSchema 'SwaggerKindParamOtherSchema
-  } deriving (Eq, Show, Generic, Typeable, Data)
+    -- | Parameter schema.
+  , _paramSchema :: Maybe (Referenced Schema)
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Example = Example
   { -- | Short description for the example.
@@ -561,10 +531,11 @@ deriving instance Typeable 'SwaggerKindNormal
 deriving instance Typeable 'SwaggerKindParamOtherSchema
 deriving instance Typeable 'SwaggerKindSchema
 
+-- TODO remove
 type family SwaggerKindType (k :: SwaggerKind *) :: *
 type instance SwaggerKindType ('SwaggerKindNormal t) = t
 type instance SwaggerKindType 'SwaggerKindSchema = Schema
-type instance SwaggerKindType 'SwaggerKindParamOtherSchema = ParamOtherSchema
+--type instance SwaggerKindType 'SwaggerKindParamOtherSchema = ParamOtherSchema
 
 data SwaggerType t where
   SwaggerString   :: SwaggerType t
@@ -967,7 +938,6 @@ deriveGeneric ''OAuth2Flow
 deriveGeneric ''OAuth2Flows
 deriveGeneric ''Operation
 deriveGeneric ''Param
-deriveGeneric ''ParamOtherSchema
 deriveGeneric ''PathItem
 deriveGeneric ''Response
 deriveGeneric ''RequestBody
@@ -1032,12 +1002,6 @@ instance Monoid Param where
   mempty = genericMempty
   mappend = (<>)
 
-instance Semigroup ParamOtherSchema where
-  (<>) = genericMappend
-instance Monoid ParamOtherSchema where
-  mempty = genericMempty
-  mappend = (<>)
-
 instance Semigroup Header where
   (<>) = genericMappend
 instance Monoid Header where
@@ -1086,6 +1050,12 @@ instance Monoid OAuth2Flows where
   mempty = genericMempty
   mappend = (<>)
 
+instance Semigroup RequestBody where
+  (<>) = genericMappend
+instance Monoid RequestBody where
+  mempty = genericMempty
+  mappend = (<>)
+
 -- =======================================================================
 -- SwaggerMonoid helper instances
 -- =======================================================================
@@ -1096,7 +1066,6 @@ instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
 instance SwaggerMonoid (ParamSchema t)
 instance SwaggerMonoid Param
-instance SwaggerMonoid ParamOtherSchema
 instance SwaggerMonoid Responses
 instance SwaggerMonoid Response
 instance SwaggerMonoid ExternalDocs
@@ -1121,12 +1090,6 @@ instance {-# OVERLAPPING #-} SwaggerMonoid (InsOrdHashMap FilePath PathItem) whe
 instance Monoid a => SwaggerMonoid (Referenced a) where
   swaggerMempty = Inline mempty
   swaggerMappend (Inline x) (Inline y) = Inline (mappend x y)
-  swaggerMappend _ y = y
-
-instance SwaggerMonoid ParamAnySchema where
-  swaggerMempty = ParamOther swaggerMempty
-  swaggerMappend (ParamBody x) (ParamBody y) = ParamBody (swaggerMappend x y)
-  swaggerMappend (ParamOther x) (ParamOther y) = ParamOther (swaggerMappend x y)
   swaggerMappend _ y = y
 
 -- =======================================================================
@@ -1156,9 +1119,6 @@ instance ToJSON ApiKeyLocation where
 
 instance ToJSON ApiKeyParams where
   toJSON = genericToJSON (jsonPrefix "apiKey")
-
-instance ToJSON Scheme where
-  toJSON = genericToJSON (jsonPrefix "")
 
 instance ToJSON Tag where
   toJSON = genericToJSON (jsonPrefix "Tag")
@@ -1211,9 +1171,6 @@ instance FromJSON ApiKeyLocation where
 
 instance FromJSON ApiKeyParams where
   parseJSON = genericParseJSON (jsonPrefix "apiKey")
-
-instance FromJSON Scheme where
-  parseJSON = genericParseJSON (jsonPrefix "")
 
 instance FromJSON Tag where
   parseJSON = genericParseJSON (jsonPrefix "Tag")
@@ -1303,24 +1260,10 @@ instance ToJSON Components where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
-instance ToJSON Host where
-  toJSON (Host host mport) = toJSON $
-    case mport of
-      Nothing -> host
-      Just port -> host ++ ":" ++ show port
-
 instance ToJSON MimeList where
   toJSON (MimeList xs) = toJSON (map show xs)
 
 instance ToJSON Param where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
-
-instance ToJSON ParamAnySchema where
-  toJSON (ParamBody s) = object [ "in" .= ("body" :: Text), "schema" .= s ]
-  toJSON (ParamOther s) = toJSON s
-
-instance ToJSON ParamOtherSchema where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
@@ -1466,32 +1409,10 @@ instance FromJSON (SwaggerItems 'SwaggerKindSchema) where
 instance FromJSON Components where
   parseJSON = sopSwaggerGenericParseJSON
 
-instance FromJSON Host where
-  parseJSON (String s) = case map Text.unpack $ Text.split (== ':') s of
-    [host] -> return $ Host host Nothing
-    [host, port] -> case readMaybe port of
-      Nothing -> fail $ "Invalid port `" ++ port ++ "'"
-      Just p -> return $ Host host (Just (fromInteger p))
-    _ -> fail $ "Invalid host `" ++ Text.unpack s ++ "'"
-  parseJSON _ = empty
-
 instance FromJSON MimeList where
   parseJSON js = (MimeList . map fromString) <$> parseJSON js
 
 instance FromJSON Param where
-  parseJSON = sopSwaggerGenericParseJSON
-
-instance FromJSON ParamAnySchema where
-  parseJSON js@(Object o) = do
-    (i :: Text) <- o .: "in"
-    case i of
-      "body" -> do
-        schema <- o .: "schema"
-        ParamBody <$> parseJSON schema
-      _ -> ParamOther <$> parseJSON js
-  parseJSON _ = empty
-
-instance FromJSON ParamOtherSchema where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Responses where
@@ -1589,9 +1510,7 @@ instance HasSwaggerAesonOptions OAuth2Flows where
 instance HasSwaggerAesonOptions Operation where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "operation"
 instance HasSwaggerAesonOptions Param where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "param" & saoSubObject ?~ "schema"
-instance HasSwaggerAesonOptions ParamOtherSchema where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "paramOtherSchema" & saoSubObject ?~ "paramSchema"
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "param"
 instance HasSwaggerAesonOptions PathItem where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "pathItem"
 instance HasSwaggerAesonOptions Response where
@@ -1629,7 +1548,6 @@ instance AesonDefaultValue OAuth2ClientCredentialsFlow
 instance AesonDefaultValue OAuth2AuthorizationCodeFlow
 instance AesonDefaultValue p => AesonDefaultValue (OAuth2Flow p)
 instance AesonDefaultValue Responses
-instance AesonDefaultValue ParamAnySchema
 instance AesonDefaultValue SecuritySchemeType
 instance AesonDefaultValue (SwaggerType a)
 instance AesonDefaultValue MimeList where defaultValue = Just mempty

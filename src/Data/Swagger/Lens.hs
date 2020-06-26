@@ -33,15 +33,13 @@ makeFields ''Server
 --makeLensesWith swaggerFieldRules ''ServerVariable
 makeFields ''RequestBody
 makeFields ''MediaTypeObject
-makeFields ''Host
 makeFields ''Info
 makeFields ''Contact
 makeFields ''License
 makeLensesWith swaggerFieldRules ''PathItem
 makeFields ''Tag
 makeFields ''Operation
-makeFields ''Param
-makeLensesWith swaggerFieldRules ''ParamOtherSchema
+makeLensesWith swaggerFieldRules ''Param
 makeFields ''Header
 makeLensesWith swaggerFieldRules ''Schema
 makeFields ''NamedSchema
@@ -63,8 +61,6 @@ makeFields ''Example
 makeFields ''Discriminator
 
 -- * Prisms
--- ** 'ParamAnySchema' prisms
-makePrisms ''ParamAnySchema
 -- ** 'SecuritySchemeType' prisms
 makePrisms ''SecuritySchemeType
 -- ** 'Referenced' prisms
@@ -114,12 +110,10 @@ instance HasParamSchema NamedSchema (ParamSchema 'SwaggerKindSchema) where param
 instance HasType Header (Maybe (SwaggerType ('SwaggerKindNormal Header))) where type_ = paramSchema.type_
 instance HasType Schema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
 instance HasType NamedSchema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
-instance HasType ParamOtherSchema (Maybe (SwaggerType 'SwaggerKindParamOtherSchema)) where type_ = paramSchema.type_
 
 -- HasDefault instances
 instance HasDefault Header (Maybe Value) where default_ = paramSchema.default_
 instance HasDefault Schema (Maybe Value) where default_ = paramSchema.default_
-instance HasDefault ParamOtherSchema (Maybe Value) where default_ = paramSchema.default_
 
 -- OVERLAPPABLE instances
 
