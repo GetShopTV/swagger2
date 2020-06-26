@@ -21,7 +21,7 @@ import Prelude.Compat
 
 import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
-import           Data.Aeson
+import           Data.Aeson               hiding (Encoding)
 import qualified Data.Aeson.Types         as JSON
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.Hashable            (Hashable)
@@ -186,7 +186,7 @@ data Components = Components
   { _componentsSchemas :: Definitions Schema
   , _componentsResponses :: Definitions Response
   , _componentsParameters :: Definitions Param
---  , _componentsExamples
+  , _componentsExamples :: Definitions Example
   , _componentsRequestBodies :: Definitions RequestBody
   , _componentsHeader :: Definitions Header
   , _componentsSecuritySchemes :: Definitions SecurityScheme
@@ -350,11 +350,59 @@ data RequestBody = RequestBody
 data MediaTypeObject = MediaTypeObject
   { _mediaTypeObjectSchema :: Maybe (Referenced Schema)
 
--- TODO
---  , _mediaTypeExample
---  , _mediaTypeExamples
+    -- | Example of the media type.
+    -- The example object SHOULD be in the correct format as specified by the media type.
+  , _mediaTypeObjectExample :: Maybe Value
 
---  , _mediaTypeEncoding :: InsOrdHashMap Text Encoding
+    -- | Examples of the media type.
+    -- Each example object SHOULD match the media type and specified schema if present.
+  , _mediaTypeObjectExamples :: InsOrdHashMap Text (Referenced Example)
+
+    -- | A map between a property name and its encoding information.
+    -- The key, being the property name, MUST exist in the schema as a property.
+    -- The encoding object SHALL only apply to 'RequestBody' objects when the media type
+    -- is @multipart@ or @application/x-www-form-urlencoded@.
+  , _mediaTypeObjectEncoding :: InsOrdHashMap Text Encoding
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data Encoding = Encoding
+  { -- | The Content-Type for encoding a specific property.
+    -- Default value depends on the property type: for @string@
+    -- with format being @binary@ – @application/octet-stream@;
+    -- for other primitive types – @text/plain@; for object - @application/json@;
+    -- for array – the default is defined based on the inner type.
+    -- The value can be a specific media type (e.g. @application/json@),
+    -- a wildcard media type (e.g. @image/*@), or a comma-separated list of the two types.
+    _encodingContentType :: Maybe Text
+
+    -- | A map allowing additional information to be provided as headers,
+    -- for example @Content-Disposition@. @Content-Type@ is described separately
+    -- and SHALL be ignored in this section.
+    -- This property SHALL be ignored if the request body media type is not a @multipart@.
+  , _encodingHeaders :: InsOrdHashMap Text (Referenced Header)
+
+    -- | Describes how a specific property value will be serialized depending on its type.
+    -- See Parameter Object for details on the style property.
+    -- The behavior follows the same values as query parameters, including default values.
+    -- This property SHALL be ignored if the request body media type
+    -- is not @application/x-www-form-urlencoded@.
+  , _encodingStyle :: Maybe Text -- TODO enum
+
+    -- | When this is true, property values of type @array@ or @object@ generate
+    -- separate parameters for each value of the array,
+    -- or key-value-pair of the map.
+    -- For other types of properties this property has no effect.
+    -- When style is form, the default value is @true@. For all other styles,
+    -- the default value is @false@. This property SHALL be ignored
+    -- if the request body media type is not @application/x-www-form-urlencoded@.
+  , _encodingExplode :: Maybe Bool
+
+    -- | Determines whether the parameter value SHOULD allow reserved characters,
+    -- as defined by [RFC3986](https://tools.ietf.org/html/rfc3986#section-2.2)
+    -- @:/?#[]@!$&'()*+,;=@ to be included without percent-encoding.
+    -- The default value is @false@. This property SHALL be ignored if the request body media type
+    -- is not @application/x-www-form-urlencoded@.
+  , _encodingAllowReserved :: Maybe Bool
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
@@ -410,6 +458,28 @@ data ParamOtherSchema = ParamOtherSchema
   , _paramOtherSchemaAllowEmptyValue :: Maybe Bool
 
   , _paramOtherSchemaParamSchema :: ParamSchema 'SwaggerKindParamOtherSchema
+  } deriving (Eq, Show, Generic, Typeable, Data)
+
+data Example = Example
+  { -- | Short description for the example.
+    _exampleSummary :: Maybe Text
+
+    -- | Long description for the example.
+    -- CommonMark syntax MAY be used for rich text representation.
+  , _exampleDescription :: Maybe Text
+
+    -- | Embedded literal example.
+    -- The '_exampleValue' field and '_exampleExternalValue' field are mutually exclusive.
+    --
+    -- To represent examples of media types that cannot naturally represented in JSON or YAML,
+    -- use a string value to contain the example, escaping where necessary.
+  , _exampleValue :: Maybe Value
+
+    -- | A URL that points to the literal example.
+    -- This provides the capability to reference examples that cannot easily be included
+    -- in JSON or YAML documents. The '_exampleValue' field
+    -- and '_exampleExternalValue' field are mutually exclusive.
+  , _exampleExternalValue :: Maybe URL
   } deriving (Eq, Show, Generic, Typeable, Data)
 
 -- | Items for @'SwaggerArray'@ schemas.
@@ -633,6 +703,8 @@ data NamedSchema = NamedSchema
 -- | Regex pattern for @string@ type.
 type Pattern = Text
 
+-- TODO examples for params
+
 data ParamSchema (t :: SwaggerKind *) = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
@@ -734,22 +806,6 @@ data Header = Header
 
   , _headerParamSchema :: ParamSchema ('SwaggerKindNormal Header)
   } deriving (Eq, Show, Generic, Data, Typeable)
-
-data Example = Example { getExample :: Map MediaType Value }
-  deriving (Eq, Show, Generic, Typeable)
-
-exampleConstr :: Constr
-exampleConstr = mkConstr exampleDataType "Example" ["getExample"] Prefix
-
-exampleDataType :: DataType
-exampleDataType = mkDataType "Data.Swagger.Example" [exampleConstr]
-
-instance Data Example where
-  gunfold k z c = case constrIndex c of
-    1 -> k (z (\m -> Example (Map.mapKeys fromString m)))
-    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type Example."
-  toConstr (Example _) = exampleConstr
-  dataTypeOf _ = exampleDataType
 
 -- | The location of the API key.
 data ApiKeyLocation
@@ -898,6 +954,8 @@ deriveGeneric ''SecurityScheme
 deriveGeneric ''Schema
 deriveGeneric ''ParamSchema
 deriveGeneric ''Swagger
+deriveGeneric ''Example
+deriveGeneric ''Encoding
 
 -- =======================================================================
 -- Monoid instances
@@ -981,6 +1039,12 @@ instance Monoid MediaTypeObject where
   mempty = genericMempty
   mappend = (<>)
 
+instance Semigroup Encoding where
+  (<>) = genericMappend
+instance Monoid Encoding where
+  mempty = genericMempty
+  mappend = (<>)
+
 instance Semigroup ExternalDocs where
   (<>) = genericMappend
 instance Monoid ExternalDocs where
@@ -990,12 +1054,6 @@ instance Monoid ExternalDocs where
 instance Semigroup Operation where
   (<>) = genericMappend
 instance Monoid Operation where
-  mempty = genericMempty
-  mappend = (<>)
-
-instance Semigroup Example where
-  (<>) = genericMappend
-instance Monoid Example where
   mempty = genericMempty
   mappend = (<>)
 
@@ -1251,7 +1309,12 @@ instance ToJSON MediaTypeObject where
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Example where
-  toJSON = toJSON . Map.mapKeys show . getExample
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
+
+instance ToJSON Encoding where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON SecurityDefinitions where
   toJSON (SecurityDefinitions sd) = toJSON sd
@@ -1267,6 +1330,8 @@ instance ToJSON (Referenced Schema)   where toJSON = referencedToJSON "#/compone
 instance ToJSON (Referenced Param)    where toJSON = referencedToJSON "#/components/parameters/"
 instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/components/responses/"
 instance ToJSON (Referenced RequestBody) where toJSON = referencedToJSON "#/components/requestBodies/"
+instance ToJSON (Referenced Example)  where toJSON = referencedToJSON "#/components/examples/"
+instance ToJSON (Referenced Header)   where toJSON = referencedToJSON "#/components/headers/"
 
 instance ToJSON (SwaggerType t) where
   toJSON SwaggerArray   = "array"
@@ -1408,9 +1473,7 @@ instance FromJSON Responses where
   parseJSON _ = empty
 
 instance FromJSON Example where
-  parseJSON js = do
-    m <- parseJSON js
-    pure $ Example (Map.mapKeys fromString m)
+  parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Response where
   parseJSON = sopSwaggerGenericParseJSON
@@ -1425,6 +1488,9 @@ instance FromJSON RequestBody where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON MediaTypeObject where
+  parseJSON = sopSwaggerGenericParseJSON
+
+instance FromJSON Encoding where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON SecurityDefinitions where
@@ -1450,7 +1516,9 @@ referencedParseJSON _ _ = fail "referenceParseJSON: not an object"
 instance FromJSON (Referenced Schema)   where parseJSON = referencedParseJSON "#/components/schemas/"
 instance FromJSON (Referenced Param)    where parseJSON = referencedParseJSON "#/components/parameters/"
 instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#/components/responses/"
-instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/components/requestBodies"
+instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/components/requestBodies/"
+instance FromJSON (Referenced Example)  where parseJSON = referencedParseJSON "#/components/examples/"
+instance FromJSON (Referenced Header)   where parseJSON = referencedParseJSON "#/components/headers/"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
@@ -1513,6 +1581,10 @@ instance HasSwaggerAesonOptions Schema where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "schema" & saoSubObject ?~ "paramSchema"
 instance HasSwaggerAesonOptions Swagger where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0.3")]
+instance HasSwaggerAesonOptions Example where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "example"
+instance HasSwaggerAesonOptions Encoding where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "encoding"
 
 instance HasSwaggerAesonOptions (ParamSchema ('SwaggerKindNormal t)) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"

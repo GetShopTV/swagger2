@@ -74,6 +74,7 @@ module Data.Swagger (
   Example(..),
   RequestBody(..),
   MediaTypeObject(..),
+  Encoding(..),
 
   -- ** Schemas
   ParamSchema(..),
