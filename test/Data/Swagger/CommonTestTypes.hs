@@ -88,7 +88,7 @@ paintSchemaJSON = [aesonQQ|
     {
       "color":
         {
-          "$ref": "#/definitions/Color"
+          "$ref": "#/components/schemas/Color"
         }
     },
   "required": ["color"]
@@ -181,7 +181,7 @@ userGroupSchemaJSON :: Value
 userGroupSchemaJSON = [aesonQQ|
 {
   "type": "array",
-  "items": { "$ref": "#/definitions/UserId" },
+  "items": { "$ref": "#/components/schemas/UserId" },
   "uniqueItems": true
 }
 |]
@@ -228,7 +228,7 @@ playerSchemaJSON = [aesonQQ|
     {
       "position":
         {
-          "$ref": "#/definitions/Point"
+          "$ref": "#/components/schemas/Point"
         }
     },
   "required": ["position"]
@@ -250,7 +250,7 @@ playersSchemaJSON = [aesonQQ|
         {
           "position":
             {
-              "$ref": "#/definitions/Point"
+              "$ref": "#/components/schemas/Point"
             }
         },
       "required": ["position"]
@@ -274,14 +274,14 @@ characterSchemaJSON = [aesonQQ|
   "type": "object",
   "properties":
     {
-      "PC": { "$ref": "#/definitions/Player" },
+      "PC": { "$ref": "#/components/schemas/Player" },
       "NPC":
         {
           "type": "object",
           "properties":
             {
               "npcName": { "type": "string" },
-              "npcPosition": { "$ref": "#/definitions/Point" }
+              "npcPosition": { "$ref": "#/components/schemas/Point" }
             },
           "required": ["npcName", "npcPosition"]
         }
@@ -353,7 +353,7 @@ characterInlinedPlayerSchemaJSON = [aesonQQ|
             {
               "position":
                 {
-                  "$ref": "#/definitions/Point"
+                  "$ref": "#/components/schemas/Point"
                 }
             },
           "required": ["position"]
@@ -364,7 +364,7 @@ characterInlinedPlayerSchemaJSON = [aesonQQ|
           "properties":
             {
               "npcName": { "type": "string" },
-              "npcPosition": { "$ref": "#/definitions/Point" }
+              "npcPosition": { "$ref": "#/components/schemas/Point" }
             },
           "required": ["npcName", "npcPosition"]
         }
@@ -482,7 +482,7 @@ myRoseTreeSchemaJSON = [aesonQQ|
           "type": "array",
           "items":
             {
-              "$ref": "#/definitions/RoseTree"
+              "$ref": "#/components/schemas/RoseTree"
             }
         }
     },
@@ -511,7 +511,7 @@ myRoseTreeSchemaJSON' = [aesonQQ|
           "type": "array",
           "items":
             {
-              "$ref": "#/definitions/myrosetree'"
+              "$ref": "#/components/schemas/myrosetree'"
             }
         }
     },
@@ -553,7 +553,7 @@ lightSchemaJSON = [aesonQQ|
     {
       "NoLight": { "type": "array", "items": {}, "maxItems": 0, "example": [] },
       "LightFreq": { "type": "number", "format": "double" },
-      "LightColor": { "$ref": "#/definitions/Color" },
+      "LightColor": { "$ref": "#/components/schemas/Color" },
       "LightWaveLength": { "type": "number", "format": "double" }
     },
   "maxProperties": 1,
