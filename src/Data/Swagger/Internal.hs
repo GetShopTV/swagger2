@@ -838,26 +838,54 @@ type AuthorizationURL = Text
 -- | The token URL to be used for OAuth2 flow. This SHOULD be in the form of a URL.
 type TokenURL = Text
 
-data OAuth2Flow
-  = OAuth2Implicit AuthorizationURL
-  | OAuth2Password TokenURL
-  | OAuth2Application TokenURL
-  | OAuth2AccessCode AuthorizationURL TokenURL
-  deriving (Eq, Show, Generic, Data, Typeable)
+data OAuth2ImplicitFlow = OAuth2ImplicitFlow
+  { _oAuth2ImplicitFlowAuthorizationUrl :: AuthorizationURL
+  } deriving (Eq, Show, Generic, Data, Typeable)
 
-data OAuth2Params = OAuth2Params
-  { -- | The flow used by the OAuth2 security scheme.
-    _oauth2Flow :: OAuth2Flow
+data OAuth2PasswordFlow = OAuth2PasswordFlow
+  { _oAuth2PasswordFlowTokenUrl :: TokenURL
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data OAuth2ClientCredentialsFlow = OAuth2ClientCredentialsFlow
+  { _oAuth2ClientCredentialsFlowTokenUrl :: TokenURL
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data OAuth2AuthorizationCodeFlow = OAuth2AuthorizationCodeFlow
+  { _oAuth2AuthorizationCodeFlowAuthorizationUrl :: AuthorizationURL
+  , _oAuth2AuthorizationCodeFlowTokenUrl :: TokenURL
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data OAuth2Flow p = OAuth2Flow
+  { _oAuth2Params :: p
+
+    -- | The URL to be used for obtaining refresh tokens.
+  , _oAath2RefreshUrl :: Maybe URL
 
     -- | The available scopes for the OAuth2 security scheme.
-  , _oauth2Scopes :: InsOrdHashMap Text Text
+    -- A map between the scope name and a short description for it.
+    -- The map MAY be empty.
+  , _oAuth2Scopes :: InsOrdHashMap Text Text
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data OAuth2Flows = OAuth2Flows
+  { -- | Configuration for the OAuth Implicit flow
+    _oAuth2FlowsImplicit :: Maybe (OAuth2Flow OAuth2ImplicitFlow)
+
+    -- | Configuration for the OAuth Resource Owner Password flow
+  , _oAuth2FlowsPassword :: Maybe (OAuth2Flow OAuth2PasswordFlow)
+
+    -- | Configuration for the OAuth Client Credentials flow
+  , _oAuth2FlowsClientCredentials :: Maybe (OAuth2Flow OAuth2ClientCredentialsFlow)
+
+    -- | Configuration for the OAuth Authorization Code flow
+  , _oAuth2FlowsAuthorizationCode :: Maybe (OAuth2Flow OAuth2AuthorizationCodeFlow)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecuritySchemeType
   = SecuritySchemeHttp
   | SecuritySchemeApiKey ApiKeyParams
-  | SecuritySchemeOAuth2 OAuth2Params
---  | SecuritySchemeOpenIdConnect -- FIXME
+  | SecuritySchemeOAuth2 OAuth2Flows
+  | SecuritySchemeOpenIdConnect URL
   deriving (Eq, Show, Generic, Data, Typeable)
 
 data SecurityScheme = SecurityScheme
@@ -867,22 +895,6 @@ data SecurityScheme = SecurityScheme
     -- | A short description for security scheme.
   , _securitySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic, Data, Typeable)
-
-
--- | merge scopes of two OAuth2 security schemes when their flows are identical.
--- In other case returns first security scheme
-mergeSecurityScheme :: SecurityScheme -> SecurityScheme -> SecurityScheme
-mergeSecurityScheme s1@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 scopes1)) desc)
-                    s2@(SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow2 scopes2)) _)
-  = if flow1 == flow2 then
-      SecurityScheme (SecuritySchemeOAuth2 (OAuth2Params flow1 (scopes1 <> scopes2))) desc
-    else
-      s1
-mergeSecurityScheme s1 _ = s1
-
-newtype SecurityDefinitions
-  = SecurityDefinitions (Definitions SecurityScheme)
-  deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
@@ -951,7 +963,8 @@ data AdditionalProperties
 
 deriveGeneric ''Components
 deriveGeneric ''Header
-deriveGeneric ''OAuth2Params
+deriveGeneric ''OAuth2Flow
+deriveGeneric ''OAuth2Flows
 deriveGeneric ''Operation
 deriveGeneric ''Param
 deriveGeneric ''ParamOtherSchema
@@ -1067,15 +1080,10 @@ instance Monoid Operation where
   mempty = genericMempty
   mappend = (<>)
 
-instance Semigroup SecurityScheme where
-  (<>) = mergeSecurityScheme
-
-instance Semigroup SecurityDefinitions where
-  (SecurityDefinitions sd1) <> (SecurityDefinitions sd2) =
-     SecurityDefinitions $ InsOrdHashMap.unionWith (<>) sd1 sd2
-
-instance Monoid SecurityDefinitions where
-  mempty = SecurityDefinitions InsOrdHashMap.empty
+instance Semigroup OAuth2Flows where
+  (<>) = genericMappend
+instance Monoid OAuth2Flows where
+  mempty = genericMempty
   mappend = (<>)
 
 -- =======================================================================
@@ -1093,7 +1101,6 @@ instance SwaggerMonoid Responses
 instance SwaggerMonoid Response
 instance SwaggerMonoid ExternalDocs
 instance SwaggerMonoid Operation
-instance SwaggerMonoid SecurityDefinitions
 instance (Eq a, Hashable a) => SwaggerMonoid (InsOrdHashSet a)
 
 instance SwaggerMonoid MimeList
@@ -1165,6 +1172,18 @@ instance ToJSON Xml where
 instance ToJSON Discriminator where
   toJSON = genericToJSON (jsonPrefix "Discriminator")
 
+instance ToJSON OAuth2ImplicitFlow where
+  toJSON = genericToJSON (jsonPrefix "OAuth2ImplicitFlow")
+
+instance ToJSON OAuth2PasswordFlow where
+  toJSON = genericToJSON (jsonPrefix "OAuth2PasswordFlow")
+
+instance ToJSON OAuth2ClientCredentialsFlow where
+  toJSON = genericToJSON (jsonPrefix "OAuth2ClientCredentialsFlow")
+
+instance ToJSON OAuth2AuthorizationCodeFlow where
+  toJSON = genericToJSON (jsonPrefix "OAuth2AuthorizationCodeFlow")
+
 -- =======================================================================
 -- Simple Generic-based FromJSON instances
 -- =======================================================================
@@ -1205,26 +1224,27 @@ instance FromJSON ExternalDocs where
 instance FromJSON Discriminator where
   parseJSON = genericParseJSON (jsonPrefix "Discriminator")
 
+instance FromJSON OAuth2ImplicitFlow where
+  parseJSON = genericParseJSON (jsonPrefix "OAuth2ImplicitFlow")
+
+instance FromJSON OAuth2PasswordFlow where
+  parseJSON = genericParseJSON (jsonPrefix "OAuth2PasswordFlow")
+
+instance FromJSON OAuth2ClientCredentialsFlow where
+  parseJSON = genericParseJSON (jsonPrefix "OAuth2ClientCredentialsFlow")
+
+instance FromJSON OAuth2AuthorizationCodeFlow where
+  parseJSON = genericParseJSON (jsonPrefix "OAuth2AuthorizationCodeFlow")
+
 -- =======================================================================
 -- Manual ToJSON instances
 -- =======================================================================
 
-instance ToJSON OAuth2Flow where
-  toJSON (OAuth2Implicit authUrl) = object
-    [ "flow"             .= ("implicit" :: Text)
-    , "authorizationUrl" .= authUrl ]
-  toJSON (OAuth2Password tokenUrl) = object
-    [ "flow"     .= ("password" :: Text)
-    , "tokenUrl" .= tokenUrl ]
-  toJSON (OAuth2Application tokenUrl) = object
-    [ "flow"     .= ("application" :: Text)
-    , "tokenUrl" .= tokenUrl ]
-  toJSON (OAuth2AccessCode authUrl tokenUrl) = object
-    [ "flow"             .= ("accessCode" :: Text)
-    , "authorizationUrl" .= authUrl
-    , "tokenUrl"         .= tokenUrl ]
+instance (Eq p, ToJSON p, AesonDefaultValue p)  =>ToJSON (OAuth2Flow p) where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
 
-instance ToJSON OAuth2Params where
+instance ToJSON OAuth2Flows where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
@@ -1237,6 +1257,10 @@ instance ToJSON SecuritySchemeType where
   toJSON (SecuritySchemeOAuth2 params)
       = toJSON params
     <+> object [ "type" .= ("oauth2" :: Text) ]
+  toJSON (SecuritySchemeOpenIdConnect url) = object
+    [ "type" .= ("openIdConnect" :: Text)
+    , "openIdConnectUrl" .= url
+    ]
 
 instance ToJSON Swagger where
   toJSON a = sopSwaggerGenericToJSON a &
@@ -1332,9 +1356,6 @@ instance ToJSON Encoding where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
-instance ToJSON SecurityDefinitions where
-  toJSON (SecurityDefinitions sd) = toJSON sd
-
 instance ToJSON Reference where
   toJSON (Reference ref) = object [ "$ref" .= ref ]
 
@@ -1379,20 +1400,10 @@ instance ToJSON AdditionalProperties where
 -- Manual FromJSON instances
 -- =======================================================================
 
-instance FromJSON OAuth2Flow where
-  parseJSON (Object o) = do
-    (flow :: Text) <- o .: "flow"
-    case flow of
-      "implicit"    -> OAuth2Implicit    <$> o .: "authorizationUrl"
-      "password"    -> OAuth2Password    <$> o .: "tokenUrl"
-      "application" -> OAuth2Application <$> o .: "tokenUrl"
-      "accessCode"  -> OAuth2AccessCode
-        <$> o .: "authorizationUrl"
-        <*> o .: "tokenUrl"
-      _ -> empty
-  parseJSON _ = empty
+instance (Eq p, FromJSON p, AesonDefaultValue p) => FromJSON (OAuth2Flow p) where
+  parseJSON = sopSwaggerGenericParseJSON
 
-instance FromJSON OAuth2Params where
+instance FromJSON OAuth2Flows where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON SecuritySchemeType where
@@ -1402,6 +1413,7 @@ instance FromJSON SecuritySchemeType where
       "http"   -> pure SecuritySchemeHttp
       "apiKey" -> SecuritySchemeApiKey <$> parseJSON js
       "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON js
+      "openIdConnect" -> SecuritySchemeOpenIdConnect <$> (o .: "openIdConnectUrl")
       _ -> empty
   parseJSON _ = empty
 
@@ -1509,9 +1521,6 @@ instance FromJSON MediaTypeObject where
 instance FromJSON Encoding where
   parseJSON = sopSwaggerGenericParseJSON
 
-instance FromJSON SecurityDefinitions where
-  parseJSON js = SecurityDefinitions <$> parseJSON js
-
 instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
   parseJSON _ = empty
@@ -1573,8 +1582,10 @@ instance HasSwaggerAesonOptions Components where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "components"
 instance HasSwaggerAesonOptions Header where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "header" & saoSubObject ?~ "paramSchema"
-instance HasSwaggerAesonOptions OAuth2Params where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2" & saoSubObject ?~ "flow"
+instance AesonDefaultValue p => HasSwaggerAesonOptions (OAuth2Flow p) where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2" & saoSubObject ?~ "params"
+instance HasSwaggerAesonOptions OAuth2Flows where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2Flows"
 instance HasSwaggerAesonOptions Operation where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "operation"
 instance HasSwaggerAesonOptions Param where
@@ -1612,7 +1623,11 @@ instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindSchema) where
 
 instance AesonDefaultValue Components
 instance AesonDefaultValue (ParamSchema s)
-instance AesonDefaultValue OAuth2Flow
+instance AesonDefaultValue OAuth2ImplicitFlow
+instance AesonDefaultValue OAuth2PasswordFlow
+instance AesonDefaultValue OAuth2ClientCredentialsFlow
+instance AesonDefaultValue OAuth2AuthorizationCodeFlow
+instance AesonDefaultValue p => AesonDefaultValue (OAuth2Flow p)
 instance AesonDefaultValue Responses
 instance AesonDefaultValue ParamAnySchema
 instance AesonDefaultValue SecuritySchemeType
@@ -1620,4 +1635,3 @@ instance AesonDefaultValue (SwaggerType a)
 instance AesonDefaultValue MimeList where defaultValue = Just mempty
 instance AesonDefaultValue Info
 instance AesonDefaultValue ParamLocation
-instance AesonDefaultValue SecurityDefinitions where defaultValue = Just $ SecurityDefinitions mempty

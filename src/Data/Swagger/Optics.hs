@@ -98,7 +98,12 @@ makeFieldLabels ''Responses
 makeFieldLabels ''Response
 makeFieldLabels ''SecurityScheme
 makeFieldLabels ''ApiKeyParams
-makeFieldLabels ''OAuth2Params
+makeFieldLabels ''OAuth2ImplicitFlow
+makeFieldLabels ''OAuth2PasswordFlow
+makeFieldLabels ''OAuth2ClientCredentialsFlow
+makeFieldLabels ''OAuth2AuthorizationCodeFlow
+makeFieldLabels ''OAuth2Flow
+makeFieldLabels ''OAuth2Flows
 makeFieldLabels ''ExternalDocs
 makeFieldLabels ''Encoding
 makeFieldLabels ''Example

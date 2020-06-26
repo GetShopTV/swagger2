@@ -95,15 +95,18 @@ module Data.Swagger (
   SecurityScheme(..),
   SecuritySchemeType(..),
   SecurityRequirement(..),
-  SecurityDefinitions(..),
 
   -- *** API key
   ApiKeyParams(..),
   ApiKeyLocation(..),
 
   -- *** OAuth2
-  OAuth2Params(..),
+  OAuth2Flows(..),
   OAuth2Flow(..),
+  OAuth2ImplicitFlow(..),
+  OAuth2PasswordFlow(..),
+  OAuth2ClientCredentialsFlow(..),
+  OAuth2AuthorizationCodeFlow(..),
   AuthorizationURL,
   TokenURL,
 
