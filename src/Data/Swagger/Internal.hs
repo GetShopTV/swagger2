@@ -684,8 +684,6 @@ data NamedSchema = NamedSchema
 -- | Regex pattern for @string@ type.
 type Pattern = Text
 
--- TODO examples for params
-
 data ParamSchema (t :: SwaggerKind *) = ParamSchema
   { -- | Declares the value of the parameter that the server will use if none is provided,
     -- for example a @"count"@ to control the number of results per page might default to @100@
@@ -785,7 +783,7 @@ data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe Text
 
-  , _headerParamSchema :: ParamSchema ('SwaggerKindNormal Header)
+  , _headerSchema :: ParamSchema ('SwaggerKindNormal Header)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | The location of the API key.
@@ -867,6 +865,10 @@ data SecurityScheme = SecurityScheme
   , _securitySchemeDescription :: Maybe Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+newtype SecurityDefinitions
+  = SecurityDefinitions (Definitions SecurityScheme)
+  deriving (Eq, Show, Generic, Data, Typeable)
+
 -- | Lists the required security schemes to execute this operation.
 -- The object can have multiple security schemes declared in it which are all required
 -- (that is, there is a logical AND between the schemes).
@@ -932,6 +934,7 @@ data AdditionalProperties
 -- Generic instances
 -------------------------------------------------------------------------------
 
+deriveGeneric ''Server
 deriveGeneric ''Components
 deriveGeneric ''Header
 deriveGeneric ''OAuth2Flow
@@ -1044,10 +1047,36 @@ instance Monoid Operation where
   mempty = genericMempty
   mappend = (<>)
 
+instance Semigroup (OAuth2Flow p) where
+  l@OAuth2Flow{ _oAath2RefreshUrl = lUrl, _oAuth2Scopes = lScopes }
+    <> OAuth2Flow { _oAath2RefreshUrl = rUrl, _oAuth2Scopes = rScopes } =
+      l { _oAath2RefreshUrl = swaggerMappend lUrl rUrl, _oAuth2Scopes = lScopes <> rScopes }
+
+-- swaggerMappend has First-like semantics, and here we need mappend'ing under Maybes.
 instance Semigroup OAuth2Flows where
-  (<>) = genericMappend
+  l <> r = OAuth2Flows
+    { _oAuth2FlowsImplicit = _oAuth2FlowsImplicit l <> _oAuth2FlowsImplicit r
+    , _oAuth2FlowsPassword = _oAuth2FlowsPassword l <> _oAuth2FlowsPassword r
+    , _oAuth2FlowsClientCredentials = _oAuth2FlowsClientCredentials l <> _oAuth2FlowsClientCredentials r
+    , _oAuth2FlowsAuthorizationCode = _oAuth2FlowsAuthorizationCode l <> _oAuth2FlowsAuthorizationCode r
+    }
+
 instance Monoid OAuth2Flows where
   mempty = genericMempty
+  mappend = (<>)
+
+instance Semigroup SecurityScheme where
+  SecurityScheme (SecuritySchemeOAuth2 lFlows) lDesc
+    <> SecurityScheme (SecuritySchemeOAuth2 rFlows) rDesc =
+      SecurityScheme (SecuritySchemeOAuth2 $ lFlows <> rFlows) (swaggerMappend lDesc rDesc)
+  l <> _ = l
+
+instance Semigroup SecurityDefinitions where
+  (SecurityDefinitions sd1) <> (SecurityDefinitions sd2) =
+     SecurityDefinitions $ InsOrdHashMap.unionWith (<>) sd1 sd2
+
+instance Monoid SecurityDefinitions where
+  mempty = SecurityDefinitions InsOrdHashMap.empty
   mappend = (<>)
 
 instance Semigroup RequestBody where
@@ -1108,9 +1137,6 @@ instance ToJSON Contact where
 instance ToJSON License where
   toJSON = genericToJSON (jsonPrefix "License")
 
-instance ToJSON Server where
-  toJSON = genericToJSON (jsonPrefix "Server")
-
 instance ToJSON ServerVariable where
   toJSON = genericToJSON (jsonPrefix "ServerVariable")
 
@@ -1160,9 +1186,6 @@ instance FromJSON Contact where
 instance FromJSON License where
   parseJSON = genericParseJSON (jsonPrefix "License")
 
-instance FromJSON Server where
-  parseJSON = genericParseJSON (jsonPrefix "Server")
-
 instance FromJSON ServerVariable where
   parseJSON = genericParseJSON (jsonPrefix "ServerVariable")
 
@@ -1211,9 +1234,10 @@ instance ToJSON SecuritySchemeType where
   toJSON (SecuritySchemeApiKey params)
       = toJSON params
     <+> object [ "type" .= ("apiKey" :: Text) ]
-  toJSON (SecuritySchemeOAuth2 params)
-      = toJSON params
-    <+> object [ "type" .= ("oauth2" :: Text) ]
+  toJSON (SecuritySchemeOAuth2 params) = object
+    [ "type" .= ("oauth2" :: Text)
+    , "flows" .= toJSON params
+    ]
   toJSON (SecuritySchemeOpenIdConnect url) = object
     [ "type" .= ("openIdConnect" :: Text)
     , "openIdConnectUrl" .= url
@@ -1224,6 +1248,10 @@ instance ToJSON Swagger where
     if InsOrdHashMap.null (_swaggerPaths a)
     then (<+> object ["paths" .= object []])
     else id
+  toEncoding = sopSwaggerGenericToEncoding
+
+instance ToJSON Server where
+  toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON SecurityScheme where
@@ -1299,6 +1327,9 @@ instance ToJSON Encoding where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
+instance ToJSON SecurityDefinitions where
+  toJSON (SecurityDefinitions sd) = toJSON sd
+
 instance ToJSON Reference where
   toJSON (Reference ref) = object [ "$ref" .= ref ]
 
@@ -1355,12 +1386,15 @@ instance FromJSON SecuritySchemeType where
     case t of
       "http"   -> pure SecuritySchemeHttp
       "apiKey" -> SecuritySchemeApiKey <$> parseJSON js
-      "oauth2" -> SecuritySchemeOAuth2 <$> parseJSON js
+      "oauth2" -> SecuritySchemeOAuth2 <$> (o .: "flows")
       "openIdConnect" -> SecuritySchemeOpenIdConnect <$> (o .: "openIdConnectUrl")
       _ -> empty
   parseJSON _ = empty
 
 instance FromJSON Swagger where
+  parseJSON = sopSwaggerGenericParseJSON
+
+instance FromJSON Server where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON SecurityScheme where
@@ -1433,6 +1467,9 @@ instance FromJSON Operation where
 instance FromJSON PathItem where
   parseJSON = sopSwaggerGenericParseJSON
 
+instance FromJSON SecurityDefinitions where
+  parseJSON js = SecurityDefinitions <$> parseJSON js
+
 instance FromJSON RequestBody where
   parseJSON = sopSwaggerGenericParseJSON
 
@@ -1499,10 +1536,12 @@ instance FromJSON AdditionalProperties where
   parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
   parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
 
+instance HasSwaggerAesonOptions Server where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "server"
 instance HasSwaggerAesonOptions Components where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "components"
 instance HasSwaggerAesonOptions Header where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "header" & saoSubObject ?~ "paramSchema"
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "header"
 instance AesonDefaultValue p => HasSwaggerAesonOptions (OAuth2Flow p) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "oauth2" & saoSubObject ?~ "params"
 instance HasSwaggerAesonOptions OAuth2Flows where
@@ -1526,7 +1565,7 @@ instance HasSwaggerAesonOptions SecurityScheme where
 instance HasSwaggerAesonOptions Schema where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "schema" & saoSubObject ?~ "paramSchema"
 instance HasSwaggerAesonOptions Swagger where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0.3")]
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "swagger" & saoAdditionalPairs .~ [("openapi", "3.0.0")]
 instance HasSwaggerAesonOptions Example where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "example"
 instance HasSwaggerAesonOptions Encoding where
@@ -1540,6 +1579,7 @@ instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindParamOtherSchema) where
 instance HasSwaggerAesonOptions (ParamSchema 'SwaggerKindSchema) where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema"
 
+instance AesonDefaultValue Server
 instance AesonDefaultValue Components
 instance AesonDefaultValue (ParamSchema s)
 instance AesonDefaultValue OAuth2ImplicitFlow

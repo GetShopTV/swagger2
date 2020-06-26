@@ -107,12 +107,12 @@ instance At   Operation where at n = responses . at n
 instance HasParamSchema NamedSchema (ParamSchema 'SwaggerKindSchema) where paramSchema = schema.paramSchema
 
 -- HasType instances
-instance HasType Header (Maybe (SwaggerType ('SwaggerKindNormal Header))) where type_ = paramSchema.type_
+instance HasType Header (Maybe (SwaggerType ('SwaggerKindNormal Header))) where type_ = schema.type_
 instance HasType Schema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
 instance HasType NamedSchema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
 
 -- HasDefault instances
-instance HasDefault Header (Maybe Value) where default_ = paramSchema.default_
+instance HasDefault Header (Maybe Value) where default_ = schema.default_
 instance HasDefault Schema (Maybe Value) where default_ = paramSchema.default_
 
 -- OVERLAPPABLE instances

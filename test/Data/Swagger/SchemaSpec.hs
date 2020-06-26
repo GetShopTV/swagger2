@@ -24,37 +24,37 @@ import Test.Hspec
 import qualified Data.HashMap.Strict as HM
 import Data.Time.LocalTime
 
-checkToSchema :: ToSchema a => Proxy a -> Value -> Spec
+checkToSchema :: (HasCallStack, ToSchema a) => Proxy a -> Value -> Spec
 checkToSchema proxy js = toSchema proxy <=> js
 
-checkSchemaName :: ToSchema a => Maybe String -> Proxy a -> Spec
+checkSchemaName :: (HasCallStack, ToSchema a) => Maybe String -> Proxy a -> Spec
 checkSchemaName sname proxy =
   it ("schema name is " ++ show sname) $
     schemaName proxy `shouldBe` fmap Text.pack sname
 
-checkDefs :: ToSchema a => Proxy a -> [String] -> Spec
+checkDefs :: (HasCallStack, ToSchema a) => Proxy a -> [String] -> Spec
 checkDefs proxy names =
   it ("uses these definitions " ++ show names) $
     InsOrdHashMap.keys defs `shouldBe` map Text.pack names
   where
     defs = execDeclare (declareNamedSchema proxy) mempty
 
-checkProperties :: ToSchema a => Proxy a -> [String] -> Spec
+checkProperties :: (HasCallStack, ToSchema a) => Proxy a -> [String] -> Spec
 checkProperties proxy names =
   it ("has these fields in order " ++ show names) $
     InsOrdHashMap.keys fields `shouldBe` map Text.pack names
   where
     fields = toSchema proxy ^. properties
 
-checkInlinedSchema :: ToSchema a => Proxy a -> Value -> Spec
+checkInlinedSchema :: (HasCallStack, ToSchema a) => Proxy a -> Value -> Spec
 checkInlinedSchema proxy js = toInlinedSchema proxy <=> js
 
-checkInlinedSchemas :: ToSchema a => [String] -> Proxy a -> Value -> Spec
+checkInlinedSchemas :: (HasCallStack, ToSchema a) => [String] -> Proxy a -> Value -> Spec
 checkInlinedSchemas names proxy js = inlineSchemas (map Text.pack names) defs s <=> js
   where
     (defs, s) = runDeclare (declareSchema proxy) mempty
 
-checkInlinedRecSchema :: ToSchema a => Proxy a -> Value -> Spec
+checkInlinedRecSchema :: (HasCallStack, ToSchema a) => Proxy a -> Value -> Spec
 checkInlinedRecSchema proxy js = inlineNonRecursiveSchemas defs s <=> js
   where
     (defs, s) = runDeclare (declareSchema proxy) mempty

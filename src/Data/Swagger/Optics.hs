@@ -188,7 +188,7 @@ instance
   ( a ~ Maybe (SwaggerType ('SwaggerKindNormal Header))
   , b ~ Maybe (SwaggerType ('SwaggerKindNormal Header))
   ) => LabelOptic "type" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #type
+  labelOptic = #schema % #type
   {-# INLINE labelOptic #-}
 
 instance
@@ -210,7 +210,7 @@ instance
 instance
   ( a ~ Maybe Value, b ~ Maybe Value
   ) => LabelOptic "default" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #default
+  labelOptic = #schema % #default
   {-# INLINE labelOptic #-}
 
 instance
@@ -230,7 +230,7 @@ instance
 instance
   ( a ~ Maybe Format, b ~ Maybe Format
   ) => LabelOptic "format" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #format
+  labelOptic = #schema % #format
   {-# INLINE labelOptic #-}
 
 instance
@@ -251,7 +251,7 @@ instance
   ( a ~ Maybe (SwaggerItems ('SwaggerKindNormal Header))
   , b ~ Maybe (SwaggerItems ('SwaggerKindNormal Header))
   ) => LabelOptic "items" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #items
+  labelOptic = #schema % #items
   {-# INLINE labelOptic #-}
 
 instance
@@ -273,7 +273,7 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "maximum" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #maximum
+  labelOptic = #schema % #maximum
   {-# INLINE labelOptic #-}
 
 instance
@@ -293,7 +293,7 @@ instance
 instance
   ( a ~ Maybe Bool, b ~ Maybe Bool
   ) => LabelOptic "exclusiveMaximum" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #exclusiveMaximum
+  labelOptic = #schema % #exclusiveMaximum
   {-# INLINE labelOptic #-}
 
 instance
@@ -313,7 +313,7 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "minimum" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #minimum
+  labelOptic = #schema % #minimum
   {-# INLINE labelOptic #-}
 
 instance
@@ -333,7 +333,7 @@ instance
 instance
   ( a ~ Maybe Bool, b ~ Maybe Bool
   ) => LabelOptic "exclusiveMinimum" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #exclusiveMinimum
+  labelOptic = #schema % #exclusiveMinimum
   {-# INLINE labelOptic #-}
 
 instance
@@ -353,7 +353,7 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "maxLength" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #maxLength
+  labelOptic = #schema % #maxLength
   {-# INLINE labelOptic #-}
 
 instance
@@ -373,7 +373,7 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "minLength" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #minLength
+  labelOptic = #schema % #minLength
   {-# INLINE labelOptic #-}
 
 instance
@@ -393,7 +393,7 @@ instance
 instance
   ( a ~ Maybe Text, b ~ Maybe Text
   ) => LabelOptic "pattern" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #pattern
+  labelOptic = #schema % #pattern
   {-# INLINE labelOptic #-}
 
 instance
@@ -413,7 +413,7 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "maxItems" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #maxItems
+  labelOptic = #schema % #maxItems
   {-# INLINE labelOptic #-}
 
 instance
@@ -433,7 +433,7 @@ instance
 instance
   ( a ~ Maybe Integer, b ~ Maybe Integer
   ) => LabelOptic "minItems" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #minItems
+  labelOptic = #schema % #minItems
   {-# INLINE labelOptic #-}
 
 instance
@@ -453,7 +453,7 @@ instance
 instance
   ( a ~ Maybe Bool, b ~ Maybe Bool
   ) => LabelOptic "uniqueItems" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #uniqueItems
+  labelOptic = #schema % #uniqueItems
   {-# INLINE labelOptic #-}
 
 instance
@@ -473,7 +473,7 @@ instance
 instance
   ( a ~ Maybe [Value], b ~ Maybe [Value]
   ) => LabelOptic "enum" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #enum
+  labelOptic = #schema % #enum
   {-# INLINE labelOptic #-}
 
 instance
@@ -493,7 +493,7 @@ instance
 instance
   ( a ~ Maybe Scientific, b ~ Maybe Scientific
   ) => LabelOptic "multipleOf" A_Lens Header Header a b where
-  labelOptic = #paramSchema % #multipleOf
+  labelOptic = #schema % #multipleOf
   {-# INLINE labelOptic #-}
 
 instance
