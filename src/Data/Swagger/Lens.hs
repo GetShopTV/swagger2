@@ -29,6 +29,8 @@ import Data.Text (Text)
 makeFields ''Swagger
 makeFields ''Components
 makeFields ''Server
+-- conflict with enum of ParamSchema
+--makeLensesWith swaggerFieldRules ''ServerVariable
 makeFields ''RequestBody
 makeFields ''MediaTypeObject
 makeFields ''Host
@@ -51,6 +53,9 @@ makeLensesWith swaggerFieldRules ''SecurityScheme
 makeFields ''ApiKeyParams
 makeFields ''OAuth2Params
 makeFields ''ExternalDocs
+makeFields ''Encoding
+makeFields ''Example
+makeFields ''Discriminator
 
 -- * Prisms
 -- ** 'ParamAnySchema' prisms

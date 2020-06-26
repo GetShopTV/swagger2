@@ -84,6 +84,7 @@ module Data.Swagger (
   Xml(..),
   Pattern,
   AdditionalProperties(..),
+  Discriminator(..),
 
   -- ** Responses
   Responses(..),

@@ -681,16 +681,26 @@ data Schema = Schema
   , _schemaProperties :: InsOrdHashMap Text (Referenced Schema)
   , _schemaAdditionalProperties :: Maybe AdditionalProperties
 
-  , _schemaDiscriminator :: Maybe Text -- FIXME Discriminator object
+  , _schemaDiscriminator :: Maybe Discriminator
   , _schemaReadOnly :: Maybe Bool
+  , _schemaWriteOnly :: Maybe Bool
   , _schemaXml :: Maybe Xml
   , _schemaExternalDocs :: Maybe ExternalDocs
   , _schemaExample :: Maybe Value
+  , _schemaDeprecated :: Maybe Bool
 
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
   , _schemaParamSchema :: ParamSchema 'SwaggerKindSchema
+  } deriving (Eq, Show, Generic, Data, Typeable)
+
+data Discriminator = Discriminator
+  { -- | The name of the property in the payload that will hold the discriminator value.
+    _discriminatorPropertyName :: Text
+
+    -- | An object to hold mappings between payload values and schema names or references.
+  , _discriminatorMapping :: InsOrdHashMap Text Text
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | A @'Schema'@ with an optional name.
@@ -790,7 +800,7 @@ data Response = Response
   , _responseContent :: InsOrdHashMap Text MediaTypeObject
 
     -- | Maps a header name to its definition.
-  , _responseHeaders :: InsOrdHashMap HeaderName Header -- FIXME Referenced
+  , _responseHeaders :: InsOrdHashMap HeaderName (Referenced Header)
 
   -- TODO links
   } deriving (Eq, Show, Generic, Data, Typeable)
@@ -1152,6 +1162,9 @@ instance ToJSON ExternalDocs where
 instance ToJSON Xml where
   toJSON = genericToJSON (jsonPrefix "Xml")
 
+instance ToJSON Discriminator where
+  toJSON = genericToJSON (jsonPrefix "Discriminator")
+
 -- =======================================================================
 -- Simple Generic-based FromJSON instances
 -- =======================================================================
@@ -1188,6 +1201,9 @@ instance FromJSON Tag where
 
 instance FromJSON ExternalDocs where
   parseJSON = genericParseJSON (jsonPrefix "ExternalDocs")
+
+instance FromJSON Discriminator where
+  parseJSON = genericParseJSON (jsonPrefix "Discriminator")
 
 -- =======================================================================
 -- Manual ToJSON instances

@@ -37,6 +37,7 @@ import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
 import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
+import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
 import           Data.Text                           (Text)
@@ -374,8 +375,11 @@ validateArray xs = do
 validateObject :: HashMap Text Value -> Validation Schema ()
 validateObject o = withSchema $ \sch ->
   case sch ^. discriminator of
-    Just pname -> case fromJSON <$> HashMap.lookup pname o of
-      Just (Success ref) -> validateWithSchemaRef ref (Object o)
+    Just (Discriminator pname types) -> case fromJSON <$> HashMap.lookup pname o of
+      Just (Success pvalue) ->
+        let ref = fromMaybe pvalue $ InsOrdHashMap.lookup pvalue types
+        -- TODO ref may be name or reference
+        in validateWithSchemaRef (Ref (Reference ref)) (Object o)
       Just (Error msg)   -> invalid ("failed to parse discriminator property " ++ show pname ++ ": " ++ show msg)
       Nothing            -> invalid ("discriminator property " ++ show pname ++ "is missing")
     Nothing -> do
