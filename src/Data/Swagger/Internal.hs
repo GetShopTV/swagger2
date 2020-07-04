@@ -1427,10 +1427,10 @@ instance FromJSON (SwaggerItems 'SwaggerKindParamOtherSchema) where
 -- >>> decode "{}" :: Maybe (SwaggerItems 'SwaggerKindSchema)
 -- Just (SwaggerItemsArray [])
 --
--- >>> eitherDecode "{\"$ref\":\"#/definitions/example\"}" :: Either String (SwaggerItems 'SwaggerKindSchema)
+-- >>> eitherDecode "{\"$ref\":\"#/components/schemas/example\"}" :: Either String (SwaggerItems 'SwaggerKindSchema)
 -- Right (SwaggerItemsObject (Ref (Reference {getReference = "example"})))
 --
--- >>> eitherDecode "[{\"$ref\":\"#/definitions/example\"}]" :: Either String (SwaggerItems 'SwaggerKindSchema)
+-- >>> eitherDecode "[{\"$ref\":\"#/components/schemas/example\"}]" :: Either String (SwaggerItems 'SwaggerKindSchema)
 -- Right (SwaggerItemsArray [Ref (Reference {getReference = "example"})])
 --
 instance FromJSON (SwaggerItems 'SwaggerKindSchema) where

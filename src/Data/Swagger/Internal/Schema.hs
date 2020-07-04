@@ -67,7 +67,7 @@ import Data.Swagger.SchemaOptions
 import Data.Swagger.Internal.TypeShape
 
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 unnamed :: Schema -> NamedSchema
@@ -151,13 +151,13 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 --
 -- >>> toNamedSchema (Proxy :: Proxy String) ^. name
 -- Nothing
--- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. schema)
--- "{\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode (toNamedSchema (Proxy :: Proxy String) ^. schema)
+-- {"type":"string"}
 --
 -- >>> toNamedSchema (Proxy :: Proxy Day) ^. name
 -- Just "Day"
--- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
--- "{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
+-- {"example":"2016-07-22","format":"date","type":"string"}
 toNamedSchema :: ToSchema a => Proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
@@ -173,22 +173,22 @@ schemaName = _namedSchemaName . toNamedSchema
 
 -- | Convert a type into a schema.
 --
--- >>> encode $ toSchema (Proxy :: Proxy Int8)
--- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Int8)
+-- {"maximum":127,"minimum":-128,"type":"integer"}
 --
--- >>> encode $ toSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy [Day])
+-- {"items":{"$ref":"#/components/schemas/Day"},"type":"array"}
 toSchema :: ToSchema a => Proxy a -> Schema
 toSchema = _namedSchemaSchema . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
 --
--- >>> encode $ toSchemaRef (Proxy :: Proxy Integer)
--- "{\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaRef (Proxy :: Proxy Integer)
+-- {"type":"integer"}
 --
--- >>> encode $ toSchemaRef (Proxy :: Proxy Day)
--- "{\"$ref\":\"#/definitions/Day\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaRef (Proxy :: Proxy Day)
+-- {"$ref":"#/components/schemas/Day"}
 toSchemaRef :: ToSchema a => Proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
@@ -256,8 +256,8 @@ inlineAllSchemas = inlineSchemasWhen (const True)
 
 -- | Convert a type into a schema without references.
 --
--- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ toInlinedSchema (Proxy :: Proxy [Day])
+-- {"items":{"example":"2016-07-22","format":"date","type":"string"},"type":"array"}
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
@@ -309,19 +309,19 @@ passwordSchema = mempty
 -- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema can be used for further refinement.
 --
--- >>> encode $ sketchSchema "hello"
--- "{\"example\":\"hello\",\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema "hello"
+-- {"example":"hello","type":"string"}
 --
--- >>> encode $ sketchSchema (1, 2, 3)
--- "{\"example\":[1,2,3],\"items\":{\"type\":\"number\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema (1, 2, 3)
+-- {"example":[1,2,3],"items":{"type":"number"},"type":"array"}
 --
--- >>> encode $ sketchSchema ("Jack", 25)
--- "{\"example\":[\"Jack\",25],\"items\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema ("Jack", 25)
+-- {"example":["Jack",25],"items":[{"type":"string"},{"type":"number"}],"type":"array"}
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
--- >>> encode $ sketchSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema (Person "Jack" 25)
+-- {"required":["age","name"],"properties":{"age":{"type":"number"},"name":{"type":"string"}},"example":{"age":25,"name":"Jack"},"type":"object"}
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -353,19 +353,19 @@ sketchSchema = sketch . toJSON
 -- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema uses as much constraints as possible.
 --
--- >>> encode $ sketchStrictSchema "hello"
--- "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema "hello"
+-- {"maxLength":5,"pattern":"hello","minLength":5,"type":"string","enum":["hello"]}
 --
--- >>> encode $ sketchStrictSchema (1, 2, 3)
--- "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema (1, 2, 3)
+-- {"minItems":3,"uniqueItems":true,"items":[{"maximum":1,"minimum":1,"multipleOf":1,"type":"number","enum":[1]},{"maximum":2,"minimum":2,"multipleOf":2,"type":"number","enum":[2]},{"maximum":3,"minimum":3,"multipleOf":3,"type":"number","enum":[3]}],"maxItems":3,"type":"array","enum":[[1,2,3]]}
 --
--- >>> encode $ sketchStrictSchema ("Jack", 25)
--- "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema ("Jack", 25)
+-- {"minItems":2,"uniqueItems":true,"items":[{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]},{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]}],"maxItems":2,"type":"array","enum":[["Jack",25]]}
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
--- >>> encode $ sketchStrictSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}},\"maxProperties\":2,\"minProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema (Person "Jack" 25)
+-- {"required":["age","name"],"properties":{"age":{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]},"name":{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]}},"maxProperties":2,"minProperties":2,"type":"object","enum":[{"age":25,"name":"Jack"}]}
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
@@ -565,8 +565,8 @@ instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declar
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 --
--- >>> encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
--- "{\"maximum\":32767,\"minimum\":-32768,\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
+-- {"maximum":32767,"minimum":-32768,"type":"integer"}
 toSchemaBoundedIntegral :: forall a. (Bounded a, Integral a) => Proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & type_ ?~ SwaggerInteger
@@ -598,8 +598,8 @@ genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$>
 -- >>> instance ToSchema ButtonState
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
--- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- {"properties":{"Neutral":{"type":"string"},"Focus":{"type":"string"},"Active":{"type":"string"},"Hover":{"type":"string"},"Disabled":{"type":"string"}},"type":"object"}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
@@ -626,8 +626,8 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
 -- >>> instance ToSchema ButtonState
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
--- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- {"properties":{"Neutral":{"type":"string"},"Focus":{"type":"string"},"Active":{"type":"string"},"Hover":{"type":"string"},"Disabled":{"type":"string"}},"type":"object"}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.

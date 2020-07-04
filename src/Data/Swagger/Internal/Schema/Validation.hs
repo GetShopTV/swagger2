@@ -109,7 +109,7 @@ validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checke
 --     "type": "object",
 --     "properties": {
 --         "phone": {
---             "$ref": "#/definitions/Phone"
+--             "$ref": "#/components/schemas/Phone"
 --         },
 --         "name": {
 --             "type": "string"

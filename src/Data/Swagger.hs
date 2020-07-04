@@ -134,6 +134,7 @@ import Data.Swagger.Internal
 -- >>> import Data.Monoid
 -- >>> import Data.Proxy
 -- >>> import GHC.Generics
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XOverloadedLists
@@ -150,8 +151,8 @@ import Data.Swagger.Internal
 --
 -- In this library you can use @'mempty'@ for a default/empty value. For instance:
 --
--- >>> encode (mempty :: Swagger)
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"}}"
+-- >>> BSL.putStrLn $ encode (mempty :: Swagger)
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"components":{}}
 --
 -- As you can see some spec properties (e.g. @"version"@) are there even when the spec is empty.
 -- That is because these properties are actually required ones.
@@ -159,13 +160,13 @@ import Data.Swagger.Internal
 -- You /should/ always override the default (empty) value for these properties,
 -- although it is not strictly necessary:
 --
--- >>> encode mempty { _infoTitle = "Todo API", _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- >>> BSL.putStrLn $ encode mempty { _infoTitle = "Todo API", _infoVersion = "1.0" }
+-- {"version":"1.0","title":"Todo API"}
 --
 -- You can merge two values using @'mappend'@ or its infix version @('<>')@:
 --
--- >>> encode $ mempty { _infoTitle = "Todo API" } <> mempty { _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- >>> BSL.putStrLn $ encode $ mempty { _infoTitle = "Todo API" } <> mempty { _infoVersion = "1.0" }
+-- {"version":"1.0","title":"Todo API"}
 --
 -- This can be useful for combining specifications of endpoints into a whole API specification:
 --
@@ -191,15 +192,14 @@ import Data.Swagger.Internal
 -- make it fairly simple to construct/modify any part of the specification:
 --
 -- >>> :{
--- encode $ (mempty :: Swagger)
---   & definitions .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
+-- BSL.putStrLn $ encode $ (mempty :: Swagger)
+--   & components . schemas .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
 --   & paths .~
 --     [ ("/user", mempty & get ?~ (mempty
---         & produces ?~ MimeList ["application/json"]
---         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
+--         & at 200 ?~ ("OK" & _Inline.content.at "application/json" ?~ (mempty & schema ?~ Ref (Reference "User")))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"404":{"description":"User info not found"},"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/User"}}},"description":"OK"}}}}},"components":{"schemas":{"User":{"type":"string"}}}}
 --
 -- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
 -- which produces @application/json@ output. It should respond with code @200@ and body specified
@@ -211,30 +211,33 @@ import Data.Swagger.Internal
 -- common field is @'description'@. Many components of a Swagger specification
 -- can have descriptions, and you can use the same name for them:
 --
--- >>> encode $ (mempty :: Response) & description .~ "No content"
--- "{\"description\":\"No content\"}"
+-- >>> BSL.putStrLn $ encode $ (mempty :: Response) & description .~ "No content"
+-- {"description":"No content"}
 -- >>> :{
--- encode $ (mempty :: Schema)
+-- BSL.putStrLn $ encode $ (mempty :: Schema)
 --   & type_       ?~ SwaggerBoolean
 --   & description ?~ "To be or not to be"
 -- :}
--- "{\"description\":\"To be or not to be\",\"type\":\"boolean\"}"
+-- {"description":"To be or not to be","type":"boolean"}
 --
 -- @'ParamSchema'@ is basically the /base schema specification/ and many types contain it (see @'HasParamSchema'@).
 -- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
 -- For example, you can use @'type_'@ to access @'SwaggerType'@ of @'Header'@ schema without having to use @'paramSchema'@:
 --
--- >>> encode $ (mempty :: Header) & type_ ?~ SwaggerNumber
--- "{\"type\":\"number\"}"
+-- >>> BSL.putStrLn $ encode $ (mempty :: Header) & type_ ?~ SwaggerNumber
+-- {"schema":{"type":"number"}}
+--
+-- TODO this is no up-to-date ^, since in openapi 3 there is no ParamSchema madness, all objects
+-- have Schemas as fields.
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
 -- have direct access to it via @'at' code@. Example:
 --
 -- >>> :{
--- encode $ (mempty :: Operation)
+-- BSL.putStrLn $ encode $ (mempty :: Operation)
 --   & at 404 ?~ "Not found"
 -- :}
--- "{\"responses\":{\"404\":{\"description\":\"Not found\"}}}"
+-- {"responses":{"404":{"description":"Not found"}}}
 --
 -- You might've noticed that @'type_'@ has an extra underscore in its name
 -- compared to, say, @'description'@ field accessor.
@@ -281,10 +284,10 @@ import Data.Swagger.Internal
 -- >>> data Person = Person { name :: String, age :: Integer } deriving Generic
 -- >>> instance ToJSON Person
 -- >>> instance ToSchema Person
--- >>> encode (Person "David" 28)
--- "{\"age\":28,\"name\":\"David\"}"
--- >>> encode $ toSchema (Proxy :: Proxy Person)
--- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"integer\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode (Person "David" 28)
+-- {"age":28,"name":"David"}
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Person)
+-- {"required":["name","age"],"properties":{"name":{"type":"string"},"age":{"type":"integer"}},"type":"object"}
 --
 -- Please note that not all valid Haskell data types will have a proper swagger schema. For example while we can derive a
 -- schema for basic enums like

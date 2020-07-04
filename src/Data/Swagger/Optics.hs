@@ -17,33 +17,33 @@
 -- >>> import Data.Aeson
 -- >>> import Optics.Core
 -- >>> :set -XOverloadedLabels
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
 --
 -- Example from the "Data.Swagger" module using @optics@:
 --
 -- >>> :{
--- encode $ (mempty :: Swagger)
---   & #definitions .~ [ ("User", mempty & #type ?~ SwaggerString) ]
+-- BSL.putStrLn $ encode $ (mempty :: Swagger)
+--   & #components % #schemas .~ [ ("User", mempty & #type ?~ SwaggerString) ]
 --   & #paths .~
 --     [ ("/user", mempty & #get ?~ (mempty
---         & #produces ?~ MimeList ["application/json"]
---         & at 200 ?~ ("OK" & #_Inline % #schema ?~ Ref (Reference "User"))
+--         & at 200 ?~ ("OK" & #_Inline % #content % at "application/json" ?~ (mempty & #schema ?~ Ref (Reference "User")))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"404":{"description":"User info not found"},"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/User"}}},"description":"OK"}}}}},"components":{"schemas":{"User":{"type":"string"}}}}
 --
 -- For convenience optics are defined as /labels/. It means that field accessor
 -- names can be overloaded for different types. One such common field is
 -- @#description@. Many components of a Swagger specification can have
 -- descriptions, and you can use the same name for them:
 --
--- >>> encode $ (mempty :: Response) & #description .~ "No content"
--- "{\"description\":\"No content\"}"
+-- >>> BSL.putStrLn $ encode $ (mempty :: Response) & #description .~ "No content"
+-- {"description":"No content"}
 -- >>> :{
--- encode $ (mempty :: Schema)
+-- BSL.putStrLn $ encode $ (mempty :: Schema)
 --   & #type        ?~ SwaggerBoolean
 --   & #description ?~ "To be or not to be"
 -- :}
--- "{\"description\":\"To be or not to be\",\"type\":\"boolean\"}"
+-- {"description":"To be or not to be","type":"boolean"}
 --
 -- @'ParamSchema'@ is basically the /base schema specification/ and many types
 -- contain it. So for convenience, all @'ParamSchema'@ fields are transitively
@@ -51,17 +51,17 @@
 -- access @'SwaggerType'@ of @'Header'@ schema without having to use
 -- @#paramSchema@:
 --
--- >>> encode $ (mempty :: Header) & #type ?~ SwaggerNumber
--- "{\"type\":\"number\"}"
+-- >>> BSL.putStrLn $ encode $ (mempty :: Header) & #type ?~ SwaggerNumber
+-- {"schema":{"type":"number"}}
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and
 -- @'Responses'@ have direct access to it via @'Optics.Core.At.at'@. Example:
 --
 -- >>> :{
--- encode $ (mempty :: Operation)
+-- BSL.putStrLn $ encode $ (mempty :: Operation)
 --   & at 404 ?~ "Not found"
 -- :}
--- "{\"responses\":{\"404\":{\"description\":\"Not found\"}}}"
+-- {"responses":{"404":{"description":"Not found"}}}
 --
 module Data.Swagger.Optics () where
 
