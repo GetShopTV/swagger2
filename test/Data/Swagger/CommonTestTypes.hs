@@ -271,106 +271,192 @@ instance ToSchema Character
 characterSchemaJSON :: Value
 characterSchemaJSON = [aesonQQ|
 {
-  "type": "object",
-  "properties":
+  "oneOf": [
     {
-      "PC": { "$ref": "#/components/schemas/Player" },
-      "NPC":
-        {
-          "type": "object",
-          "properties":
-            {
-              "npcName": { "type": "string" },
-              "npcPosition": { "$ref": "#/components/schemas/Point" }
-            },
-          "required": ["npcName", "npcPosition"]
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "PC"
+          ]
+        },
+        "contents": {
+          "$ref": "#/components/schemas/Player"
         }
+      }
     },
-  "maxProperties": 1,
-  "minProperties": 1
+    {
+      "required": [
+        "npcName",
+        "npcPosition",
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "NPC"
+          ]
+        },
+        "npcPosition": {
+          "$ref": "#/components/schemas/Point"
+        },
+        "npcName": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "type": "object"
 }
+
 |]
 
 characterInlinedSchemaJSON :: Value
 characterInlinedSchemaJSON = [aesonQQ|
 {
-  "type": "object",
-  "properties":
+  "oneOf": [
     {
-      "PC":
-        {
-          "type": "object",
-          "properties":
-            {
-              "position":
-                {
-                  "type": "object",
-                  "properties":
-                    {
-                      "x": { "type": "number", "format": "double" },
-                      "y": { "type": "number", "format": "double" }
-                    },
-                  "required": ["x", "y"]
-                }
-            },
-          "required": ["position"]
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "PC"
+          ]
         },
-      "NPC":
-        {
+        "contents": {
+          "required": [
+            "position"
+          ],
           "type": "object",
-          "properties":
-            {
-              "npcName": { "type": "string" },
-              "npcPosition":
-                {
-                  "type": "object",
-                  "properties":
-                    {
-                      "x": { "type": "number", "format": "double" },
-                      "y": { "type": "number", "format": "double" }
-                    },
-                  "required": ["x", "y"]
+          "properties": {
+            "position": {
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object",
+              "properties": {
+                "x": {
+                  "format": "double",
+                  "type": "number"
+                },
+                "y": {
+                  "format": "double",
+                  "type": "number"
                 }
-            },
-          "required": ["npcName", "npcPosition"]
+              }
+            }
+          }
         }
+      }
     },
-  "maxProperties": 1,
-  "minProperties": 1
+    {
+      "required": [
+        "npcName",
+        "npcPosition",
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "NPC"
+          ]
+        },
+        "npcPosition": {
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object",
+          "properties": {
+            "x": {
+              "format": "double",
+              "type": "number"
+            },
+            "y": {
+              "format": "double",
+              "type": "number"
+            }
+          }
+        },
+        "npcName": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "type": "object"
 }
 |]
 
 characterInlinedPlayerSchemaJSON :: Value
 characterInlinedPlayerSchemaJSON = [aesonQQ|
 {
-  "type": "object",
-  "properties":
+  "oneOf": [
     {
-      "PC":
-        {
-          "type": "object",
-          "properties":
-            {
-              "position":
-                {
-                  "$ref": "#/components/schemas/Point"
-                }
-            },
-          "required": ["position"]
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "PC"
+          ]
         },
-      "NPC":
-        {
+        "contents": {
+          "required": [
+            "position"
+          ],
           "type": "object",
-          "properties":
-            {
-              "npcName": { "type": "string" },
-              "npcPosition": { "$ref": "#/components/schemas/Point" }
-            },
-          "required": ["npcName", "npcPosition"]
+          "properties": {
+            "position": {
+              "$ref": "#/components/schemas/Point"
+            }
+          }
         }
+      }
     },
-  "maxProperties": 1,
-  "minProperties": 1
+    {
+      "required": [
+        "npcName",
+        "npcPosition",
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "NPC"
+          ]
+        },
+        "npcPosition": {
+          "$ref": "#/components/schemas/Point"
+        },
+        "npcName": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "type": "object"
 }
 |]
 
@@ -542,42 +628,169 @@ data Light
   deriving (Generic)
 
 instance ToSchema Light where
-  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
     { unwrapUnaryRecords = True }
 
 lightSchemaJSON :: Value
 lightSchemaJSON = [aesonQQ|
 {
-  "type": "object",
-  "properties":
+  "oneOf": [
     {
-      "NoLight": { "type": "array", "items": {}, "maxItems": 0, "example": [] },
-      "LightFreq": { "type": "number", "format": "double" },
-      "LightColor": { "$ref": "#/components/schemas/Color" },
-      "LightWaveLength": { "type": "number", "format": "double" }
+      "required": [
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "NoLight"
+          ]
+        }
+      }
     },
-  "maxProperties": 1,
-  "minProperties": 1
+    {
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightFreq"
+          ]
+        },
+        "contents": {
+          "format": "double",
+          "type": "number"
+        }
+      }
+    },
+    {
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightColor"
+          ]
+        },
+        "contents": {
+          "$ref": "#/components/schemas/Color"
+        }
+      }
+    },
+    {
+      "required": [
+        "waveLength",
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightWaveLength"
+          ]
+        },
+        "waveLength": {
+          "format": "double",
+          "type": "number"
+        }
+      }
+    }
+  ],
+  "type": "object"
 }
 |]
 
 lightInlinedSchemaJSON :: Value
 lightInlinedSchemaJSON = [aesonQQ|
 {
-  "type": "object",
-  "properties":
+  "oneOf": [
     {
-      "NoLight": { "type": "array", "items": {}, "maxItems": 0, "example": [] },
-      "LightFreq": { "type": "number", "format": "double" },
-      "LightColor":
-        {
+      "required": [
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
           "type": "string",
-          "enum": ["Red", "Green", "Blue"]
-        },
-      "LightWaveLength": { "type": "number", "format": "double" }
+          "enum": [
+            "NoLight"
+          ]
+        }
+      }
     },
-  "maxProperties": 1,
-  "minProperties": 1
+    {
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightFreq"
+          ]
+        },
+        "contents": {
+          "format": "double",
+          "type": "number"
+        }
+      }
+    },
+    {
+      "required": [
+        "tag",
+        "contents"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightColor"
+          ]
+        },
+        "contents": {
+          "type": "string",
+          "enum": [
+            "Red",
+            "Green",
+            "Blue"
+          ]
+        }
+      }
+    },
+    {
+      "required": [
+        "waveLength",
+        "tag"
+      ],
+      "type": "object",
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": [
+            "LightWaveLength"
+          ]
+        },
+        "waveLength": {
+          "format": "double",
+          "type": "number"
+        }
+      }
+    }
+  ],
+  "type": "object"
 }
 |]
 

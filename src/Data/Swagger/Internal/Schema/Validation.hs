@@ -12,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ViewPatterns               #-}
 -- |
 -- Module:      Data.Swagger.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
@@ -26,8 +27,8 @@ import           Prelude                             ()
 import           Prelude.Compat
 
 import           Control.Applicative
-import           Control.Lens
-import           Control.Monad                       (when)
+import           Control.Lens                        hiding (allOf)
+import           Control.Monad                       (forM, forM_, when)
 
 import           Data.Aeson                          hiding (Result)
 import           Data.Aeson.Encode.Pretty            (encodePretty)
@@ -473,22 +474,37 @@ inferParamSchemaTypes sch = concat
 
 validateSchemaType :: Value -> Validation Schema ()
 validateSchemaType value = withSchema $ \sch ->
-  case (sch ^. type_, value) of
-    (Just SwaggerNull,    Null)       -> valid
-    (Just SwaggerBoolean, Bool _)     -> valid
-    (Just SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
-    (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
-    (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
-    (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
-    (Just SwaggerObject,  Object o)   -> validateObject o
-    (Nothing, Null)                   -> valid
-    (Nothing, Bool _)                 -> valid
-    -- Number by default
-    (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
-    (Nothing, String s)               -> sub_ paramSchema (validateString s)
-    (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
-    (Nothing, Object o)               -> validateObject o
-    bad -> invalid $ "expected JSON value of type " ++ showType bad
+  case sch of
+    (view oneOf -> Just variants) -> do
+      res <- forM variants $ \var ->
+        (True <$ validateWithSchemaRef var value) <|> (return False)
+      case length $ filter id res of
+        0 -> invalid $ "Value not valid under any of 'oneOf' schemas: " ++ show value
+        1 -> valid
+        _ -> invalid $ "Value matches more than one of 'oneOf' schemas: " ++ show value
+    (view allOf -> Just variants) -> do
+      -- Default semantics for Validation Monad will abort when at least one
+      -- variant does not match.
+      forM_ variants $ \var ->
+        validateWithSchemaRef var value
+
+    _ ->
+      case (sch ^. type_, value) of
+        (Just SwaggerNull,    Null)       -> valid
+        (Just SwaggerBoolean, Bool _)     -> valid
+        (Just SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
+        (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
+        (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
+        (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
+        (Just SwaggerObject,  Object o)   -> validateObject o
+        (Nothing, Null)                   -> valid
+        (Nothing, Bool _)                 -> valid
+        -- Number by default
+        (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
+        (Nothing, String s)               -> sub_ paramSchema (validateString s)
+        (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
+        (Nothing, Object o)               -> validateObject o
+        bad -> invalid $ "expected JSON value of type " ++ showType bad
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->

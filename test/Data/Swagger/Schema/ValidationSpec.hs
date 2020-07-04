@@ -188,10 +188,10 @@ instance Arbitrary MyRoseTree where
 data Light = NoLight | LightFreq Double | LightColor Color deriving (Show, Generic)
 
 instance ToSchema Light where
-  declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions { Data.Swagger.sumEncoding = ObjectWithSingleField }
 
 instance ToJSON Light where
-  toJSON = genericToJSON defaultOptions { sumEncoding = ObjectWithSingleField }
+  toJSON = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = ObjectWithSingleField }
 
 instance Arbitrary Light where
   arbitrary = oneof
