@@ -40,6 +40,7 @@ import Data.Maybe (mapMaybe)
 import Data.Proxy
 import qualified Data.Set as Set
 import Data.Text (Text)
+import Network.HTTP.Media (MediaType)
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -124,7 +125,7 @@ applyTagsFor ops ts swag = swag
 --
 -- >>> BSL.putStrLn $ encode $ runDeclare (declareResponse "application/json" (Proxy :: Proxy Day)) mempty
 -- [{"Day":{"example":"2016-07-22","format":"date","type":"string"}},{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Day"}}}}]
-declareResponse :: ToSchema a => Text -> Proxy a -> Declare (Definitions Schema) Response
+declareResponse :: ToSchema a => MediaType -> Proxy a -> Declare (Definitions Schema) Response
 declareResponse cType proxy = do
   s <- declareSchemaRef proxy
   return (mempty & content.at cType ?~ (mempty & schema ?~ s))

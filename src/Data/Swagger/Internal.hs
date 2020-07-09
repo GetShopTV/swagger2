@@ -19,26 +19,29 @@ module Data.Swagger.Internal where
 import Prelude ()
 import Prelude.Compat
 
-import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
-import           Data.Aeson               hiding (Encoding)
-import qualified Data.Aeson.Types         as JSON
-import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
-import           Data.Hashable            (Hashable)
-import qualified Data.HashMap.Strict      as HashMap
-import           Data.HashSet.InsOrd      (InsOrdHashSet)
-import           Data.Map                 (Map)
-import qualified Data.Map                 as Map
-import           Data.Monoid              (Monoid (..))
-import           Data.Semigroup.Compat    (Semigroup (..))
-import           Data.Scientific          (Scientific)
-import           Data.String              (IsString(..))
-import           Data.Text                (Text)
-import qualified Data.Text                as Text
-import           GHC.Generics             (Generic)
-import           Network.Socket           (HostName, PortNumber)
-import           Network.HTTP.Media       (MediaType)
-import           Text.Read                (readMaybe)
+import           Control.Lens          ((&), (.~), (?~))
+import           Data.Aeson            hiding (Encoding)
+import qualified Data.Aeson.Types      as JSON
+import           Data.Data             (Constr, Data (..), DataType, Fixity (..), Typeable,
+                                        constrIndex, mkConstr, mkDataType)
+import           Data.Hashable         (Hashable (..))
+import qualified Data.HashMap.Strict   as HashMap
+import           Data.HashSet.InsOrd   (InsOrdHashSet)
+import           Data.Map              (Map)
+import qualified Data.Map              as Map
+import           Data.Monoid           (Monoid (..))
+import           Data.Scientific       (Scientific)
+import           Data.Semigroup.Compat (Semigroup (..))
+import           Data.String           (IsString (..))
+import           Data.Text             (Text)
+import qualified Data.Text             as Text
+import           Data.Text.Encoding    (encodeUtf8)
+import           GHC.Generics          (Generic)
+import           Network.HTTP.Media    (MediaType, mainType, parameters, parseAccept, subType, (//),
+                                        (/:))
+import           Network.Socket        (HostName, PortNumber)
+import           Text.Read             (readMaybe)
 
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
@@ -304,6 +307,22 @@ data Operation = Operation
   , _operationServers :: [Server]
   } deriving (Eq, Show, Generic, Data, Typeable)
 
+-- This instance should be in @http-media@.
+instance Data MediaType where
+  gunfold k z c = case constrIndex c of
+    1 -> k (k (k (z (\main sub params -> foldl (/:) (main // sub) (Map.toList params)))))
+    _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type MediaType."
+
+  toConstr _ = mediaTypeConstr
+
+  dataTypeOf _ = mediaTypeData
+
+mediaTypeConstr = mkConstr mediaTypeData "MediaType" [] Prefix
+mediaTypeData = mkDataType "MediaType" [mediaTypeConstr]
+
+instance Hashable MediaType where
+  hashWithSalt salt mt = salt `hashWithSalt` show mt
+
 -- | Describes a single request body.
 data RequestBody = RequestBody
   { -- | A brief description of the request body. This could contain examples of use.
@@ -314,7 +333,7 @@ data RequestBody = RequestBody
     -- The key is a media type or media type range and the value describes it.
     -- For requests that match multiple keys, only the most specific key is applicable.
     -- e.g. @text/plain@ overrides @text/*@
-  , _requestBodyContent :: InsOrdHashMap {-MediaType-} Text MediaTypeObject -- FIXME Data MediaType
+  , _requestBodyContent :: InsOrdHashMap MediaType MediaTypeObject
 
   , _requestBodyRequired :: Maybe Bool
   } deriving (Eq, Show, Generic, Data, Typeable)
@@ -369,7 +388,7 @@ data Encoding = Encoding
     -- for array – the default is defined based on the inner type.
     -- The value can be a specific media type (e.g. @application/json@),
     -- a wildcard media type (e.g. @image/*@), or a comma-separated list of the two types.
-    _encodingContentType :: Maybe Text
+    _encodingContentType :: Maybe MediaType
 
     -- | A map allowing additional information to be provided as headers,
     -- for example @Content-Disposition@. @Content-Type@ is described separately
@@ -416,9 +435,6 @@ instance Data MimeList where
     _ -> error $ "Data.Data.gunfold: Constructor " ++ show c ++ " is not of type MimeList."
   toConstr (MimeList _) = mimeListConstr
   dataTypeOf _ = mimeListDataType
-
--- TODO style
--- TODO example
 
 -- | Describes a single operation parameter.
 -- A unique parameter is defined by a combination of a name and location.
@@ -669,7 +685,7 @@ data Response = Response
     -- The key is a media type or media type range and the value describes it.
     -- For responses that match multiple keys, only the most specific key is applicable.
     -- e.g. @text/plain@ overrides @text/*@.
-  , _responseContent :: InsOrdHashMap Text MediaTypeObject
+  , _responseContent :: InsOrdHashMap MediaType MediaTypeObject
 
     -- | Maps a header name to its definition.
   , _responseHeaders :: InsOrdHashMap HeaderName (Referenced Header)
@@ -1137,7 +1153,14 @@ instance FromJSON OAuth2AuthorizationCodeFlow where
 -- Manual ToJSON instances
 -- =======================================================================
 
-instance (Eq p, ToJSON p, AesonDefaultValue p)  =>ToJSON (OAuth2Flow p) where
+instance ToJSON MediaType where
+  toJSON = toJSON . show
+  toEncoding = toEncoding . show
+
+instance ToJSONKey MediaType where
+  toJSONKey = JSON.toJSONKeyText (Text.pack . show)
+
+instance (Eq p, ToJSON p, AesonDefaultValue p) => ToJSON (OAuth2Flow p) where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
@@ -1270,6 +1293,13 @@ instance ToJSON AdditionalProperties where
 -- =======================================================================
 -- Manual FromJSON instances
 -- =======================================================================
+
+instance FromJSON MediaType where
+  parseJSON = withText "MediaType" $ \str ->
+    maybe (fail $ "Invalid media type literal " <> Text.unpack str) pure $ parseAccept $ encodeUtf8 str
+
+instance FromJSONKey MediaType where
+  fromJSONKey = FromJSONKeyTextParser (parseJSON . String)
 
 instance (Eq p, FromJSON p, AesonDefaultValue p) => FromJSON (OAuth2Flow p) where
   parseJSON = sopSwaggerGenericParseJSON
