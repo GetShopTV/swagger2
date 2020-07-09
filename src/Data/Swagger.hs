@@ -59,7 +59,7 @@ module Data.Swagger (
   SwaggerType(..),
   Format,
   Definitions,
-  CollectionFormat(..),
+  Style(..),
 
   -- ** Parameters
   Param(..),
@@ -219,16 +219,6 @@ import Data.Swagger.Internal
 --   & description ?~ "To be or not to be"
 -- :}
 -- {"description":"To be or not to be","type":"boolean"}
---
--- @'ParamSchema'@ is basically the /base schema specification/ and many types contain it (see @'HasParamSchema'@).
--- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
--- For example, you can use @'type_'@ to access @'SwaggerType'@ of @'Header'@ schema without having to use @'paramSchema'@:
---
--- >>> BSL.putStrLn $ encode $ (mempty :: Header) & type_ ?~ SwaggerNumber
--- {"schema":{"type":"number"}}
---
--- TODO this is no up-to-date ^, since in openapi 3 there is no ParamSchema madness, all objects
--- have Schemas as fields.
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
 -- have direct access to it via @'at' code@. Example:

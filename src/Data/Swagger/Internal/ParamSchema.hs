@@ -50,20 +50,20 @@ import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 -- | Default schema for binary data (any sequence of octets).
-binaryParamSchema :: ParamSchema t
+binaryParamSchema :: ParamSchema
 binaryParamSchema = mempty
   & type_ ?~ SwaggerString
   & format ?~ "binary"
 
 -- | Default schema for binary data (base64 encoded).
-byteParamSchema :: ParamSchema t
+byteParamSchema :: ParamSchema
 byteParamSchema = mempty
   & type_ ?~ SwaggerString
   & format ?~ "byte"
 
 -- | Default schema for password string.
 -- @"password"@ format is used to hint UIs the input needs to be obscured.
-passwordParamSchema :: ParamSchema t
+passwordParamSchema :: ParamSchema
 passwordParamSchema = mempty
   & type_ ?~ SwaggerString
   & format ?~ "password"
@@ -108,8 +108,8 @@ class ToParamSchema a where
   --
   -- >>> encode $ toParamSchema (Proxy :: Proxy Integer)
   -- "{\"type\":\"integer\"}"
-  toParamSchema :: Proxy a -> ParamSchema t
-  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => Proxy a -> ParamSchema t
+  toParamSchema :: Proxy a -> ParamSchema
+  default toParamSchema :: (Generic a, GToParamSchema (Rep a)) => Proxy a -> ParamSchema
   toParamSchema = genericToParamSchema defaultSchemaOptions
 
 instance {-# OVERLAPPING #-} ToParamSchema String where
@@ -151,7 +151,7 @@ instance ToParamSchema Word64 where
 --
 -- >>> encode $ toParamSchemaBoundedIntegral (Proxy :: Proxy Int8)
 -- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
-toParamSchemaBoundedIntegral :: forall a t. (Bounded a, Integral a) => Proxy a -> ParamSchema t
+toParamSchemaBoundedIntegral :: forall a t. (Bounded a, Integral a) => Proxy a -> ParamSchema
 toParamSchemaBoundedIntegral _ = mempty
   & type_ ?~ SwaggerInteger
   & minimum_ ?~ fromInteger (toInteger (minBound :: a))
@@ -181,7 +181,7 @@ instance ToParamSchema Float where
     & type_  ?~ SwaggerNumber
     & format ?~ "float"
 
-timeParamSchema :: String -> ParamSchema t
+timeParamSchema :: String -> ParamSchema
 timeParamSchema fmt = mempty
   & type_  ?~ SwaggerString
   & format ?~ T.pack fmt
@@ -236,7 +236,7 @@ type family ToParamSchemaByteStringError bs where
   ToParamSchemaByteStringError bs = TypeError
       ( 'Text "Impossible to have an instance " :<>: ShowType (ToParamSchema bs) :<>: Text "."
    :$$: 'Text "Please, use a newtype wrapper around " :<>: ShowType bs :<>: Text " instead."
-   :$$: 'Text "Consider using byteParamSchema or binaryParamSchema templates." )
+   :$$: 'Text "Consider using byteParamSchema or binaryParamSchemaemplates." )
 
 instance ToParamSchemaByteStringError BS.ByteString  => ToParamSchema BS.ByteString  where toParamSchema = error "impossible"
 instance ToParamSchemaByteStringError BSL.ByteString => ToParamSchema BSL.ByteString where toParamSchema = error "impossible"
@@ -254,7 +254,7 @@ instance ToParamSchema a => ToParamSchema (Identity a) where toParamSchema _ = t
 instance ToParamSchema a => ToParamSchema [a] where
   toParamSchema _ = mempty
     & type_ ?~ SwaggerArray
-    & items ?~ SwaggerItemsPrimitive Nothing (toParamSchema (Proxy :: Proxy a))
+    & items ?~ SwaggerItemsObject (Inline $ mempty & paramSchema .~ toParamSchema (Proxy :: Proxy a))
 
 instance ToParamSchema a => ToParamSchema (V.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
 instance ToParamSchema a => ToParamSchema (VP.Vector a) where toParamSchema _ = toParamSchema (Proxy :: Proxy [a])
@@ -287,11 +287,11 @@ instance ToParamSchema UUID where
 -- >>> data Color = Red | Blue deriving Generic
 -- >>> encode $ genericToParamSchema defaultSchemaOptions (Proxy :: Proxy Color)
 -- "{\"type\":\"string\",\"enum\":[\"Red\",\"Blue\"]}"
-genericToParamSchema :: forall a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> Proxy a -> ParamSchema t
+genericToParamSchema :: forall a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> Proxy a -> ParamSchema
 genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 class GToParamSchema (f :: * -> *) where
-  gtoParamSchema :: SchemaOptions -> Proxy f -> ParamSchema t -> ParamSchema t
+  gtoParamSchema :: SchemaOptions -> Proxy f -> ParamSchema -> ParamSchema
 
 instance GToParamSchema f => GToParamSchema (D1 d f) where
   gtoParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy f)
@@ -309,7 +309,7 @@ instance (GEnumParamSchema f, GEnumParamSchema g) => GToParamSchema (f :+: g) wh
   gtoParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy (f :+: g))
 
 class GEnumParamSchema (f :: * -> *) where
-  genumParamSchema :: SchemaOptions -> Proxy f -> ParamSchema t -> ParamSchema t
+  genumParamSchema :: SchemaOptions -> Proxy f -> ParamSchema -> ParamSchema
 
 instance (GEnumParamSchema f, GEnumParamSchema g) => GEnumParamSchema (f :+: g) where
   genumParamSchema opts _ = genumParamSchema opts (Proxy :: Proxy f) . genumParamSchema opts (Proxy :: Proxy g)
