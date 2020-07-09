@@ -91,6 +91,8 @@ spec = do
     prop "Paint" $ shouldValidate (Proxy :: Proxy Paint)
     prop "MyRoseTree" $ shouldValidate (Proxy :: Proxy MyRoseTree)
     prop "Light" $ shouldValidate (Proxy :: Proxy Light)
+    prop "Light TaggedObject" $ shouldValidate (Proxy :: Proxy LightTaggedObject)
+    prop "Light UntaggedValue" $ shouldValidate (Proxy :: Proxy LightUntaggedValue)
     prop "ButtonImages" $ shouldValidate (Proxy :: Proxy ButtonImages)
     prop "Version" $ shouldValidate (Proxy :: Proxy Version)
     prop "FreeForm" $ shouldValidate (Proxy :: Proxy FreeForm)
@@ -202,6 +204,34 @@ instance Arbitrary Light where
 
 invalidLightToJSON :: Light -> Value
 invalidLightToJSON = genericToJSON defaultOptions
+
+-- Check all SumEncoding flavors.
+
+newtype LightTaggedObject = LightTaggedObject Light
+  deriving (Show)
+
+instance ToJSON LightTaggedObject where
+  toJSON (LightTaggedObject light) = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = defaultTaggedObject } light
+
+instance ToSchema LightTaggedObject where
+  declareNamedSchema _ =
+    genericDeclareNamedSchema defaultSchemaOptions { Data.Swagger.sumEncoding = defaultTaggedObject } (Proxy :: Proxy Light)
+
+instance Arbitrary LightTaggedObject where
+  arbitrary = LightTaggedObject <$> arbitrary
+
+newtype LightUntaggedValue = LightUntaggedValue Light
+  deriving (Show)
+
+instance ToJSON LightUntaggedValue where
+  toJSON (LightUntaggedValue light) = genericToJSON defaultOptions { Data.Aeson.Types.sumEncoding = UntaggedValue } light
+
+instance ToSchema LightUntaggedValue where
+  declareNamedSchema _ =
+    genericDeclareNamedSchema defaultSchemaOptions { Data.Swagger.sumEncoding = UntaggedValue } (Proxy :: Proxy Light)
+
+instance Arbitrary LightUntaggedValue where
+  arbitrary = LightUntaggedValue <$> arbitrary
 
 -- ========================================================================
 -- ButtonImages (bounded enum key mapping)
