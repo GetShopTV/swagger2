@@ -196,8 +196,8 @@ data Components = Components
   , _componentsRequestBodies :: Definitions RequestBody
   , _componentsHeader :: Definitions Header
   , _componentsSecuritySchemes :: Definitions SecurityScheme
---  , _componentsLinks
---  , _componentsCallbacks
+  , _componentsLinks :: Definitions Link
+  , _componentsCallbacks :: Definitions Callback
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 -- | Describes the operations available on a single path.
@@ -287,7 +287,11 @@ data Operation = Operation
     -- | The list of possible responses as they are returned from executing this operation.
   , _operationResponses :: Responses
 
-    -- TODO callbacks
+    -- | A map of possible out-of band callbacks related to the parent operation.
+    -- The key is a unique identifier for the 'Callback' Object.
+    -- Each value in the map is a 'Callback' Object that describes a request
+    -- that may be initiated by the API provider and the expected responses.
+  , _operationCallbacks :: InsOrdHashMap Text (Referenced Callback)
 
     -- | Declares this operation to be deprecated.
     -- Usage of the declared operation should be refrained.
@@ -519,6 +523,42 @@ data Example = Example
   , _exampleExternalValue :: Maybe URL
   } deriving (Eq, Show, Generic, Typeable, Data)
 
+data ExpressionOrValue
+  = Expression Text
+  | Value Value
+  deriving (Eq, Show, Generic, Typeable, Data)
+
+-- | The Link object represents a possible design-time link for a response.
+-- The presence of a link does not guarantee the caller's ability to successfully invoke it,
+-- rather it provides a known relationship and traversal mechanism between responses and other operations.
+data Link = Link
+  { -- | A relative or absolute URI reference to an OAS operation.
+    -- This field is mutually exclusive of the '_linkOperationId' field,
+    -- and MUST point to an 'Operation' Object. Relative '_linkOperationRef'
+    -- values MAY be used to locate an existing 'Operation' Object in the OpenAPI definition.
+    _linkOperationRef :: Maybe Text
+
+    -- | The name of an /existing/, resolvable OAS operation, as defined with a unique
+    -- '_operationOperationId'. This field is mutually exclusive of the '_linkOperationRef' field.
+  , _linkOperationId :: Maybe Text
+
+    -- | A map representing parameters to pass to an operation as specified with '_linkOperationId'
+    -- or identified via '_linkOperationRef'. The key is the parameter name to be used, whereas
+    -- the value can be a constant or an expression to be evaluated and passed to the linked operation.
+    -- The parameter name can be qualified using the parameter location @[{in}.]{name}@
+    -- for operations that use the same parameter name in different locations (e.g. path.id).
+  , _linkParameters :: InsOrdHashMap Text ExpressionOrValue
+
+    -- | A literal value or @{expression}@ to use as a request body when calling the target operation.
+  , _linkRequestBody :: Maybe ExpressionOrValue
+
+    -- | A description of the link.
+  , _linkDescription :: Maybe Text
+
+    -- | A server object to be used by the target operation.
+  , _linkServer :: Maybe Server
+  } deriving (Eq, Show, Generic, Typeable, Data)
+
 -- | Items for @'SwaggerArray'@ schemas.
 --
 -- __Warning__: OpenAPI 3.0 does not support tuple arrays. However, OpenAPI 3.1 will, as
@@ -690,19 +730,29 @@ data Response = Response
     -- | Maps a header name to its definition.
   , _responseHeaders :: InsOrdHashMap HeaderName (Referenced Header)
 
-  -- TODO links
+    -- | A map of operations links that can be followed from the response.
+    -- The key of the map is a short name for the link, following the naming
+    -- constraints of the names for 'Component' Objects.
+  , _responseLinks :: InsOrdHashMap Text (Referenced Link)
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 instance IsString Response where
-  fromString s = Response (fromString s) mempty mempty
+  fromString s = Response (fromString s) mempty mempty mempty
+
+-- | A map of possible out-of band callbacks related to the parent operation.
+-- Each value in the map is a 'PathItem' Object that describes a set of requests that
+-- may be initiated by the API provider and the expected responses.
+-- The key value used to identify the path item object is an expression, evaluated at runtime,
+-- that identifies a URL to use for the callback operation.
+newtype Callback = Callback (InsOrdHashMap Text PathItem)
+  deriving (Eq, Show, Generic, Data, Typeable)
 
 type HeaderName = Text
-
 
 -- TODO this is mostly a copy of 'Param'.
 data Header = Header
   { -- | A short description of the header.
-    _headerDescription :: Maybe Text
+    _headerDescription :: Maybe HeaderName
 
   , _headerSchema :: Maybe (Referenced Schema)
   } deriving (Eq, Show, Generic, Data, Typeable)
@@ -873,6 +923,7 @@ deriveGeneric ''ParamSchema
 deriveGeneric ''Swagger
 deriveGeneric ''Example
 deriveGeneric ''Encoding
+deriveGeneric ''Link
 
 -- =======================================================================
 -- Monoid instances
@@ -1264,6 +1315,10 @@ instance ToJSON Encoding where
   toJSON = sopSwaggerGenericToJSON
   toEncoding = sopSwaggerGenericToEncoding
 
+instance ToJSON Link where
+  toJSON = sopSwaggerGenericToJSON
+  toEncoding = sopSwaggerGenericToEncoding
+
 instance ToJSON SecurityDefinitions where
   toJSON (SecurityDefinitions sd) = toJSON sd
 
@@ -1280,6 +1335,8 @@ instance ToJSON (Referenced Response) where toJSON = referencedToJSON "#/compone
 instance ToJSON (Referenced RequestBody) where toJSON = referencedToJSON "#/components/requestBodies/"
 instance ToJSON (Referenced Example)  where toJSON = referencedToJSON "#/components/examples/"
 instance ToJSON (Referenced Header)   where toJSON = referencedToJSON "#/components/headers/"
+instance ToJSON (Referenced Link)     where toJSON = referencedToJSON "#/components/links/"
+instance ToJSON (Referenced Callback) where toJSON = referencedToJSON "#/components/callbacks/"
 
 instance ToJSON ParamSchema where
   -- TODO: this is a bit fishy, why we need sub object only in `ToJSON`?
@@ -1289,6 +1346,13 @@ instance ToJSON ParamSchema where
 instance ToJSON AdditionalProperties where
   toJSON (AdditionalPropertiesAllowed b) = toJSON b
   toJSON (AdditionalPropertiesSchema s) = toJSON s
+
+instance ToJSON ExpressionOrValue where
+  toJSON (Expression expr) = toJSON expr
+  toJSON (Value val) = toJSON val
+
+instance ToJSON Callback where
+  toJSON (Callback ps) = toJSON ps
 
 -- =======================================================================
 -- Manual FromJSON instances
@@ -1385,6 +1449,9 @@ instance FromJSON MediaTypeObject where
 instance FromJSON Encoding where
   parseJSON = sopSwaggerGenericParseJSON
 
+instance FromJSON Link where
+  parseJSON = sopSwaggerGenericParseJSON
+
 instance FromJSON Reference where
   parseJSON (Object o) = Reference <$> o .: "$ref"
   parseJSON _ = empty
@@ -1408,6 +1475,8 @@ instance FromJSON (Referenced Response) where parseJSON = referencedParseJSON "#
 instance FromJSON (Referenced RequestBody) where parseJSON = referencedParseJSON "#/components/requestBodies/"
 instance FromJSON (Referenced Example)  where parseJSON = referencedParseJSON "#/components/examples/"
 instance FromJSON (Referenced Header)   where parseJSON = referencedParseJSON "#/components/headers/"
+instance FromJSON (Referenced Link)     where parseJSON = referencedParseJSON "#/components/links/"
+instance FromJSON (Referenced Callback) where parseJSON = referencedParseJSON "#/components/callbacks/"
 
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
@@ -1418,6 +1487,14 @@ instance FromJSON ParamSchema where
 instance FromJSON AdditionalProperties where
   parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
   parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
+
+-- | All strings are parsed as expressions
+instance FromJSON ExpressionOrValue where
+  parseJSON (String expr) = pure $ Expression expr
+  parseJSON v = pure $ Value v
+
+instance FromJSON Callback where
+  parseJSON = fmap Callback . parseJSON
 
 instance HasSwaggerAesonOptions Server where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "server"
@@ -1454,6 +1531,9 @@ instance HasSwaggerAesonOptions Example where
 instance HasSwaggerAesonOptions Encoding where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "encoding"
 
+instance HasSwaggerAesonOptions Link where
+  swaggerAesonOptions _ = mkSwaggerAesonOptions "link"
+
 instance HasSwaggerAesonOptions ParamSchema where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema"
 
@@ -1471,3 +1551,4 @@ instance AesonDefaultValue SwaggerType
 instance AesonDefaultValue MimeList where defaultValue = Just mempty
 instance AesonDefaultValue Info
 instance AesonDefaultValue ParamLocation
+instance AesonDefaultValue Link

@@ -97,6 +97,7 @@ makeFieldLabels ''ExternalDocs
 makeFieldLabels ''Encoding
 makeFieldLabels ''Example
 makeFieldLabels ''Discriminator
+makeFieldLabels ''Link
 
 -- Prisms
 

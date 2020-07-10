@@ -86,6 +86,8 @@ module Data.Swagger (
   Responses(..),
   Response(..),
   HttpStatusCode,
+  Link(..),
+  Callback(..),
 
   -- ** Security
   SecurityScheme(..),

@@ -59,6 +59,7 @@ makeFields ''ExternalDocs
 makeFields ''Encoding
 makeFields ''Example
 makeFields ''Discriminator
+makeFields ''Link
 
 -- * Prisms
 -- ** 'SecuritySchemeType' prisms
