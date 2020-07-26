@@ -281,8 +281,17 @@ import Data.Swagger.Internal
 -- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Person)
 -- {"required":["name","age"],"properties":{"name":{"type":"string"},"age":{"type":"integer"}},"type":"object"}
 --
--- TODO mention oneOf
+-- This package implements OpenAPI 3.0 spec, which supports @oneOf@ in schemas, allowing any sum types
+-- to be faithfully represented. All sum encodings supported by @aeson@ are supported here as well, with
+-- an exception of 'Data.Aeson.TwoElemArray', since OpenAPI spec does not support heterogeneous arrays.
 --
+-- An example with 'Data.Aeson.TaggedObject' encoding:
+--
+-- >>> data Error = ErrorNoUser { userId :: Int } | ErrorAccessDenied { requiredPermission :: String } deriving Generic
+-- >>> instance ToJSON Error
+-- >>> instance ToSchema Error
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Error)
+-- {"oneOf":[{"required":["userId","tag"],"type":"object","properties":{"tag":{"type":"string","enum":["ErrorNoUser"]},"userId":{"maximum":9223372036854775807,"minimum":-9223372036854775808,"type":"integer"}}},{"required":["requiredPermission","tag"],"type":"object","properties":{"tag":{"type":"string","enum":["ErrorAccessDenied"]},"requiredPermission":{"type":"string"}}}],"type":"object"}
 
 -- $manipulation
 -- Sometimes you have to work with an imported or generated @'Swagger'@.
