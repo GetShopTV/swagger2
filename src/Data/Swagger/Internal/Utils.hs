@@ -44,6 +44,7 @@ swaggerFieldRules = defaultFieldRules & lensField %~ swaggerFieldNamer
     fixName' "maximum"  = "maximum_"  -- Prelude conflict
     fixName' "enum"     = "enum_"     -- Control.Lens conflict
     fixName' "head"     = "head_"     -- Prelude conflict
+    fixName' "not"      = "not_"      -- Prelude conflict
     fixName' n = n
 
 gunfoldEnum :: String -> [a] -> (forall b r. Data b => c (b -> r) -> c r) -> (forall r. r -> c r) -> Constr -> c a

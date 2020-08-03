@@ -13,9 +13,9 @@ module Data.Swagger.ParamSchema (
   toParamSchemaBoundedIntegral,
 
   -- * Schema templates
-  passwordParamSchema,
-  binaryParamSchema,
-  byteParamSchema,
+  passwordSchema,
+  binarySchema,
+  byteSchema,
 
   -- * Generic encoding configuration
   SchemaOptions(..),

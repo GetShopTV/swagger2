@@ -38,8 +38,9 @@ module Data.Swagger (
 
   -- * Swagger specification
   Swagger(..),
-  Host(..),
-  Scheme(..),
+  Server(..),
+  ServerVariable(..),
+  Components(..),
 
   -- ** Info types
   Info(..),
@@ -58,45 +59,52 @@ module Data.Swagger (
   SwaggerType(..),
   Format,
   Definitions,
-  CollectionFormat(..),
+  Style(..),
 
   -- ** Parameters
   Param(..),
-  ParamAnySchema(..),
-  ParamOtherSchema(..),
   ParamLocation(..),
   ParamName,
   Header(..),
   HeaderName,
   Example(..),
+  RequestBody(..),
+  MediaTypeObject(..),
+  Encoding(..),
 
   -- ** Schemas
-  ParamSchema(..),
   Schema(..),
   NamedSchema(..),
   SwaggerItems(..),
   Xml(..),
   Pattern,
   AdditionalProperties(..),
+  Discriminator(..),
 
   -- ** Responses
   Responses(..),
   Response(..),
   HttpStatusCode,
+  Link(..),
+  Callback(..),
 
   -- ** Security
   SecurityScheme(..),
   SecuritySchemeType(..),
-  SecurityRequirement(..),
   SecurityDefinitions(..),
+  SecurityRequirement(..),
 
   -- *** API key
   ApiKeyParams(..),
   ApiKeyLocation(..),
 
   -- *** OAuth2
-  OAuth2Params(..),
+  OAuth2Flows(..),
   OAuth2Flow(..),
+  OAuth2ImplicitFlow(..),
+  OAuth2PasswordFlow(..),
+  OAuth2ClientCredentialsFlow(..),
+  OAuth2AuthorizationCodeFlow(..),
   AuthorizationURL,
   TokenURL,
 
@@ -127,6 +135,7 @@ import Data.Swagger.Internal
 -- >>> import Data.Monoid
 -- >>> import Data.Proxy
 -- >>> import GHC.Generics
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedStrings
 -- >>> :set -XOverloadedLists
@@ -143,8 +152,8 @@ import Data.Swagger.Internal
 --
 -- In this library you can use @'mempty'@ for a default/empty value. For instance:
 --
--- >>> encode (mempty :: Swagger)
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"}}"
+-- >>> BSL.putStrLn $ encode (mempty :: Swagger)
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"components":{}}
 --
 -- As you can see some spec properties (e.g. @"version"@) are there even when the spec is empty.
 -- That is because these properties are actually required ones.
@@ -152,13 +161,13 @@ import Data.Swagger.Internal
 -- You /should/ always override the default (empty) value for these properties,
 -- although it is not strictly necessary:
 --
--- >>> encode mempty { _infoTitle = "Todo API", _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- >>> BSL.putStrLn $ encode mempty { _infoTitle = "Todo API", _infoVersion = "1.0" }
+-- {"version":"1.0","title":"Todo API"}
 --
 -- You can merge two values using @'mappend'@ or its infix version @('<>')@:
 --
--- >>> encode $ mempty { _infoTitle = "Todo API" } <> mempty { _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- >>> BSL.putStrLn $ encode $ mempty { _infoTitle = "Todo API" } <> mempty { _infoVersion = "1.0" }
+-- {"version":"1.0","title":"Todo API"}
 --
 -- This can be useful for combining specifications of endpoints into a whole API specification:
 --
@@ -184,15 +193,14 @@ import Data.Swagger.Internal
 -- make it fairly simple to construct/modify any part of the specification:
 --
 -- >>> :{
--- encode $ (mempty :: Swagger)
---   & definitions .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
+-- BSL.putStrLn $ encode $ (mempty :: Swagger)
+--   & components . schemas .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
 --   & paths .~
 --     [ ("/user", mempty & get ?~ (mempty
---         & produces ?~ MimeList ["application/json"]
---         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
+--         & at 200 ?~ ("OK" & _Inline.content.at "application/json" ?~ (mempty & schema ?~ Ref (Reference "User")))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"404":{"description":"User info not found"},"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/User"}}},"description":"OK"}}}}},"components":{"schemas":{"User":{"type":"string"}}}}
 --
 -- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
 -- which produces @application/json@ output. It should respond with code @200@ and body specified
@@ -204,30 +212,23 @@ import Data.Swagger.Internal
 -- common field is @'description'@. Many components of a Swagger specification
 -- can have descriptions, and you can use the same name for them:
 --
--- >>> encode $ (mempty :: Response) & description .~ "No content"
--- "{\"description\":\"No content\"}"
+-- >>> BSL.putStrLn $ encode $ (mempty :: Response) & description .~ "No content"
+-- {"description":"No content"}
 -- >>> :{
--- encode $ (mempty :: Schema)
+-- BSL.putStrLn $ encode $ (mempty :: Schema)
 --   & type_       ?~ SwaggerBoolean
 --   & description ?~ "To be or not to be"
 -- :}
--- "{\"description\":\"To be or not to be\",\"type\":\"boolean\"}"
---
--- @'ParamSchema'@ is basically the /base schema specification/ and many types contain it (see @'HasParamSchema'@).
--- So for convenience, all @'ParamSchema'@ fields are transitively made fields of the type that has it.
--- For example, you can use @'type_'@ to access @'SwaggerType'@ of @'Header'@ schema without having to use @'paramSchema'@:
---
--- >>> encode $ (mempty :: Header) & type_ ?~ SwaggerNumber
--- "{\"type\":\"number\"}"
+-- {"type":"boolean","description":"To be or not to be"}
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
 -- have direct access to it via @'at' code@. Example:
 --
 -- >>> :{
--- encode $ (mempty :: Operation)
+-- BSL.putStrLn $ encode $ (mempty :: Operation)
 --   & at 404 ?~ "Not found"
 -- :}
--- "{\"responses\":{\"404\":{\"description\":\"Not found\"}}}"
+-- {"responses":{"404":{"description":"Not found"}}}
 --
 -- You might've noticed that @'type_'@ has an extra underscore in its name
 -- compared to, say, @'description'@ field accessor.
@@ -274,45 +275,22 @@ import Data.Swagger.Internal
 -- >>> data Person = Person { name :: String, age :: Integer } deriving Generic
 -- >>> instance ToJSON Person
 -- >>> instance ToSchema Person
--- >>> encode (Person "David" 28)
--- "{\"age\":28,\"name\":\"David\"}"
--- >>> encode $ toSchema (Proxy :: Proxy Person)
--- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"integer\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode (Person "David" 28)
+-- {"age":28,"name":"David"}
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Person)
+-- {"required":["name","age"],"type":"object","properties":{"age":{"type":"integer"},"name":{"type":"string"}}}
 --
--- Please note that not all valid Haskell data types will have a proper swagger schema. For example while we can derive a
--- schema for basic enums like
+-- This package implements OpenAPI 3.0 spec, which supports @oneOf@ in schemas, allowing any sum types
+-- to be faithfully represented. All sum encodings supported by @aeson@ are supported here as well, with
+-- an exception of 'Data.Aeson.TwoElemArray', since OpenAPI spec does not support heterogeneous arrays.
 --
--- >>> data SampleEnum = ChoiceOne | ChoiceTwo deriving Generic
--- >>> instance ToSchema SampleEnum
--- >>> instance ToJSON SampleEnum
+-- An example with 'Data.Aeson.TaggedObject' encoding:
 --
--- and for sum types that have constructors with values
---
--- >>> data SampleSumType = ChoiceInt Int | ChoiceString String deriving Generic
--- >>> instance ToSchema SampleSumType
--- >>> instance ToJSON SampleSumType
---
--- we can not derive a valid schema for a mix of the above. The following will result in a type error
---
--- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
--- >>> instance ToSchema BadMixedType
--- ...
--- ... error:
--- ... • Cannot derive Generic-based Swagger Schema for BadMixedType
--- ...   BadMixedType is a mixed sum type (has both unit and non-unit constructors).
--- ...   Swagger does not have a good representation for these types.
--- ...   Use genericDeclareNamedSchemaUnrestricted if you want to derive schema
--- ...   that matches aeson's Generic-based toJSON,
--- ...   but that's not supported by some Swagger tools.
--- ...
--- ... In the instance declaration for ‘ToSchema BadMixedType’
---
--- We can use 'genericDeclareNamedSchemaUnrestricted' to try our best to represent this type as a Swagger Schema and match 'ToJSON':
---
--- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
--- >>> instance ToSchema BadMixedType where declareNamedSchema = genericDeclareNamedSchemaUnrestricted defaultSchemaOptions
--- >>> instance ToJSON BadMixedType
---
+-- >>> data Error = ErrorNoUser { userId :: Int } | ErrorAccessDenied { requiredPermission :: String } deriving Generic
+-- >>> instance ToJSON Error
+-- >>> instance ToSchema Error
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Error)
+-- {"oneOf":[{"required":["userId","tag"],"type":"object","properties":{"tag":{"type":"string","enum":["ErrorNoUser"]},"userId":{"maximum":9223372036854775807,"minimum":-9223372036854775808,"type":"integer"}}},{"required":["requiredPermission","tag"],"type":"object","properties":{"tag":{"type":"string","enum":["ErrorAccessDenied"]},"requiredPermission":{"type":"string"}}}],"type":"object"}
 
 -- $manipulation
 -- Sometimes you have to work with an imported or generated @'Swagger'@.

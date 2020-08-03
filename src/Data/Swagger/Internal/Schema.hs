@@ -22,12 +22,13 @@ module Data.Swagger.Internal.Schema where
 import Prelude ()
 import Prelude.Compat
 
-import Control.Lens
+import Control.Lens hiding (allOf)
 import Data.Data.Lens (template)
 
 import Control.Monad
 import Control.Monad.Writer
-import Data.Aeson (ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..), Object(..))
+import Data.Aeson (Object (..), SumEncoding (..), ToJSON (..), ToJSONKey (..),
+                   ToJSONKeyFunction (..), Value (..))
 import Data.Char
 import Data.Data (Data)
 import Data.Foldable (traverse_)
@@ -41,6 +42,7 @@ import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
 import Data.List.NonEmpty.Compat (NonEmpty)
 import Data.Map (Map)
+import Data.Maybe (fromMaybe)
 import Data.Proxy
 import Data.Scientific (Scientific)
 import Data.Fixed (Fixed, HasResolution, Pico)
@@ -67,7 +69,7 @@ import Data.Swagger.SchemaOptions
 import Data.Swagger.Internal.TypeShape
 
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 
 unnamed :: Schema -> NamedSchema
@@ -135,7 +137,7 @@ class ToSchema a where
   -- Note that the schema itself is included in definitions
   -- only if it is recursive (and thus needs its definition in scope).
   declareNamedSchema :: Proxy a -> Declare (Definitions Schema) NamedSchema
-  default declareNamedSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
+  default declareNamedSchema :: (Generic a, GToSchema (Rep a)) =>
     Proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
 
@@ -151,13 +153,13 @@ declareSchema = fmap _namedSchemaSchema . declareNamedSchema
 --
 -- >>> toNamedSchema (Proxy :: Proxy String) ^. name
 -- Nothing
--- >>> encode (toNamedSchema (Proxy :: Proxy String) ^. schema)
--- "{\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode (toNamedSchema (Proxy :: Proxy String) ^. schema)
+-- {"type":"string"}
 --
 -- >>> toNamedSchema (Proxy :: Proxy Day) ^. name
 -- Just "Day"
--- >>> encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
--- "{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode (toNamedSchema (Proxy :: Proxy Day) ^. schema)
+-- {"example":"2016-07-22","format":"date","type":"string"}
 toNamedSchema :: ToSchema a => Proxy a -> NamedSchema
 toNamedSchema = undeclare . declareNamedSchema
 
@@ -173,22 +175,22 @@ schemaName = _namedSchemaName . toNamedSchema
 
 -- | Convert a type into a schema.
 --
--- >>> encode $ toSchema (Proxy :: Proxy Int8)
--- "{\"maximum\":127,\"minimum\":-128,\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Int8)
+-- {"maximum":127,"minimum":-128,"type":"integer"}
 --
--- >>> encode $ toSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"$ref\":\"#/definitions/Day\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy [Day])
+-- {"items":{"$ref":"#/components/schemas/Day"},"type":"array"}
 toSchema :: ToSchema a => Proxy a -> Schema
 toSchema = _namedSchemaSchema . toNamedSchema
 
 -- | Convert a type into a referenced schema if possible.
 -- Only named schemas can be referenced, nameless schemas are inlined.
 --
--- >>> encode $ toSchemaRef (Proxy :: Proxy Integer)
--- "{\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaRef (Proxy :: Proxy Integer)
+-- {"type":"integer"}
 --
--- >>> encode $ toSchemaRef (Proxy :: Proxy Day)
--- "{\"$ref\":\"#/definitions/Day\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaRef (Proxy :: Proxy Day)
+-- {"$ref":"#/components/schemas/Day"}
 toSchemaRef :: ToSchema a => Proxy a -> Referenced Schema
 toSchemaRef = undeclare . declareSchemaRef
 
@@ -256,8 +258,8 @@ inlineAllSchemas = inlineSchemasWhen (const True)
 
 -- | Convert a type into a schema without references.
 --
--- >>> encode $ toInlinedSchema (Proxy :: Proxy [Day])
--- "{\"items\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ toInlinedSchema (Proxy :: Proxy [Day])
+-- {"items":{"example":"2016-07-22","format":"date","type":"string"},"type":"array"}
 --
 -- __WARNING:__ @'toInlinedSchema'@ will produce infinite schema
 -- when inlining recursive schemas.
@@ -287,41 +289,22 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
           traverse_ usedNames (InsOrdHashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
--- | Default schema for binary data (any sequence of octets).
-binarySchema :: Schema
-binarySchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "binary"
-
--- | Default schema for binary data (base64 encoded).
-byteSchema :: Schema
-byteSchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "byte"
-
--- | Default schema for password string.
--- @"password"@ format is used to hint UIs the input needs to be obscured.
-passwordSchema :: Schema
-passwordSchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "password"
-
 -- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema can be used for further refinement.
 --
--- >>> encode $ sketchSchema "hello"
--- "{\"example\":\"hello\",\"type\":\"string\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema "hello"
+-- {"example":"hello","type":"string"}
 --
--- >>> encode $ sketchSchema (1, 2, 3)
--- "{\"example\":[1,2,3],\"items\":{\"type\":\"number\"},\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema (1, 2, 3)
+-- {"example":[1,2,3],"items":{"type":"number"},"type":"array"}
 --
--- >>> encode $ sketchSchema ("Jack", 25)
--- "{\"example\":[\"Jack\",25],\"items\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"type\":\"array\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema ("Jack", 25)
+-- {"example":["Jack",25],"items":[{"type":"string"},{"type":"number"}],"type":"array"}
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
--- >>> encode $ sketchSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ sketchSchema (Person "Jack" 25)
+-- {"example":{"age":25,"name":"Jack"},"required":["age","name"],"type":"object","properties":{"age":{"type":"number"},"name":{"type":"string"}}}
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -353,19 +336,19 @@ sketchSchema = sketch . toJSON
 -- | Make a restrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema uses as much constraints as possible.
 --
--- >>> encode $ sketchStrictSchema "hello"
--- "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema "hello"
+-- {"maxLength":5,"pattern":"hello","minLength":5,"type":"string","enum":["hello"]}
 --
--- >>> encode $ sketchStrictSchema (1, 2, 3)
--- "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema (1, 2, 3)
+-- {"minItems":3,"uniqueItems":true,"items":[{"maximum":1,"minimum":1,"multipleOf":1,"type":"number","enum":[1]},{"maximum":2,"minimum":2,"multipleOf":2,"type":"number","enum":[2]},{"maximum":3,"minimum":3,"multipleOf":3,"type":"number","enum":[3]}],"maxItems":3,"type":"array","enum":[[1,2,3]]}
 --
--- >>> encode $ sketchStrictSchema ("Jack", 25)
--- "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema ("Jack", 25)
+-- {"minItems":2,"uniqueItems":true,"items":[{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]},{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]}],"maxItems":2,"type":"array","enum":[["Jack",25]]}
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
--- >>> encode $ sketchStrictSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}},\"maxProperties\":2,\"minProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}]}"
+-- >>> BSL.putStrLn $ encode $ sketchStrictSchema (Person "Jack" 25)
+-- {"minProperties":2,"required":["age","name"],"maxProperties":2,"type":"object","enum":[{"age":25,"name":"Jack"}],"properties":{"age":{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]},"name":{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]}}}
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
@@ -443,7 +426,9 @@ instance HasResolution a => ToSchema (Fixed a) where declareNamedSchema = plain 
 instance ToSchema a => ToSchema (Maybe a) where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy a)
 
-instance (ToSchema a, ToSchema b) => ToSchema (Either a b)
+instance (ToSchema a, ToSchema b) => ToSchema (Either a b) where
+  -- To match Aeson instance
+  declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions { sumEncoding = ObjectWithSingleField }
 
 instance ToSchema () where
   declareNamedSchema _ = pure (NamedSchema Nothing nullarySchema)
@@ -565,8 +550,8 @@ instance ToSchema a => ToSchema (Identity a) where declareNamedSchema _ = declar
 
 -- | Default schema for @'Bounded'@, @'Integral'@ types.
 --
--- >>> encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
--- "{\"maximum\":32767,\"minimum\":-32768,\"type\":\"integer\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedIntegral (Proxy :: Proxy Int16)
+-- {"maximum":32767,"minimum":-32768,"type":"integer"}
 toSchemaBoundedIntegral :: forall a. (Bounded a, Integral a) => Proxy a -> Schema
 toSchemaBoundedIntegral _ = mempty
   & type_ ?~ SwaggerInteger
@@ -598,8 +583,8 @@ genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$>
 -- >>> instance ToSchema ButtonState
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
--- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- {"type":"object","properties":{"Focus":{"type":"string"},"Disabled":{"type":"string"},"Active":{"type":"string"},"Neutral":{"type":"string"},"Hover":{"type":"string"}}}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
@@ -626,8 +611,8 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
 -- >>> instance ToSchema ButtonState
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
--- >>> encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- "{\"properties\":{\"Neutral\":{\"type\":\"string\"},\"Focus\":{\"type\":\"string\"},\"Active\":{\"type\":\"string\"},\"Hover\":{\"type\":\"string\"},\"Disabled\":{\"type\":\"string\"}},\"type\":\"object\"}"
+-- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
+-- {"type":"object","properties":{"Focus":{"type":"string"},"Disabled":{"type":"string"},"Active":{"type":"string"},"Neutral":{"type":"string"},"Hover":{"type":"string"}}}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
@@ -637,32 +622,17 @@ toSchemaBoundedEnumKeyMapping :: forall map key value.
 toSchemaBoundedEnumKeyMapping = flip evalDeclare mempty . declareSchemaBoundedEnumKeyMapping
 
 -- | A configurable generic @'Schema'@ creator.
-genericDeclareSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareSchemaUnrestricted") =>
+genericDeclareSchema :: (Generic a, GToSchema (Rep a)) =>
   SchemaOptions -> Proxy a -> Declare (Definitions Schema) Schema
-genericDeclareSchema = genericDeclareSchemaUnrestricted
+genericDeclareSchema opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchema opts proxy
 
 -- | A configurable generic @'NamedSchema'@ creator.
 -- This function applied to @'defaultSchemaOptions'@
 -- is used as the default for @'declareNamedSchema'@
 -- when the type is an instance of @'Generic'@.
-genericDeclareNamedSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
+genericDeclareNamedSchema :: forall a. (Generic a, GToSchema (Rep a)) =>
   SchemaOptions -> Proxy a -> Declare (Definitions Schema) NamedSchema
-genericDeclareNamedSchema = genericDeclareNamedSchemaUnrestricted
-
--- | A configurable generic @'Schema'@ creator.
---
--- Unlike 'genericDeclareSchema' also works for mixed sum types.
--- Use with care since some Swagger tools do not support well schemas for mixed sum types.
-genericDeclareSchemaUnrestricted :: (Generic a, GToSchema (Rep a)) => SchemaOptions -> Proxy a -> Declare (Definitions Schema) Schema
-genericDeclareSchemaUnrestricted opts proxy = _namedSchemaSchema <$> genericDeclareNamedSchemaUnrestricted opts proxy
-
--- | A configurable generic @'NamedSchema'@ creator.
---
--- Unlike 'genericDeclareNamedSchema' also works for mixed sum types.
--- Use with care since some Swagger tools do not support well schemas for mixed sum types.
-genericDeclareNamedSchemaUnrestricted :: forall a. (Generic a, GToSchema (Rep a)) =>
-  SchemaOptions -> Proxy a -> Declare (Definitions Schema) NamedSchema
-genericDeclareNamedSchemaUnrestricted opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
+genericDeclareNamedSchema opts _ = gdeclareNamedSchema opts (Proxy :: Proxy (Rep a)) mempty
 
 -- | Derive a 'Generic'-based name for a datatype and assign it to a given 'Schema'.
 genericNameSchema :: forall a d f.
@@ -678,14 +648,14 @@ gdatatypeSchemaName opts _ = case orig of
     orig = datatypeName (Proxy3 :: Proxy3 d f a)
     name = datatypeNameModifier opts orig
 
--- | Lift a plain @'ParamSchema'@ into a model @'NamedSchema'@.
+-- | Construct 'NamedSchema' usinng 'ToParamSchema'.
 paramSchemaToNamedSchema :: (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d) =>
   SchemaOptions -> Proxy a -> NamedSchema
 paramSchemaToNamedSchema opts proxy = genericNameSchema opts proxy (paramSchemaToSchema proxy)
 
--- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
+-- | Construct 'Schema' usinng 'ToParamSchema'.
 paramSchemaToSchema :: ToParamSchema a => Proxy a -> Schema
-paramSchemaToSchema proxy = mempty & paramSchema .~ toParamSchema proxy
+paramSchemaToSchema = toParamSchema
 
 nullarySchema :: Schema
 nullarySchema = mempty
@@ -748,7 +718,7 @@ gdeclareSchemaRef opts proxy = do
       return $ Ref (Reference name)
     _ -> Inline <$> gdeclareSchema opts proxy
 
-appendItem :: Referenced Schema -> Maybe (SwaggerItems 'SwaggerKindSchema) -> Maybe (SwaggerItems 'SwaggerKindSchema)
+appendItem :: Referenced Schema -> Maybe SwaggerItems -> Maybe SwaggerItems
 appendItem x Nothing = Just (SwaggerItemsArray [x])
 appendItem x (Just (SwaggerItemsArray xs)) = Just (SwaggerItemsArray (xs ++ [x]))
 appendItem _ _ = error "GToSchema.appendItem: cannot append to SwaggerItemsObject"
@@ -791,56 +761,98 @@ instance ( GSumToSchema f
          , GSumToSchema g
          ) => GToSchema (f :+: g)
    where
-  gdeclareNamedSchema = gdeclareNamedSumSchema
+  -- Aeson does not unwrap unary record in sum types.
+  gdeclareNamedSchema opts p s = gdeclareNamedSumSchema (opts { unwrapUnaryRecords = False } )p s
 
 gdeclareNamedSumSchema :: GSumToSchema f => SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
-gdeclareNamedSumSchema opts proxy s
-  | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchema)
-  | otherwise = (unnamed . fst) <$> runWriterT declareSumSchema
+gdeclareNamedSumSchema opts proxy _
+  | allNullaryToStringTag opts && allNullary = pure $ unnamed (toStringTag sumSchemas)
+  | otherwise = do
+    (schemas, _) <- runWriterT declareSumSchema
+    return $ unnamed $ mempty
+      & type_ ?~ SwaggerObject
+      & oneOf ?~ (snd <$> schemas)
   where
-    declareSumSchema = gsumToSchema opts proxy s
-    (sumSchema, All allNullary) = undeclare (runWriterT declareSumSchema)
+    declareSumSchema = gsumToSchema opts proxy
+    (sumSchemas, All allNullary) = undeclare (runWriterT declareSumSchema)
 
-    toStringTag schema = mempty
+    toStringTag schemas = mempty
       & type_ ?~ SwaggerString
-      & enum_ ?~ map toJSON  (schema ^.. properties.ifolded.asIndex)
+      & enum_ ?~ map (String . fst) sumSchemas
 
 type AllNullary = All
 
 class GSumToSchema (f :: * -> *)  where
-  gsumToSchema :: SchemaOptions -> Proxy f -> Schema -> WriterT AllNullary (Declare (Definitions Schema)) Schema
+  gsumToSchema :: SchemaOptions -> Proxy f -> WriterT AllNullary (Declare (Definitions Schema)) [(T.Text, Referenced Schema)]
 
 instance (GSumToSchema f, GSumToSchema g) => GSumToSchema (f :+: g) where
-  gsumToSchema opts _ = gsumToSchema opts (Proxy :: Proxy f) >=> gsumToSchema opts (Proxy :: Proxy g)
+  gsumToSchema opts _ =
+    (<>) <$> gsumToSchema opts (Proxy :: Proxy f) <*> gsumToSchema opts (Proxy :: Proxy g)
 
+-- | Convert one component of the sum to schema, to be later combined with @oneOf@.
 gsumConToSchemaWith :: forall c f. (GToSchema (C1 c f), Constructor c) =>
-  Referenced Schema -> SchemaOptions -> Proxy (C1 c f) -> Schema -> Schema
-gsumConToSchemaWith ref opts _ schema = schema
-  & type_ ?~ SwaggerObject
-  & properties . at tag ?~ ref
-  & maxProperties ?~ 1
-  & minProperties ?~ 1
+  Maybe (Referenced Schema) -> SchemaOptions -> Proxy (C1 c f) -> (T.Text, Referenced Schema)
+gsumConToSchemaWith ref opts _ = (tag, schema)
   where
+    schema = case sumEncoding opts of
+      TaggedObject tagField contentsField ->
+        case ref of
+          -- If subschema is an object and constructor is a record, we add tag directly
+          -- to the record, as Aeson does it.
+          Just (Inline sub) | sub ^. type_ == Just SwaggerObject && isRecord -> Inline $ sub
+            & required <>~ [T.pack tagField]
+            & properties . at (T.pack tagField) ?~ (Inline $ mempty & type_ ?~ SwaggerString & enum_ ?~ [String tag])
+
+          -- If it is not a record, we need to put subschema into "contents" field.
+          _ | not isRecord -> Inline $ mempty
+            & type_ ?~ SwaggerObject
+            & required .~ [T.pack tagField]
+            & properties . at (T.pack tagField) ?~ (Inline $ mempty & type_ ?~ SwaggerString & enum_ ?~ [String tag])
+              -- If constructor is nullary, there is no content.
+            & case ref of
+                Just r -> (properties . at (T.pack contentsField) ?~ r) . (required <>~ [T.pack contentsField])
+                Nothing -> id
+
+          -- In the remaining cases we combine "tag" object and "contents" object using allOf.
+          _ -> Inline $ mempty
+            & type_ ?~ SwaggerObject
+            & allOf ?~ [Inline $ mempty
+              & type_ ?~ SwaggerObject
+              & required .~ (T.pack tagField : if isRecord then [] else [T.pack contentsField])
+              & properties . at (T.pack tagField) ?~ (Inline $ mempty & type_ ?~ SwaggerString & enum_ ?~ [String tag])]
+            & if isRecord
+                 then allOf . _Just <>~ [refOrNullary]
+                 else allOf . _Just <>~ [Inline $ mempty & type_ ?~ SwaggerObject & properties . at (T.pack contentsField) ?~ refOrNullary]
+      UntaggedValue -> refOrEnum -- Aeson encodes nullary constructors as strings in this case.
+      ObjectWithSingleField -> Inline $ mempty
+        & type_ ?~ SwaggerObject
+        & required .~ [tag]
+        & properties . at tag ?~ refOrNullary
+      TwoElemArray -> error "unrepresentable in OpenAPI 3"
+
     tag = T.pack (constructorTagModifier opts (conName (Proxy3 :: Proxy3 c f p)))
+    isRecord = conIsRecord (Proxy3 :: Proxy3 c f p)
+    refOrNullary = fromMaybe (Inline nullarySchema) ref
+    refOrEnum = fromMaybe (Inline $ mempty & type_ ?~ SwaggerString & enum_ ?~ [String tag]) ref
 
 gsumConToSchema :: (GToSchema (C1 c f), Constructor c) =>
-  SchemaOptions -> Proxy (C1 c f) -> Schema -> Declare (Definitions Schema) Schema
-gsumConToSchema opts proxy schema = do
+  SchemaOptions -> Proxy (C1 c f) -> Declare (Definitions Schema) [(T.Text, Referenced Schema)]
+gsumConToSchema opts proxy = do
   ref <- gdeclareSchemaRef opts proxy
-  return $ gsumConToSchemaWith ref opts proxy schema
+  return [gsumConToSchemaWith (Just ref) opts proxy]
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GToSchema f) => GSumToSchema (C1 c f) where
-  gsumToSchema opts proxy schema = do
+  gsumToSchema opts proxy = do
     tell (All False)
-    lift $ gsumConToSchema opts proxy schema
+    lift $ gsumConToSchema opts proxy
 
 instance (Constructor c, Selector s, GToSchema f) => GSumToSchema (C1 c (S1 s f)) where
-  gsumToSchema opts proxy schema = do
+  gsumToSchema opts proxy = do
     tell (All False)
-    lift $ gsumConToSchema opts proxy schema
+    lift $ gsumConToSchema opts proxy
 
 instance Constructor c => GSumToSchema (C1 c U1) where
-  gsumToSchema opts proxy = pure . gsumConToSchemaWith (Inline nullarySchema) opts proxy
+  gsumToSchema opts proxy = pure $ (:[]) $ gsumConToSchemaWith Nothing opts proxy
 
 data Proxy2 a b = Proxy2
 

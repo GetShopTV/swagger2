@@ -12,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ViewPatterns               #-}
 -- |
 -- Module:      Data.Swagger.Internal.Schema.Validation
 -- Copyright:   (c) 2015 GetShopTV
@@ -26,8 +27,8 @@ import           Prelude                             ()
 import           Prelude.Compat
 
 import           Control.Applicative
-import           Control.Lens
-import           Control.Monad                       (when)
+import           Control.Lens                        hiding (allOf)
+import           Control.Monad                       (forM, forM_, when)
 
 import           Data.Aeson                          hiding (Result)
 import           Data.Aeson.Encode.Pretty            (encodePretty)
@@ -37,6 +38,7 @@ import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
 import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
+import           Data.Maybe                          (fromMaybe)
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)
 import           Data.Text                           (Text)
@@ -108,7 +110,7 @@ validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checke
 --     "type": "object",
 --     "properties": {
 --         "phone": {
---             "$ref": "#/definitions/Phone"
+--             "$ref": "#/components/schemas/Phone"
 --         },
 --         "name": {
 --             "type": "string"
@@ -203,7 +205,7 @@ instance Monad Result where
 
 -- | Validation configuration.
 data Config = Config
-  { -- | Pattern checker for @'_paramSchemaPattern'@ validation.
+  { -- | Pattern checker for @'_schemaPattern'@ validation.
     configPatternChecker :: Pattern -> Text -> Bool
     -- | Schema definitions in scope to resolve references.
   , configDefinitions    :: Definitions Schema
@@ -296,23 +298,17 @@ validateWithSchemaRef (Inline s) js = sub s (validateWithSchema js)
 
 -- | Validate JSON @'Value'@ with Swagger @'Schema'@.
 validateWithSchema :: Value -> Validation Schema ()
-validateWithSchema value = do
-  validateSchemaType value
-  sub_ paramSchema $ validateEnum value
+validateWithSchema val = do
+  validateSchemaType val
+  validateEnum val
 
--- | Validate JSON @'Value'@ with Swagger @'ParamSchema'@.
-validateWithParamSchema :: Value -> Validation (ParamSchema t) ()
-validateWithParamSchema value = do
-  validateParamSchemaType value
-  validateEnum value
-
-validateInteger :: Scientific -> Validation (ParamSchema t) ()
+validateInteger :: Scientific -> Validation Schema ()
 validateInteger n = do
   when (not (isInteger n)) $
     invalid ("not an integer")
   validateNumber n
 
-validateNumber :: Scientific -> Validation (ParamSchema t) ()
+validateNumber :: Scientific -> Validation Schema ()
 validateNumber n = withConfig $ \_cfg -> withSchema $ \sch -> do
   let exMax = Just True == sch ^. exclusiveMaximum
       exMin = Just True == sch ^. exclusiveMinimum
@@ -329,7 +325,7 @@ validateNumber n = withConfig $ \_cfg -> withSchema $ \sch -> do
     when (not (isInteger (n / k))) $
       invalid ("expected a multiple of " ++ show k ++ " but got " ++ show n)
 
-validateString :: Text -> Validation (ParamSchema t) ()
+validateString :: Text -> Validation Schema ()
 validateString s = do
   check maxLength $ \n ->
     when (len > fromInteger n) $
@@ -346,7 +342,7 @@ validateString s = do
   where
     len = Text.length s
 
-validateArray :: Vector Value -> Validation (ParamSchema t) ()
+validateArray :: Vector Value -> Validation Schema ()
 validateArray xs = do
   check maxItems $ \n ->
     when (len > fromInteger n) $
@@ -357,7 +353,6 @@ validateArray xs = do
       invalid ("array is too short (size should be >=" ++ show n ++ ")")
 
   check items $ \case
-    SwaggerItemsPrimitive _ itemSchema -> sub itemSchema $ traverse_ validateWithParamSchema xs
     SwaggerItemsObject itemSchema      -> traverse_ (validateWithSchemaRef itemSchema) xs
     SwaggerItemsArray itemSchemas -> do
       when (len /= length itemSchemas) $
@@ -374,8 +369,11 @@ validateArray xs = do
 validateObject :: HashMap Text Value -> Validation Schema ()
 validateObject o = withSchema $ \sch ->
   case sch ^. discriminator of
-    Just pname -> case fromJSON <$> HashMap.lookup pname o of
-      Just (Success ref) -> validateWithSchemaRef ref (Object o)
+    Just (Discriminator pname types) -> case fromJSON <$> HashMap.lookup pname o of
+      Just (Success pvalue) ->
+        let ref = fromMaybe pvalue $ InsOrdHashMap.lookup pvalue types
+        -- TODO ref may be name or reference
+        in validateWithSchemaRef (Ref (Reference ref)) (Object o)
       Just (Error msg)   -> invalid ("failed to parse discriminator property " ++ show pname ++ ": " ++ show msg)
       Nothing            -> invalid ("discriminator property " ++ show pname ++ "is missing")
     Nothing -> do
@@ -414,11 +412,11 @@ validateObject o = withSchema $ \sch ->
     unknownProperty pname = invalid $
       "property " <> show pname <> " is found in JSON value, but it is not mentioned in Swagger schema"
 
-validateEnum :: Value -> Validation (ParamSchema t) ()
-validateEnum value = do
+validateEnum :: Value -> Validation Schema ()
+validateEnum val = do
   check enum_ $ \xs ->
-    when (value `notElem` xs) $
-      invalid ("expected one of " ++ show (encode xs) ++ " but got " ++ show value)
+    when (val `notElem` xs) $
+      invalid ("expected one of " ++ show (encode xs) ++ " but got " ++ show val)
 
 -- | Infer schema type based on used properties.
 --
@@ -426,8 +424,8 @@ validateEnum value = do
 --
 -- >>> inferSchemaTypes <$> decode "{\"minProperties\": 1}"
 -- Just [SwaggerObject]
-inferSchemaTypes :: Schema -> [SwaggerType 'SwaggerKindSchema]
-inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
+inferSchemaTypes :: Schema -> [SwaggerType]
+inferSchemaTypes sch = inferParamSchemaTypes sch ++
   [ SwaggerObject | any ($ sch)
        [ has (additionalProperties._Just)
        , has (maxProperties._Just)
@@ -448,7 +446,7 @@ inferSchemaTypes sch = inferParamSchemaTypes (sch ^. paramSchema) ++
 --
 -- >>> inferSchemaTypes <$> decode "{\"minimum\": 1}"
 -- Just [SwaggerInteger]
-inferParamSchemaTypes :: ParamSchema t -> [SwaggerType t]
+inferParamSchemaTypes :: Schema -> [SwaggerType]
 inferParamSchemaTypes sch = concat
   [ [ SwaggerArray | any ($ sch)
         [ has (items._Just)
@@ -468,27 +466,42 @@ inferParamSchemaTypes sch = concat
   ]
 
 validateSchemaType :: Value -> Validation Schema ()
-validateSchemaType value = withSchema $ \sch ->
-  case (sch ^. type_, value) of
-    (Just SwaggerNull,    Null)       -> valid
-    (Just SwaggerBoolean, Bool _)     -> valid
-    (Just SwaggerInteger, Number n)   -> sub_ paramSchema (validateInteger n)
-    (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
-    (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
-    (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
-    (Just SwaggerObject,  Object o)   -> validateObject o
-    (Nothing, Null)                   -> valid
-    (Nothing, Bool _)                 -> valid
-    -- Number by default
-    (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
-    (Nothing, String s)               -> sub_ paramSchema (validateString s)
-    (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
-    (Nothing, Object o)               -> validateObject o
-    bad -> invalid $ "expected JSON value of type " ++ showType bad
+validateSchemaType val = withSchema $ \sch ->
+  case sch of
+    (view oneOf -> Just variants) -> do
+      res <- forM variants $ \var ->
+        (True <$ validateWithSchemaRef var val) <|> (return False)
+      case length $ filter id res of
+        0 -> invalid $ "Value not valid under any of 'oneOf' schemas: " ++ show val
+        1 -> valid
+        _ -> invalid $ "Value matches more than one of 'oneOf' schemas: " ++ show val
+    (view allOf -> Just variants) -> do
+      -- Default semantics for Validation Monad will abort when at least one
+      -- variant does not match.
+      forM_ variants $ \var ->
+        validateWithSchemaRef var val
 
-validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
-validateParamSchemaType value = withSchema $ \sch ->
-  case (sch ^. type_, value) of
+    _ ->
+      case (sch ^. type_, val) of
+        (Just SwaggerNull,    Null)       -> valid
+        (Just SwaggerBoolean, Bool _)     -> valid
+        (Just SwaggerInteger, Number n)   -> validateInteger n
+        (Just SwaggerNumber,  Number n)   -> validateNumber n
+        (Just SwaggerString,  String s)   -> validateString s
+        (Just SwaggerArray,   Array xs)   -> validateArray xs
+        (Just SwaggerObject,  Object o)   -> validateObject o
+        (Nothing, Null)                   -> valid
+        (Nothing, Bool _)                 -> valid
+        -- Number by default
+        (Nothing, Number n)               -> validateNumber n
+        (Nothing, String s)               -> validateString s
+        (Nothing, Array xs)               -> validateArray xs
+        (Nothing, Object o)               -> validateObject o
+        bad -> invalid $ "expected JSON value of type " ++ showType bad
+
+validateParamSchemaType :: Value -> Validation Schema ()
+validateParamSchemaType val = withSchema $ \sch ->
+  case (sch ^. type_, val) of
     (Just SwaggerBoolean, Bool _)     -> valid
     (Just SwaggerInteger, Number n)   -> validateInteger n
     (Just SwaggerNumber,  Number n)   -> validateNumber n
@@ -501,7 +514,7 @@ validateParamSchemaType value = withSchema $ \sch ->
     (Nothing, Array xs)               -> validateArray xs
     bad -> invalid $ "expected JSON value of type " ++ showType bad
 
-showType :: (Maybe (SwaggerType t), Value) -> String
+showType :: (Maybe SwaggerType, Value) -> String
 showType (Just ty, _)        = show ty
 showType (Nothing, Null)     = "SwaggerNull"
 showType (Nothing, Bool _)   = "SwaggerBoolean"

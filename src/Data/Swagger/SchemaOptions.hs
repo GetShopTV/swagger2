@@ -22,6 +22,8 @@ data SchemaOptions = SchemaOptions
   , allNullaryToStringTag :: Bool
     -- | Hide the field name when a record constructor has only one field, like a newtype.
   , unwrapUnaryRecords :: Bool
+    -- | Specifies how to encode constructors of a sum datatype.
+  , sumEncoding :: Aeson.SumEncoding
   }
 
 -- | Default encoding @'SchemaOptions'@.
@@ -33,6 +35,7 @@ data SchemaOptions = SchemaOptions
 -- , 'datatypeNameModifier'   = id
 -- , 'allNullaryToStringTag'  = True
 -- , 'unwrapUnaryRecords'     = False
+-- , 'sumEncoding'            = 'Aeson.defaultTaggedObject'
 -- }
 -- @
 defaultSchemaOptions :: SchemaOptions
@@ -42,6 +45,7 @@ defaultSchemaOptions = SchemaOptions
   , datatypeNameModifier = id
   , allNullaryToStringTag = True
   , unwrapUnaryRecords = False
+  , sumEncoding = Aeson.defaultTaggedObject
   }
 
 -- | Convert 'Aeson.Options' to 'SchemaOptions'.
@@ -56,7 +60,6 @@ defaultSchemaOptions = SchemaOptions
 -- Note that these fields have no effect on `SchemaOptions`:
 --
 -- * 'Aeson.omitNothingFields'
--- * 'Aeson.sumEncoding'
 -- * 'Aeson.tagSingleConstructors'
 --
 -- The rest is defined as in 'defaultSchemaOptions'.
@@ -69,4 +72,5 @@ fromAesonOptions opts = defaultSchemaOptions
   , constructorTagModifier = Aeson.constructorTagModifier opts
   , allNullaryToStringTag  = Aeson.allNullaryToStringTag  opts
   , unwrapUnaryRecords     = Aeson.unwrapUnaryRecords     opts
+  , sumEncoding            = Aeson.sumEncoding            opts
   }

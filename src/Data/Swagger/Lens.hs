@@ -27,30 +27,38 @@ import Data.Text (Text)
 -- * Classy lenses
 
 makeFields ''Swagger
-makeFields ''Host
+makeFields ''Components
+makeFields ''Server
+makeFields ''RequestBody
+makeFields ''MediaTypeObject
 makeFields ''Info
 makeFields ''Contact
 makeFields ''License
 makeLensesWith swaggerFieldRules ''PathItem
 makeFields ''Tag
 makeFields ''Operation
-makeFields ''Param
-makeLensesWith swaggerFieldRules ''ParamOtherSchema
+makeLensesWith swaggerFieldRules ''Param
 makeFields ''Header
-makeFields ''Schema
+makeLensesWith swaggerFieldRules ''Schema
 makeFields ''NamedSchema
-makeLensesWith swaggerFieldRules ''ParamSchema
 makeFields ''Xml
 makeLensesWith swaggerFieldRules ''Responses
 makeFields ''Response
 makeLensesWith swaggerFieldRules ''SecurityScheme
 makeFields ''ApiKeyParams
-makeFields ''OAuth2Params
+makeFields ''OAuth2ImplicitFlow
+makeFields ''OAuth2PasswordFlow
+makeFields ''OAuth2ClientCredentialsFlow
+makeFields ''OAuth2AuthorizationCodeFlow
+makeFields ''OAuth2Flow
+makeFields ''OAuth2Flows
 makeFields ''ExternalDocs
+makeFields ''Encoding
+makeFields ''Example
+makeFields ''Discriminator
+makeFields ''Link
 
 -- * Prisms
--- ** 'ParamAnySchema' prisms
-makePrisms ''ParamAnySchema
 -- ** 'SecuritySchemeType' prisms
 makePrisms ''SecuritySchemeType
 -- ** 'Referenced' prisms
@@ -58,7 +66,7 @@ makePrisms ''Referenced
 
 -- ** 'SwaggerItems' prisms
 
-_SwaggerItemsArray :: Review (SwaggerItems 'SwaggerKindSchema) [Referenced Schema]
+_SwaggerItemsArray :: Review SwaggerItems [Referenced Schema]
 _SwaggerItemsArray
   = unto (\x -> SwaggerItemsArray x)
 {- \x -> case x of
@@ -67,7 +75,7 @@ _SwaggerItemsArray
       SwaggerItemsArray a       -> Right a
 -}
 
-_SwaggerItemsObject :: Review (SwaggerItems 'SwaggerKindSchema) (Referenced Schema)
+_SwaggerItemsObject :: Review SwaggerItems (Referenced Schema)
 _SwaggerItemsObject
   = unto (\x -> SwaggerItemsObject x)
 {- \x -> case x of
@@ -75,9 +83,6 @@ _SwaggerItemsObject
       SwaggerItemsObject o      -> Right o
       SwaggerItemsArray a       -> Left (SwaggerItemsArray a)
 -}
-
-_SwaggerItemsPrimitive :: forall t p f. (Profunctor p, Bifunctor p, Functor f) => Optic' p f (SwaggerItems t) (Maybe (CollectionFormat t), ParamSchema t)
-_SwaggerItemsPrimitive = unto (\(c, p) -> SwaggerItemsPrimitive c p)
 
 -- =============================================================
 -- More helpful instances for easier access to schema properties
@@ -94,85 +99,68 @@ instance At   Responses where at n = responses . at n
 instance Ixed Operation where ix n = responses . ix n
 instance At   Operation where at n = responses . at n
 
-type instance Index SecurityDefinitions = Text
-type instance IxValue SecurityDefinitions = SecurityScheme
-
-instance Ixed SecurityDefinitions where ix n = (coerced :: Lens' SecurityDefinitions (Definitions SecurityScheme)). ix n
-instance At   SecurityDefinitions where at n = (coerced :: Lens' SecurityDefinitions (Definitions SecurityScheme)). at n
-
-instance HasParamSchema NamedSchema (ParamSchema 'SwaggerKindSchema) where paramSchema = schema.paramSchema
-
--- HasType instances
-instance HasType Header (Maybe (SwaggerType ('SwaggerKindNormal Header))) where type_ = paramSchema.type_
-instance HasType Schema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
-instance HasType NamedSchema (Maybe (SwaggerType 'SwaggerKindSchema)) where type_ = paramSchema.type_
-instance HasType ParamOtherSchema (Maybe (SwaggerType 'SwaggerKindParamOtherSchema)) where type_ = paramSchema.type_
-
--- HasDefault instances
-instance HasDefault Header (Maybe Value) where default_ = paramSchema.default_
-instance HasDefault Schema (Maybe Value) where default_ = paramSchema.default_
-instance HasDefault ParamOtherSchema (Maybe Value) where default_ = paramSchema.default_
+instance HasType NamedSchema (Maybe SwaggerType) where type_ = schema.type_
 
 -- OVERLAPPABLE instances
 
 instance
   {-# OVERLAPPABLE #-}
-  HasParamSchema s (ParamSchema t)
+  HasSchema s Schema
   => HasFormat s (Maybe Format) where
-  format = paramSchema.format
+  format = schema.format
 
 instance
   {-# OVERLAPPABLE #-}
-  HasParamSchema s (ParamSchema t)
-  => HasItems s (Maybe (SwaggerItems t)) where
-  items = paramSchema.items
+  HasSchema s Schema
+  => HasItems s (Maybe SwaggerItems) where
+  items = schema.items
 
 instance
   {-# OVERLAPPABLE #-}
-  HasParamSchema s (ParamSchema t)
+  HasSchema s Schema
   => HasMaximum s (Maybe Scientific) where
-  maximum_ = paramSchema.maximum_
+  maximum_ = schema.maximum_
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasExclusiveMaximum s (Maybe Bool) where
-  exclusiveMaximum = paramSchema.exclusiveMaximum
+  exclusiveMaximum = schema.exclusiveMaximum
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMinimum s (Maybe Scientific) where
-  minimum_ = paramSchema.minimum_
+  minimum_ = schema.minimum_
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasExclusiveMinimum s (Maybe Bool) where
-  exclusiveMinimum = paramSchema.exclusiveMinimum
+  exclusiveMinimum = schema.exclusiveMinimum
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMaxLength s (Maybe Integer) where
-  maxLength = paramSchema.maxLength
+  maxLength = schema.maxLength
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMinLength s (Maybe Integer) where
-  minLength = paramSchema.minLength
+  minLength = schema.minLength
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasPattern s (Maybe Text) where
-  pattern = paramSchema.pattern
+  pattern = schema.pattern
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMaxItems s (Maybe Integer) where
-  maxItems = paramSchema.maxItems
+  maxItems = schema.maxItems
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMinItems s (Maybe Integer) where
-  minItems = paramSchema.minItems
+  minItems = schema.minItems
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasUniqueItems s (Maybe Bool) where
-  uniqueItems = paramSchema.uniqueItems
+  uniqueItems = schema.uniqueItems
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasEnum s (Maybe [Value]) where
-  enum_ = paramSchema.enum_
+  enum_ = schema.enum_
 
-instance {-# OVERLAPPABLE #-} HasParamSchema s (ParamSchema t)
+instance {-# OVERLAPPABLE #-} HasSchema s Schema
   => HasMultipleOf s (Maybe Scientific) where
-  multipleOf = paramSchema.multipleOf
+  multipleOf = schema.multipleOf

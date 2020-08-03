@@ -29,7 +29,9 @@ import           Test.QuickCheck.Property
 -- and cannot be inferred.
 schemaGen :: Definitions Schema -> Schema -> Gen Value
 schemaGen _ schema
-    | Just cases <- schema  ^. paramSchema . enum_  = elements cases
+    | Just cases <- schema  ^. enum_  = elements cases
+schemaGen defns schema
+    | Just variants <- schema ^. oneOf = schemaGen defns =<< elements (dereference defns <$> variants)
 schemaGen defns schema =
     case schema ^. type_ of
       Nothing ->
@@ -94,10 +96,10 @@ schemaGen defns schema =
             _                                      -> return []
           x <- sequence $ gens <> additionalGens
           return . Object $ M.toHashMap x
-  where
-    dereference :: Definitions a -> Referenced a -> a
-    dereference _ (Inline a)               = a
-    dereference defs (Ref (Reference ref)) = fromJust $ M.lookup ref defs
+
+dereference :: Definitions a -> Referenced a -> a
+dereference _ (Inline a)               = a
+dereference defs (Ref (Reference ref)) = fromJust $ M.lookup ref defs
 
 genValue :: (ToSchema a) => Proxy a -> Gen Value
 genValue p =

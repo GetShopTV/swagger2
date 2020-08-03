@@ -39,6 +39,8 @@ import Data.List.Compat
 import Data.Maybe (mapMaybe)
 import Data.Proxy
 import qualified Data.Set as Set
+import Data.Text (Text)
+import Network.HTTP.Media (MediaType)
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -52,13 +54,14 @@ import qualified Data.HashSet.InsOrd as InsOrdHS
 -- >>> import Data.Aeson
 -- >>> import Data.Proxy
 -- >>> import Data.Time
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL
 
 -- | Prepend path piece to all operations of the spec.
 -- Leading and trailing slashes are trimmed/added automatically.
 --
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/info", mempty)]
--- >>> encode $ prependPath "user/{user_id}" api ^. paths
--- "{\"/user/{user_id}/info\":{}}"
+-- >>> BSL.putStrLn $ encode $ prependPath "user/{user_id}" api ^. paths
+-- {"/user/{user_id}/info":{}}
 prependPath :: FilePath -> Swagger -> Swagger
 prependPath path = paths %~ InsOrdHashMap.mapKeys (path </>)
   where
@@ -79,10 +82,10 @@ allOperations = paths.traverse.template
 -- >>> let ok = (mempty :: Operation) & at 200 ?~ "OK"
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ ok & post ?~ ok)]
 -- >>> let sub = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
--- >>> encode api
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
--- >>> encode $ api & operationsOf sub . at 404 ?~ "Not found"
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
+-- >>> BSL.putStrLn $ encode api
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"200":{"description":"OK"}}},"post":{"responses":{"200":{"description":"OK"}}}}},"components":{}}
+-- >>> BSL.putStrLn $ encode $ api & operationsOf sub . at 404 ?~ "Not found"
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"404":{"description":"Not found"},"200":{"description":"OK"}}},"post":{"responses":{"200":{"description":"OK"}}}}},"components":{}}
 operationsOf :: Swagger -> Traversal' Swagger Operation
 operationsOf sub = paths.itraversed.withIndex.subops
   where
@@ -118,12 +121,14 @@ applyTagsFor ops ts swag = swag
 -- | Construct a response with @'Schema'@ while declaring all
 -- necessary schema definitions.
 --
--- >>> encode $ runDeclare (declareResponse (Proxy :: Proxy Day)) mempty
--- "[{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}},{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}]"
-declareResponse :: ToSchema a => Proxy a -> Declare (Definitions Schema) Response
-declareResponse proxy = do
+-- FIXME doc
+--
+-- >>> BSL.putStrLn $ encode $ runDeclare (declareResponse "application/json" (Proxy :: Proxy Day)) mempty
+-- [{"Day":{"example":"2016-07-22","format":"date","type":"string"}},{"description":"","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Day"}}}}]
+declareResponse :: ToSchema a => MediaType -> Proxy a -> Declare (Definitions Schema) Response
+declareResponse cType proxy = do
   s <- declareSchemaRef proxy
-  return (mempty & schema ?~ s)
+  return (mempty & content.at cType ?~ (mempty & schema ?~ s))
 
 -- | Set response for all operations.
 -- This will also update global schema definitions.
@@ -137,9 +142,9 @@ declareResponse proxy = do
 -- Example:
 --
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
--- >>> let res = declareResponse (Proxy :: Proxy Day)
--- >>> encode $ api & setResponse 200 res
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}}}"
+-- >>> let res = declareResponse "application/json" (Proxy :: Proxy Day)
+-- >>> BSL.putStrLn $ encode $ api & setResponse 200 res
+-- {"openapi":"3.0.0","info":{"version":"","title":""},"paths":{"/user":{"get":{"responses":{"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Day"}}},"description":""}}}}},"components":{"schemas":{"Day":{"example":"2016-07-22","format":"date","type":"string"}}}}
 --
 -- See also @'setResponseWith'@.
 setResponse :: HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
@@ -167,7 +172,7 @@ setResponseWith = setResponseForWith allOperations
 -- See also @'setResponseForWith'@.
 setResponseFor :: Traversal' Swagger Operation -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
 setResponseFor ops code dres swag = swag
-  & definitions %~ (<> defs)
+  & components.schemas %~ (<> defs)
   & ops . at code ?~ Inline res
   where
     (defs, res) = runDeclare dres mempty
@@ -181,12 +186,12 @@ setResponseFor ops code dres swag = swag
 -- See also @'setResponseFor'@.
 setResponseForWith :: Traversal' Swagger Operation -> (Response -> Response -> Response) -> HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger
 setResponseForWith ops f code dres swag = swag
-  & definitions %~ (<> defs)
+  & components.schemas %~ (<> defs)
   & ops . at code %~ Just . Inline . combine
   where
     (defs, new) = runDeclare dres mempty
 
-    combine (Just (Ref (Reference n))) = case swag ^. responses.at n of
+    combine (Just (Ref (Reference n))) = case swag ^. components.responses.at n of
       Just old -> f old new
       Nothing  -> new -- response name can't be dereferenced, replacing with new response
     combine (Just (Inline old)) = f old new
