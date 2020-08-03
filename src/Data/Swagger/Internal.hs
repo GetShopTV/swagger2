@@ -194,7 +194,7 @@ data Components = Components
   , _componentsParameters :: Definitions Param
   , _componentsExamples :: Definitions Example
   , _componentsRequestBodies :: Definitions RequestBody
-  , _componentsHeader :: Definitions Header
+  , _componentsHeaders :: Definitions Header
   , _componentsSecuritySchemes :: Definitions SecurityScheme
   , _componentsLinks :: Definitions Link
   , _componentsCallbacks :: Definitions Callback
@@ -339,6 +339,8 @@ data RequestBody = RequestBody
     -- e.g. @text/plain@ overrides @text/*@
   , _requestBodyContent :: InsOrdHashMap MediaType MediaTypeObject
 
+    -- | Determines if the request body is required in the request.
+    -- Defaults to 'False'.
   , _requestBodyRequired :: Maybe Bool
   } deriving (Eq, Show, Generic, Data, Typeable)
 
@@ -499,6 +501,10 @@ data Param = Param
     -- Furthermore, if referencing a schema that contains an example,
     -- the examples value SHALL override the example provided by the schema.
   , _paramExamples :: InsOrdHashMap Text (Referenced Example)
+
+    -- TODO
+    -- _paramContent :: InsOrdHashMap MediaType MediaTypeObject
+    -- should be singleton. mutually exclusive with _paramSchema.
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 data Example = Example
@@ -749,10 +755,19 @@ newtype Callback = Callback (InsOrdHashMap Text PathItem)
 
 type HeaderName = Text
 
--- TODO this is mostly a copy of 'Param'.
+-- | Header fields have the same meaning as for 'Param'.
+--
+-- Style is always treated as 'StyleSimple', as it is the only value allowed for headers.
 data Header = Header
   { -- | A short description of the header.
     _headerDescription :: Maybe HeaderName
+
+  , _headerRequired :: Maybe Bool
+  , _headerDeprecated :: Maybe Bool
+  , _headerAllowEmptyValue :: Maybe Bool
+  , _headerExplode :: Maybe Bool
+  , _headerExample :: Maybe Value
+  , _headerExamples :: InsOrdHashMap Text (Referenced Example)
 
   , _headerSchema :: Maybe (Referenced Schema)
   } deriving (Eq, Show, Generic, Data, Typeable)
