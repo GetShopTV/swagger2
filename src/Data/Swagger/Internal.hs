@@ -451,7 +451,7 @@ data Param = Param
 
     -- | A brief description of the parameter.
     -- This could contain examples of use.
-    -- GFM syntax can be used for rich text representation.
+    -- CommonMark syntax MAY be used for rich text representation.
   , _paramDescription :: Maybe Text
 
     -- | Determines whether this parameter is mandatory.
@@ -470,6 +470,13 @@ data Param = Param
     -- This is valid only for 'ParamQuery' parameters and allows sending
     -- a parameter with an empty value. Default value is @false@.
   , _paramAllowEmptyValue :: Maybe Bool
+
+    -- | Determines whether the parameter value SHOULD allow reserved characters,
+    -- as defined by [RFC3986](https://tools.ietf.org/html/rfc3986#section-2.2)
+    -- @:/?#[]@!$&'()*+,;=@ to be included without percent-encoding.
+    -- This property only applies to parameters with an '_paramIn' value of 'ParamQuery'.
+    -- The default value is 'False'.
+  , _paramAllowReserved :: Maybe Bool
 
     -- | Parameter schema.
   , _paramSchema :: Maybe (Referenced Schema)
@@ -868,7 +875,7 @@ data Tag = Tag
     _tagName :: TagName
 
     -- | A short description for the tag.
-    -- GFM syntax can be used for rich text representation.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
   , _tagDescription :: Maybe Text
 
     -- | Additional external documentation for this tag.
@@ -883,7 +890,7 @@ instance IsString Tag where
 -- | Allows referencing an external resource for extended documentation.
 data ExternalDocs = ExternalDocs
   { -- | A short description of the target documentation.
-    -- GFM syntax can be used for rich text representation.
+    -- [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
     _externalDocsDescription :: Maybe Text
 
     -- | The URL for the target documentation.
