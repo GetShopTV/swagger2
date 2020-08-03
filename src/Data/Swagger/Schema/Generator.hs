@@ -29,7 +29,7 @@ import           Test.QuickCheck.Property
 -- and cannot be inferred.
 schemaGen :: Definitions Schema -> Schema -> Gen Value
 schemaGen _ schema
-    | Just cases <- schema  ^. paramSchema . enum_  = elements cases
+    | Just cases <- schema  ^. enum_  = elements cases
 schemaGen defns schema
     | Just variants <- schema ^. oneOf = schemaGen defns =<< elements (dereference defns <$> variants)
 schemaGen defns schema =

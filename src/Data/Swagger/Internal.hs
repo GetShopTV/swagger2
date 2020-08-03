@@ -630,8 +630,32 @@ data Schema = Schema
   , _schemaMaxProperties :: Maybe Integer
   , _schemaMinProperties :: Maybe Integer
 
-  , _schemaParamSchema :: ParamSchema
+  , -- | Declares the value of the parameter that the server will use if none is provided,
+    -- for example a @"count"@ to control the number of results per page might default to @100@
+    -- if not supplied by the client in the request.
+    -- (Note: "default" has no meaning for required parameters.)
+    -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
+    _schemaDefault :: Maybe Value
+
+  , _schemaType :: Maybe SwaggerType
+  , _schemaFormat :: Maybe Format
+  , _schemaItems :: Maybe SwaggerItems
+  , _schemaMaximum :: Maybe Scientific
+  , _schemaExclusiveMaximum :: Maybe Bool
+  , _schemaMinimum :: Maybe Scientific
+  , _schemaExclusiveMinimum :: Maybe Bool
+  , _schemaMaxLength :: Maybe Integer
+  , _schemaMinLength :: Maybe Integer
+  , _schemaPattern :: Maybe Pattern
+  , _schemaMaxItems :: Maybe Integer
+  , _schemaMinItems :: Maybe Integer
+  , _schemaUniqueItems :: Maybe Bool
+  , _schemaEnum :: Maybe [Value]
+  , _schemaMultipleOf :: Maybe Scientific
   } deriving (Eq, Show, Generic, Data, Typeable)
+
+-- | Regex pattern for @string@ type.
+type Pattern = Text
 
 data Discriminator = Discriminator
   { -- | The name of the property in the payload that will hold the discriminator value.
@@ -647,34 +671,6 @@ data NamedSchema = NamedSchema
   { _namedSchemaName :: Maybe Text
   , _namedSchemaSchema :: Schema
   } deriving (Eq, Show, Generic, Data, Typeable)
-
--- | Regex pattern for @string@ type.
-type Pattern = Text
-
-data ParamSchema = ParamSchema
-  { -- | Declares the value of the parameter that the server will use if none is provided,
-    -- for example a @"count"@ to control the number of results per page might default to @100@
-    -- if not supplied by the client in the request.
-    -- (Note: "default" has no meaning for required parameters.)
-    -- Unlike JSON Schema this value MUST conform to the defined type for this parameter.
-    _paramSchemaDefault :: Maybe Value
-
-  , _paramSchemaType :: Maybe SwaggerType
-  , _paramSchemaFormat :: Maybe Format
-  , _paramSchemaItems :: Maybe SwaggerItems
-  , _paramSchemaMaximum :: Maybe Scientific
-  , _paramSchemaExclusiveMaximum :: Maybe Bool
-  , _paramSchemaMinimum :: Maybe Scientific
-  , _paramSchemaExclusiveMinimum :: Maybe Bool
-  , _paramSchemaMaxLength :: Maybe Integer
-  , _paramSchemaMinLength :: Maybe Integer
-  , _paramSchemaPattern :: Maybe Pattern
-  , _paramSchemaMaxItems :: Maybe Integer
-  , _paramSchemaMinItems :: Maybe Integer
-  , _paramSchemaUniqueItems :: Maybe Bool
-  , _paramSchemaEnum :: Maybe [Value]
-  , _paramSchemaMultipleOf :: Maybe Scientific
-  } deriving (Eq, Show, Generic, Typeable, Data)
 
 data Xml = Xml
   { -- | Replaces the name of the element/attribute used for the described schema property.
@@ -934,7 +930,6 @@ deriveGeneric ''MediaTypeObject
 deriveGeneric ''Responses
 deriveGeneric ''SecurityScheme
 deriveGeneric ''Schema
-deriveGeneric ''ParamSchema
 deriveGeneric ''Swagger
 deriveGeneric ''Example
 deriveGeneric ''Encoding
@@ -977,12 +972,6 @@ instance Monoid PathItem where
 instance Semigroup Schema where
   (<>) = genericMappend
 instance Monoid Schema where
-  mempty = genericMempty
-  mappend = (<>)
-
-instance Semigroup ParamSchema where
-  (<>) = genericMappend
-instance Monoid ParamSchema where
   mempty = genericMempty
   mappend = (<>)
 
@@ -1080,7 +1069,6 @@ instance SwaggerMonoid Info
 instance SwaggerMonoid Components
 instance SwaggerMonoid PathItem
 instance SwaggerMonoid Schema
-instance SwaggerMonoid ParamSchema
 instance SwaggerMonoid Param
 instance SwaggerMonoid Responses
 instance SwaggerMonoid Response
@@ -1265,8 +1253,8 @@ instance ToJSON SecurityScheme where
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Schema where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON = sopSwaggerGenericToJSONWithOpts $
+      mkSwaggerAesonOptions "schema" & saoSubObject ?~ "items"
 
 instance ToJSON Header where
   toJSON = sopSwaggerGenericToJSON
@@ -1353,11 +1341,6 @@ instance ToJSON (Referenced Header)   where toJSON = referencedToJSON "#/compone
 instance ToJSON (Referenced Link)     where toJSON = referencedToJSON "#/components/links/"
 instance ToJSON (Referenced Callback) where toJSON = referencedToJSON "#/components/callbacks/"
 
-instance ToJSON ParamSchema where
-  -- TODO: this is a bit fishy, why we need sub object only in `ToJSON`?
-  toJSON = sopSwaggerGenericToJSONWithOpts $
-      mkSwaggerAesonOptions "paramSchema" & saoSubObject ?~ "items"
-
 instance ToJSON AdditionalProperties where
   toJSON (AdditionalPropertiesAllowed b) = toJSON b
   toJSON (AdditionalPropertiesSchema s) = toJSON s
@@ -1409,10 +1392,11 @@ instance FromJSON SecurityScheme where
 instance FromJSON Schema where
   parseJSON = fmap nullaryCleanup . sopSwaggerGenericParseJSON
     where nullaryCleanup :: Schema -> Schema
-          nullaryCleanup s@Schema{_schemaParamSchema=ps} =
-            if _paramSchemaItems ps == Just (SwaggerItemsArray [])
+          nullaryCleanup s =
+            if _schemaItems s == Just (SwaggerItemsArray [])
               then s { _schemaExample = Nothing
-                     , _schemaParamSchema = ps { _paramSchemaMaxItems = Nothing } }
+                     , _schemaMaxItems = Nothing
+                     }
               else s
 
 instance FromJSON Header where
@@ -1496,9 +1480,6 @@ instance FromJSON (Referenced Callback) where parseJSON = referencedParseJSON "#
 instance FromJSON Xml where
   parseJSON = genericParseJSON (jsonPrefix "xml")
 
-instance FromJSON ParamSchema where
-  parseJSON = sopSwaggerGenericParseJSON
-
 instance FromJSON AdditionalProperties where
   parseJSON (Bool b) = pure $ AdditionalPropertiesAllowed b
   parseJSON js = AdditionalPropertiesSchema <$> parseJSON js
@@ -1549,12 +1530,8 @@ instance HasSwaggerAesonOptions Encoding where
 instance HasSwaggerAesonOptions Link where
   swaggerAesonOptions _ = mkSwaggerAesonOptions "link"
 
-instance HasSwaggerAesonOptions ParamSchema where
-  swaggerAesonOptions _ = mkSwaggerAesonOptions "paramSchema"
-
 instance AesonDefaultValue Server
 instance AesonDefaultValue Components
-instance AesonDefaultValue ParamSchema
 instance AesonDefaultValue OAuth2ImplicitFlow
 instance AesonDefaultValue OAuth2PasswordFlow
 instance AesonDefaultValue OAuth2ClientCredentialsFlow

@@ -73,7 +73,6 @@ module Data.Swagger (
   Encoding(..),
 
   -- ** Schemas
-  ParamSchema(..),
   Schema(..),
   NamedSchema(..),
   SwaggerItems(..),
@@ -220,7 +219,7 @@ import Data.Swagger.Internal
 --   & type_       ?~ SwaggerBoolean
 --   & description ?~ "To be or not to be"
 -- :}
--- {"description":"To be or not to be","type":"boolean"}
+-- {"type":"boolean","description":"To be or not to be"}
 --
 -- Additionally, to simplify working with @'Response'@, both @'Operation'@ and @'Responses'@
 -- have direct access to it via @'at' code@. Example:
@@ -279,7 +278,7 @@ import Data.Swagger.Internal
 -- >>> BSL.putStrLn $ encode (Person "David" 28)
 -- {"age":28,"name":"David"}
 -- >>> BSL.putStrLn $ encode $ toSchema (Proxy :: Proxy Person)
--- {"required":["name","age"],"properties":{"name":{"type":"string"},"age":{"type":"integer"}},"type":"object"}
+-- {"required":["name","age"],"type":"object","properties":{"age":{"type":"integer"},"name":{"type":"string"}}}
 --
 -- This package implements OpenAPI 3.0 spec, which supports @oneOf@ in schemas, allowing any sum types
 -- to be faithfully represented. All sum encodings supported by @aeson@ are supported here as well, with

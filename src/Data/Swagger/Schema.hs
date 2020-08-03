@@ -32,11 +32,6 @@ module Data.Swagger.Schema (
   paramSchemaToNamedSchema,
   paramSchemaToSchema,
 
-  -- * Schema templates
-  passwordSchema,
-  binarySchema,
-  byteSchema,
-
   -- * Sketching @'Schema'@s using @'ToJSON'@
   sketchSchema,
   sketchStrictSchema,

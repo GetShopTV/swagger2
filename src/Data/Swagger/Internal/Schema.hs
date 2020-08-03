@@ -289,25 +289,6 @@ inlineNonRecursiveSchemas defs = inlineSchemasWhen nonRecursive defs
           traverse_ usedNames (InsOrdHashMap.lookup name defs)
       Inline subschema -> usedNames subschema
 
--- | Default schema for binary data (any sequence of octets).
-binarySchema :: Schema
-binarySchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "binary"
-
--- | Default schema for binary data (base64 encoded).
-byteSchema :: Schema
-byteSchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "byte"
-
--- | Default schema for password string.
--- @"password"@ format is used to hint UIs the input needs to be obscured.
-passwordSchema :: Schema
-passwordSchema = mempty
-  & type_ ?~ SwaggerString
-  & format ?~ "password"
-
 -- | Make an unrestrictive sketch of a @'Schema'@ based on a @'ToJSON'@ instance.
 -- Produced schema can be used for further refinement.
 --
@@ -323,7 +304,7 @@ passwordSchema = mempty
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> BSL.putStrLn $ encode $ sketchSchema (Person "Jack" 25)
--- {"required":["age","name"],"properties":{"age":{"type":"number"},"name":{"type":"string"}},"example":{"age":25,"name":"Jack"},"type":"object"}
+-- {"example":{"age":25,"name":"Jack"},"required":["age","name"],"type":"object","properties":{"age":{"type":"number"},"name":{"type":"string"}}}
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -367,7 +348,7 @@ sketchSchema = sketch . toJSON
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> BSL.putStrLn $ encode $ sketchStrictSchema (Person "Jack" 25)
--- {"required":["age","name"],"properties":{"age":{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]},"name":{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]}},"maxProperties":2,"minProperties":2,"type":"object","enum":[{"age":25,"name":"Jack"}]}
+-- {"minProperties":2,"required":["age","name"],"maxProperties":2,"type":"object","enum":[{"age":25,"name":"Jack"}],"properties":{"age":{"maximum":25,"minimum":25,"multipleOf":25,"type":"number","enum":[25]},"name":{"maxLength":4,"pattern":"Jack","minLength":4,"type":"string","enum":["Jack"]}}}
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
@@ -603,7 +584,7 @@ genericDeclareNamedSchemaNewtype opts f proxy = genericNameSchema opts proxy <$>
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
 -- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- {"properties":{"Neutral":{"type":"string"},"Focus":{"type":"string"},"Active":{"type":"string"},"Hover":{"type":"string"},"Disabled":{"type":"string"}},"type":"object"}
+-- {"type":"object","properties":{"Focus":{"type":"string"},"Disabled":{"type":"string"},"Active":{"type":"string"},"Neutral":{"type":"string"},"Hover":{"type":"string"}}}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
@@ -631,7 +612,7 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
 -- >>> instance ToJSONKey ButtonState where toJSONKey = toJSONKeyText (T.pack . show)
 -- >>> type ImageUrl = T.Text
 -- >>> BSL.putStrLn $ encode $ toSchemaBoundedEnumKeyMapping (Proxy :: Proxy (Map ButtonState ImageUrl))
--- {"properties":{"Neutral":{"type":"string"},"Focus":{"type":"string"},"Active":{"type":"string"},"Hover":{"type":"string"},"Disabled":{"type":"string"}},"type":"object"}
+-- {"type":"object","properties":{"Focus":{"type":"string"},"Disabled":{"type":"string"},"Active":{"type":"string"},"Neutral":{"type":"string"},"Hover":{"type":"string"}}}
 --
 -- Note: this is only useful when @key@ is encoded with 'ToJSONKeyText'.
 -- If it is encoded with 'ToJSONKeyValue' then a regular schema for @[(key, value)]@ is used.
@@ -667,14 +648,14 @@ gdatatypeSchemaName opts _ = case orig of
     orig = datatypeName (Proxy3 :: Proxy3 d f a)
     name = datatypeNameModifier opts orig
 
--- | Lift a plain @'ParamSchema'@ into a model @'NamedSchema'@.
+-- | Construct 'NamedSchema' usinng 'ToParamSchema'.
 paramSchemaToNamedSchema :: (ToParamSchema a, Generic a, Rep a ~ D1 d f, Datatype d) =>
   SchemaOptions -> Proxy a -> NamedSchema
 paramSchemaToNamedSchema opts proxy = genericNameSchema opts proxy (paramSchemaToSchema proxy)
 
--- | Lift a plain @'ParamSchema'@ into a model @'Schema'@.
+-- | Construct 'Schema' usinng 'ToParamSchema'.
 paramSchemaToSchema :: ToParamSchema a => Proxy a -> Schema
-paramSchemaToSchema proxy = mempty & paramSchema .~ toParamSchema proxy
+paramSchemaToSchema = toParamSchema
 
 nullarySchema :: Schema
 nullarySchema = mempty
