@@ -43,6 +43,7 @@ import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import qualified Data.Text.Lazy                      as TL
 import qualified Data.Text.Lazy.Encoding             as TL
+import           Data.Typeable                       (Typeable, typeOf)
 import           Data.Vector                         (Vector)
 import qualified Data.Vector                         as Vector
 
@@ -60,11 +61,11 @@ import           Data.Swagger.Lens
 -- See @'validateToJSONWithPatternChecker'@.
 --
 -- See 'renderValidationErrors' on how the output is structured.
-validatePrettyToJSON :: forall a. (ToJSON a, ToSchema a) => a -> Maybe String
+validatePrettyToJSON :: forall a. (ToJSON a, ToSchema a, Typeable a) => a -> Maybe String
 validatePrettyToJSON = renderValidationErrors validateToJSON
 
 -- | Variant of 'validatePrettyToJSON' with typed output.
-validateToJSON :: forall a. (ToJSON a, ToSchema a) => a -> [ValidationError]
+validateToJSON :: forall a. (ToJSON a, ToSchema a, Typeable a) => a -> [ValidationError]
 validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 
 -- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value and pattern checker.
@@ -72,10 +73,11 @@ validateToJSON = validateToJSONWithPatternChecker (\_pattern _str -> True)
 --
 -- For validation without patterns see @'validateToJSON'@.  See also:
 -- 'renderValidationErrors'.
-validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a) => (Pattern -> Text -> Bool) -> a -> [ValidationError]
-validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checker defs sch . toJSON
+validateToJSONWithPatternChecker :: forall a. (ToJSON a, ToSchema a, Typeable a) => (Pattern -> Text -> Bool) -> a -> [ValidationError]
+validateToJSONWithPatternChecker checker a = validateJSONWithPatternChecker checker defs sch typeName $ toJSON a
   where
     (defs, sch) = runDeclare (declareSchema (Proxy :: Proxy a)) mempty
+    typeName = show $ typeOf a
 
 -- | Pretty print validation errors
 -- together with actual JSON and Swagger Schema
@@ -160,14 +162,14 @@ renderValidationErrors f x =
 -- /NOTE:/ @'validateJSON'@ does not perform string pattern validation.
 -- See @'validateJSONWithPatternChecker'@.
 validateJSON :: Definitions Schema -> Schema -> Value -> [ValidationError]
-validateJSON = validateJSONWithPatternChecker (\_pattern _str -> True)
+validateJSON defs schem val = validateJSONWithPatternChecker (\_pattern _str -> True) defs schem "Value" val
 
 -- | Validate JSON @'Value'@ agains Swagger @'ToSchema'@ for a given value and pattern checker.
 --
 -- For validation without patterns see @'validateJSON'@.
-validateJSONWithPatternChecker :: (Pattern -> Text -> Bool) -> Definitions Schema -> Schema -> Value -> [ValidationError]
-validateJSONWithPatternChecker checker defs sch js =
-  case runValidation (validateWithSchema js) cfg sch of
+validateJSONWithPatternChecker :: (Pattern -> Text -> Bool) -> Definitions Schema -> Schema -> String -> Value -> [ValidationError]
+validateJSONWithPatternChecker checker defs sch typeName js =
+  case runValidation (validateWithSchema typeName js) cfg sch of
     Failed xs -> xs
     Passed _  -> mempty
   where
@@ -291,13 +293,13 @@ withRef (Reference ref) f = withConfig $ \cfg ->
     Just s  -> f s
 
 validateWithSchemaRef :: Referenced Schema -> Value -> Validation s ()
-validateWithSchemaRef (Ref ref)  js = withRef ref $ \sch -> sub sch (validateWithSchema js)
-validateWithSchemaRef (Inline s) js = sub s (validateWithSchema js)
+validateWithSchemaRef (Ref ref)  js = withRef ref $ \sch -> sub sch (validateWithSchema "Referenced Schema" js)
+validateWithSchemaRef (Inline s) js = sub s (validateWithSchema "Referenced Schema" js)
 
 -- | Validate JSON @'Value'@ with Swagger @'Schema'@.
-validateWithSchema :: Value -> Validation Schema ()
-validateWithSchema value = do
-  validateSchemaType value
+validateWithSchema :: String -> Value -> Validation Schema ()
+validateWithSchema typeName value = do
+  validateSchemaType typeName value
   sub_ paramSchema $ validateEnum value
 
 -- | Validate JSON @'Value'@ with Swagger @'ParamSchema'@.
@@ -467,8 +469,8 @@ inferParamSchemaTypes sch = concat
         , has (pattern._Just) ] ]
   ]
 
-validateSchemaType :: Value -> Validation Schema ()
-validateSchemaType value = withSchema $ \sch ->
+validateSchemaType :: String -> Value -> Validation Schema ()
+validateSchemaType typeName value = withSchema $ \sch ->
   case (sch ^. type_, value) of
     (Just SwaggerNull,    Null)       -> valid
     (Just SwaggerBoolean, Bool _)     -> valid
@@ -490,6 +492,7 @@ validateSchemaType value = withSchema $ \sch ->
       , "    " <> unwords ["SwaggerType:", show $ fst bad]
       , "    " <> unwords ["Aeson Value:", show $ snd bad]
       , "    " <> unwords ["Schema title:", show $ sch ^. title]
+      , "    " <> unwords ["Type name:", typeName]
       ]
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
