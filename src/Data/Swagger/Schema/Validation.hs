@@ -71,11 +71,11 @@ import Data.Swagger.Internal.Schema.Validation
 -- generally fails for @null@ JSON:
 --
 -- >>> validateToJSON (Nothing :: Maybe String)
--- ["expected JSON value of type SwaggerString"]
+-- ["expected JSON value of type SwaggerString\n  with context:\n    SwaggerType: Just SwaggerString\n    Aeson Value: Null\n    Schema title: Nothing\n"]
 -- >>> validateToJSON ([Just "hello", Nothing] :: [Maybe String])
--- ["expected JSON value of type SwaggerString"]
+-- ["expected JSON value of type SwaggerString\n  with context:\n    SwaggerType: Just SwaggerString\n    Aeson Value: Null\n    Schema title: Nothing\n"]
 -- >>> validateToJSON (123, Nothing :: Maybe String)
--- ["expected JSON value of type SwaggerString"]
+-- ["expected JSON value of type SwaggerString\n  with context:\n    SwaggerType: Just SwaggerString\n    Aeson Value: Null\n    Schema title: Nothing\n"]
 --
 -- However, when @'Maybe' a@ is a type of a record field,
 -- validation takes @'required'@ property of the @'Schema'@
