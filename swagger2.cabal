@@ -1,6 +1,6 @@
 cabal-version:       >=1.10
 name:                swagger2
-version:             2.6.1
+version:             2.6.1.1
 
 synopsis:            Swagger 2.0 data model
 category:            Web, Swagger
@@ -81,10 +81,10 @@ library
     , hashable                  >=1.2.7.0  && <1.4
     , http-media                >=0.8.0.0  && <0.9
     , insert-ordered-containers >=0.2.3    && <0.3
-    , lens                      >=4.16.1   && <4.20
+    , lens                      >=4.16.1   && <5.1
     , network                   >=2.6.3.5  && <3.2
-    , optics-core               >=0.2      && <0.4
-    , optics-th                 >=0.2      && <0.4
+    , optics-core               >=0.2      && <0.5
+    , optics-th                 >=0.2      && <0.5
     , scientific                >=0.3.6.2  && <0.4
     , unordered-containers      >=0.2.9.0  && <0.3
     , uuid-types                >=1.0.3    && <1.1
