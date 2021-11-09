@@ -80,9 +80,9 @@ allOperations = paths.traverse.template
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ ok & post ?~ ok)]
 -- >>> let sub = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> encode api
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 -- >>> encode $ api & operationsOf sub . at 404 ?~ "Not found"
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"404\":{\"description\":\"Not found\"},\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"},\"404\":{\"description\":\"Not found\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 operationsOf :: Swagger -> Traversal' Swagger Operation
 operationsOf sub = paths.itraversed.withIndex.subops
   where
@@ -139,7 +139,7 @@ declareResponse proxy = do
 -- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponse 200 res
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"schema\":{\"$ref\":\"#/definitions/Day\"},\"description\":\"\"}}}}},\"definitions\":{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}}}}},\"definitions\":{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}}}"
 --
 -- See also @'setResponseWith'@.
 setResponse :: HttpStatusCode -> Declare (Definitions Schema) Response -> Swagger -> Swagger

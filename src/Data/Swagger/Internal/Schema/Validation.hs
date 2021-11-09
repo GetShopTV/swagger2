@@ -102,33 +102,33 @@ validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checke
 -- <BLANKLINE>
 -- Swagger Schema:
 -- {
+--     "properties": {
+--         "name": {
+--             "type": "string"
+--         },
+--         "phone": {
+--             "$ref": "#/definitions/Phone"
+--         }
+--     },
 --     "required": [
 --         "name",
 --         "phone"
 --     ],
---     "type": "object",
---     "properties": {
---         "phone": {
---             "$ref": "#/definitions/Phone"
---         },
---         "name": {
---             "type": "string"
---         }
---     }
+--     "type": "object"
 -- }
 -- <BLANKLINE>
 -- Swagger Description Context:
 -- {
 --     "Phone": {
---         "required": [
---             "value"
---         ],
---         "type": "object",
 --         "properties": {
 --             "value": {
 --                 "type": "string"
 --             }
---         }
+--         },
+--         "required": [
+--             "value"
+--         ],
+--         "type": "object"
 --     }
 -- }
 -- <BLANKLINE>

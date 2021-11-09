@@ -29,7 +29,7 @@
 --         & at 200 ?~ ("OK" & #_Inline % #schema ?~ Ref (Reference "User"))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"200\":{\"description\":\"OK\",\"schema\":{\"$ref\":\"#/definitions/User\"}},\"404\":{\"description\":\"User info not found\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
 --
 -- For convenience optics are defined as /labels/. It means that field accessor
 -- names can be overloaded for different types. One such common field is

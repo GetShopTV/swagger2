@@ -270,7 +270,7 @@ instance ToParamSchema a => ToParamSchema (HashSet a) where
 
 -- |
 -- >>> encode $ toParamSchema (Proxy :: Proxy ())
--- "{\"type\":\"string\",\"enum\":[\"_\"]}"
+-- "{\"enum\":[\"_\"],\"type\":\"string\"}"
 instance ToParamSchema () where
   toParamSchema _ = mempty
     & type_ ?~ SwaggerString
@@ -286,7 +286,7 @@ instance ToParamSchema UUID where
 -- >>> :set -XDeriveGeneric
 -- >>> data Color = Red | Blue deriving Generic
 -- >>> encode $ genericToParamSchema defaultSchemaOptions (Proxy :: Proxy Color)
--- "{\"type\":\"string\",\"enum\":[\"Red\",\"Blue\"]}"
+-- "{\"enum\":[\"Red\",\"Blue\"],\"type\":\"string\"}"
 genericToParamSchema :: forall a t. (Generic a, GToParamSchema (Rep a)) => SchemaOptions -> Proxy a -> ParamSchema t
 genericToParamSchema opts _ = gtoParamSchema opts (Proxy :: Proxy (Rep a)) mempty
 
