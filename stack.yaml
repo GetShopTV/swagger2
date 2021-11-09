@@ -1,9 +1,8 @@
-resolver: lts-15.1
+resolver: lts-18.16
 packages:
-- '.'
+  - "."
 extra-deps:
-- optics-core-0.3
-- optics-th-0.3
-- optics-extra-0.3
-- indexed-profunctors-0.1
-- insert-ordered-containers-0.2.3.1
+  - aeson-2.0.1.0@sha256:ee0847af4d1fb9ece3f24f443d8d8406431c32688a57880314ac36617da937eb,6229
+  - semialign-1.2.0.1@sha256:5efc30d6f53f8d2a8a26d9bf3a57c0f20f4ba3086797ccaa615f644abc21d42e,2814
+  - time-compat-1.9.6.1@sha256:381a2e8ed6e41d20ff5929d12d25c1d9337d459de5964ef1d90b06d115b31f07,5033
+  - hashable-1.3.5.0@sha256:47d1232d9788bb909cfbd80618de18dcdfb925609593e202912bd5841db138c1,4193
