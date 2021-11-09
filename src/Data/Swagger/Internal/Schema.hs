@@ -69,6 +69,8 @@ import Data.Swagger.Internal.TypeShape
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
+import qualified Data.Aeson.KeyMap as KM
+import Data.Aeson.Key (toText)
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -345,7 +347,7 @@ sketchSchema = sketch . toJSON
         ischema = case ys of
           (z:_) | allSame -> Just z
           _               -> Nothing
-    go (Object o) = mempty
+    go (Object o') = let o = KM.toHashMapText o' in mempty
       & type_         ?~ SwaggerObject
       & required      .~ HashMap.keys o
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
@@ -395,7 +397,7 @@ sketchStrictSchema = go . toJSON
       where
         sz = length xs
         allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
-    go js@(Object o) = mempty
+    go js@(Object o') = let o = KM.toHashMapText o' in mempty
       & type_         ?~ SwaggerObject
       & required      .~ names
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
@@ -403,7 +405,7 @@ sketchStrictSchema = go . toJSON
       & minProperties ?~ fromIntegral (length names)
       & enum_         ?~ [js]
       where
-        names = HashMap.keys o
+        names = HashMap.keys (KM.toHashMapText o')
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
@@ -613,9 +615,9 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
     objectSchema keyToText = do
       valueRef <- declareSchemaRef (Proxy :: Proxy value)
       let allKeys   = [minBound..maxBound :: key]
-          mkPair k  =  (keyToText k, valueRef)
+          mkPair k  = (toText $ keyToText k, valueRef)
       return $ mempty
-        & type_ ?~ SwaggerObject
+        & type_      ?~ SwaggerObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
 
 -- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.

@@ -25,10 +25,17 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Applicative ((<|>))
-import Control.Lens     (makeLenses, (^.))
-import Control.Monad    (unless)
-import Data.Aeson       (ToJSON(..), FromJSON(..), Value(..), Object, object, (.:), (.:?), (.!=), withObject)
+import Control.Lens        (makeLenses, (^.))
+import Control.Monad       (unless)
+import Data.Aeson          ( Encoding, FromJSON (..), ToJSON (..)
+                           , Object, Series, Value (..)
+                           , object, pairs, withObject
+                           , (.!=), (.:), (.:?), (.=)
+                           )
+import Data.Aeson.Key   (fromString, toString, fromText, toText)
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (Parser, Pair)
+import Data.Bifunctor   (first)
 import Data.Char        (toLower, isUpper)
 import Data.Foldable    (traverse_)
 import Data.Text        (Text)
@@ -40,8 +47,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.HashMap.Strict.InsOrd as InsOrd
 import qualified Data.HashSet.InsOrd as InsOrdHS
-
-import Data.Aeson (Encoding, pairs, (.=), Series)
 
 -------------------------------------------------------------------------------
 -- SwaggerAesonOptions
@@ -105,7 +110,7 @@ sopSwaggerGenericToJSON
     -> Value
 sopSwaggerGenericToJSON x =
     let ps = sopSwaggerGenericToJSON' opts (from x) (datatypeInfo proxy) (aesonDefaults proxy)
-    in object (opts ^. saoAdditionalPairs ++ ps)
+    in object $ (map $ first fromText) (opts ^. saoAdditionalPairs ++ (map $ first toText) ps)
   where
     proxy = Proxy :: Proxy a
     opts  = swaggerAesonOptions proxy
@@ -127,7 +132,7 @@ sopSwaggerGenericToJSONWithOpts
     -> Value
 sopSwaggerGenericToJSONWithOpts opts x =
     let ps = sopSwaggerGenericToJSON' opts (from x) (datatypeInfo proxy) defs
-    in object (opts ^. saoAdditionalPairs ++ ps)
+    in object $ (map $ first fromText) (opts ^. saoAdditionalPairs ++ (map $ first toText) ps)
   where
     proxy = Proxy :: Proxy a
     defs = hcpure (Proxy :: Proxy AesonDefaultValue) defaultValue
@@ -156,14 +161,14 @@ sopSwaggerGenericToJSON'' (SwaggerAesonOptions prefix _ sub) = go
     go  Nil Nil Nil = []
     go (I x :* xs) (FieldInfo name :* names) (def :* defs)
         | Just name' == sub = case json of
-              Object m -> HM.toList m ++ rest
+              Object m -> KM.toList m ++ rest
               Null     -> rest
               _        -> error $ "sopSwaggerGenericToJSON: subjson is not an object: " ++ show json
         -- If default value: omit it.
         | Just x == def =
             rest
         | otherwise =
-            (T.pack name', json) : rest
+            (fromString name', json) : rest
       where
         json  = toJSON x
         name' = fieldNameModifier name
@@ -199,7 +204,7 @@ sopSwaggerGenericParseJSON = withObject "Swagger Record Object" $ \obj ->
 
     parseAdditionalField :: Object -> (Text, Value) -> Parser ()
     parseAdditionalField obj (k, v) = do
-        v' <- obj .: k
+        v' <- obj .: fromText k
         unless (v == v') $ fail $
             "Additonal field don't match for key " ++ T.unpack k
             ++ ": " ++ show v
@@ -230,10 +235,10 @@ sopSwaggerGenericParseJSON'' (SwaggerAesonOptions prefix _ sub) obj = go
     go (FieldInfo name :* names) (def :* defs)
         | Just name' == sub =
             -- Note: we might strip fields of outer structure.
-            cons <$> (withDef $ parseJSON $ Object obj) <*> rest
+            cons <$> withDef (parseJSON $ Object obj) <*> rest
         | otherwise = case def of
-            Just def' -> cons <$> obj .:? T.pack name' .!= def' <*> rest
-            Nothing  ->  cons <$> obj .: T.pack name' <*> rest
+            Just def' -> cons <$> obj .:? fromString name' .!= def' <*> rest
+            Nothing   -> cons <$> obj .:  fromString name' <*> rest
       where
         cons h t = I h :* t
         name' = fieldNameModifier name
@@ -264,7 +269,7 @@ sopSwaggerGenericToEncoding
     -> Encoding
 sopSwaggerGenericToEncoding x =
     let ps = sopSwaggerGenericToEncoding' opts (from x) (datatypeInfo proxy) (aesonDefaults proxy)
-    in pairs (pairsToSeries (opts ^. saoAdditionalPairs) <> ps)
+    in pairs (pairsToSeries ((map $ first fromText) (opts ^. saoAdditionalPairs)) <> ps)
   where
     proxy = Proxy :: Proxy a
     opts  = swaggerAesonOptions proxy
@@ -296,14 +301,14 @@ sopSwaggerGenericToEncoding'' (SwaggerAesonOptions prefix _ sub) = go
     go  Nil Nil Nil = mempty
     go (I x :* xs) (FieldInfo name :* names) (def :* defs)
         | Just name' == sub = case toJSON x of
-              Object m -> pairsToSeries (HM.toList m) <> rest
+              Object m -> pairsToSeries (KM.toList m) <> rest
               Null     -> rest
               _        -> error $ "sopSwaggerGenericToJSON: subjson is not an object: " ++ show (toJSON x)
         -- If default value: omit it.
         | Just x == def =
             rest
         | otherwise =
-            (T.pack name' .= x) <> rest
+            (fromString name' .= x) <> rest
       where
         name' = fieldNameModifier name
         rest  = go xs names defs

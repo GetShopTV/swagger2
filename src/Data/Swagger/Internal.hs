@@ -42,6 +42,7 @@ import           Text.Read                (readMaybe)
 
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.Aeson.KeyMap          as KM
 
 import Generics.SOP.TH                  (deriveGeneric)
 import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
@@ -1302,7 +1303,7 @@ instance FromJSON ParamOtherSchema where
 instance FromJSON Responses where
   parseJSON (Object o) = Responses
     <$> o .:? "default"
-    <*> (parseJSON (Object (HashMap.delete "default" o)))
+    <*> parseJSON (Object (KM.delete "default" o))
   parseJSON _ = empty
 
 instance FromJSON Example where

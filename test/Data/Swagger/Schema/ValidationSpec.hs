@@ -2,6 +2,7 @@
 {-# LANGUAGE PackageImports      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Swagger.Schema.ValidationSpec where
 
@@ -9,6 +10,8 @@ import           Control.Applicative
 import           Control.Lens                        ((&), (.~), (?~))
 import           Data.Aeson
 import           Data.Aeson.Types
+import           Data.Aeson.Key
+import qualified Data.Aeson.KeyMap                   as KM
 import           Data.Hashable                       (Hashable)
 import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
@@ -122,9 +125,9 @@ instance Arbitrary Person where
 
 invalidPersonToJSON :: Person -> Value
 invalidPersonToJSON Person{..} = object
-  [ T.pack "personName"  .= toJSON name
-  , T.pack "personPhone" .= toJSON phone
-  , T.pack "personEmail" .= toJSON email
+  [ fromString "personName"  .= toJSON name
+  , fromString "personPhone" .= toJSON phone
+  , fromString "personEmail" .= toJSON email
   ]
 
 -- ========================================================================
@@ -251,7 +254,7 @@ instance ToSchema FreeForm where
     & additionalProperties ?~ AdditionalPropertiesAllowed True
 
 instance Arbitrary FreeForm where
-  arbitrary = (FreeForm . fromList) <$> genObj
+  arbitrary = FreeForm . fromList <$> genObj
     where
       genObj = listOf $ do
         k <- arbitrary
@@ -269,9 +272,12 @@ instance Arbitrary Value where
   -- Weights are almost random
   -- Uniform oneof tends not to build complex objects cause of recursive call.
   arbitrary = resize 4 $ frequency
-    [ (3, Object <$> arbitrary)
+    [ (3, Object . KM.fromHashMapText <$> arbitrary)
     , (3, Array  <$> arbitrary)
     , (3, String <$> arbitrary)
     , (3, Number <$> arbitrary)
     , (3, Bool   <$> arbitrary)
     , (1, return Null) ]
+
+instance Arbitrary (KM.KeyMap Value) where
+  arbitrary = KM.fromHashMapText <$> arbitrary
