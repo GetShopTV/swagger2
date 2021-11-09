@@ -23,12 +23,11 @@ extra-source-files:
   , CHANGELOG.md
   , examples/*.hs
 tested-with:
-  GHC ==8.0.2
-   || ==8.2.2
-   || ==8.4.4
+  GHC ==8.4.4
    || ==8.6.5
-   || ==8.8.1
-   || ==8.10.1
+   || ==8.10.4
+   || ==8.10.7
+   || ==9.0.1
 
 custom-setup
   setup-depends:
@@ -59,10 +58,10 @@ library
 
   -- GHC boot libraries
   build-depends:
-      base             >=4.9       && <4.15
+      base             >=4.9       && <4.16
     , bytestring       >=0.10.8.1  && <0.11
     , containers       >=0.5.7.1   && <0.7
-    , template-haskell >=2.11.1.0  && <2.17
+    , template-haskell >=2.11.1.0  && <2.18
     , time             >=1.6.0.1   && <1.10
     , transformers     >=0.5.2.0   && <0.6
 
@@ -81,10 +80,10 @@ library
     , hashable                  >=1.2.7.0  && <1.4
     , http-media                >=0.8.0.0  && <0.9
     , insert-ordered-containers >=0.2.3    && <0.3
-    , lens                      >=4.16.1   && <4.20
+    , lens                      >=4.16.1   && <5.1
     , network                   >=2.6.3.5  && <3.2
-    , optics-core               >=0.2      && <0.4
-    , optics-th                 >=0.2      && <0.4
+    , optics-core               >=0.2      && <0.5
+    , optics-th                 >=0.2      && <0.5
     , scientific                >=0.3.6.2  && <0.4
     , unordered-containers      >=0.2.9.0  && <0.3
     , uuid-types                >=1.0.3    && <1.1
