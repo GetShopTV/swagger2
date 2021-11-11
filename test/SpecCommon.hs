@@ -1,18 +1,20 @@
 module SpecCommon where
 
 import Data.Aeson
+import Data.Aeson.Key
 import Data.ByteString.Builder (toLazyByteString)
-import qualified Data.Foldable as F
+import qualified Data.Foldable       as F
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Vector as Vector
+import qualified Data.Aeson.KeyMap   as KM
+import qualified Data.Vector         as Vector
 
 import Test.Hspec
 
 isSubJSON :: Value -> Value -> Bool
 isSubJSON Null _ = True
-isSubJSON (Object x) (Object y) = HashMap.keys x == HashMap.keys i && F.and i
+isSubJSON (Object x) (Object y) = map toText (KM.keys x) == HashMap.keys i && F.and i
   where
-    i = HashMap.intersectionWith isSubJSON x y
+    i = HashMap.intersectionWith isSubJSON (KM.toHashMapText x) (KM.toHashMapText y)
 isSubJSON (Array xs) (Array ys) = Vector.length xs == Vector.length ys && F.and (Vector.zipWith isSubJSON xs ys)
 isSubJSON x y = x == y
 
