@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE PackageImports      #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -268,6 +269,7 @@ instance Eq ZonedTime where
 -- Arbitrary instance for Data.Aeson.Value
 -- ========================================================================
 
+#if !MIN_VERSION_aeson(2,0,3)
 instance Arbitrary Value where
   -- Weights are almost random
   -- Uniform oneof tends not to build complex objects cause of recursive call.
@@ -281,3 +283,4 @@ instance Arbitrary Value where
 
 instance Arbitrary (KM.KeyMap Value) where
   arbitrary = KM.fromHashMapText <$> arbitrary
+#endif
