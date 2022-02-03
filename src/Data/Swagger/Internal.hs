@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -363,7 +364,7 @@ data ParamOtherSchema = ParamOtherSchema
 -- @'SwaggerItemsObject'@ should be used to specify homogenous array @'Schema'@s.
 --
 -- @'SwaggerItemsArray'@ should be used to specify tuple @'Schema'@s.
-data SwaggerItems t where
+data SwaggerItems (t :: SwaggerKind *) where
   SwaggerItemsPrimitive :: Maybe (CollectionFormat k) -> ParamSchema k-> SwaggerItems k
   SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems 'SwaggerKindSchema
   SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems 'SwaggerKindSchema
@@ -422,7 +423,7 @@ instance Data (SwaggerItems 'SwaggerKindSchema) where
   dataTypeOf _ = swaggerItemsDataType
 
 -- | Type used as a kind to avoid overlapping instances.
-data SwaggerKind t
+data SwaggerKind (t :: *)
     = SwaggerKindNormal t
     | SwaggerKindParamOtherSchema
     | SwaggerKindSchema
@@ -437,7 +438,7 @@ type instance SwaggerKindType ('SwaggerKindNormal t) = t
 type instance SwaggerKindType 'SwaggerKindSchema = Schema
 type instance SwaggerKindType 'SwaggerKindParamOtherSchema = ParamOtherSchema
 
-data SwaggerType t where
+data SwaggerType (t :: SwaggerKind *) where
   SwaggerString   :: SwaggerType t
   SwaggerNumber   :: SwaggerType t
   SwaggerInteger  :: SwaggerType t
@@ -508,7 +509,7 @@ data ParamLocation
 type Format = Text
 
 -- | Determines the format of the array.
-data CollectionFormat t where
+data CollectionFormat (t :: SwaggerKind *) where
   -- Comma separated values: @foo,bar@.
   CollectionCSV :: CollectionFormat t
   -- Space separated values: @foo bar@.
