@@ -372,7 +372,6 @@ data SwaggerItems (t :: SwaggerKind *) where
 
 deriving instance Eq (SwaggerItems t)
 deriving instance Show (SwaggerItems t)
---deriving instance Typeable (SwaggerItems t)
 
 swaggerItemsPrimitiveConstr :: Constr
 swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimitive" [] Prefix
@@ -427,11 +426,6 @@ data SwaggerKind (t :: *)
     = SwaggerKindNormal t
     | SwaggerKindParamOtherSchema
     | SwaggerKindSchema
-    deriving (Typeable)
-
-deriving instance Typeable 'SwaggerKindNormal
-deriving instance Typeable 'SwaggerKindParamOtherSchema
-deriving instance Typeable 'SwaggerKindSchema
 
 type family SwaggerKindType (k :: SwaggerKind *) :: *
 type instance SwaggerKindType ('SwaggerKindNormal t) = t
