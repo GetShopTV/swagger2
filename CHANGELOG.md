@@ -1,3 +1,9 @@
+2.8
+---
+
+- Support GHC 9.2 (see [#231](https://github.com/GetShopTV/swagger2/pull/231), [#232](https://github.com/GetShopTV/swagger2/pull/232), [#233](https://github.com/GetShopTV/swagger2/pull/233));
+- Aeson `2.0.3.0` compatibility (see [#230]( https://github.com/GetShopTV/swagger2/pull/230 ));
+
 2.7
 ---
 
