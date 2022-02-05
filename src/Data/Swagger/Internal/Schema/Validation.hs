@@ -485,7 +485,13 @@ validateSchemaType value = withSchema $ \sch ->
     (Nothing, String s)               -> sub_ paramSchema (validateString s)
     (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
     (Nothing, Object o)               -> validateObject $ KM.toHashMapText o
-    bad -> invalid $ "expected JSON value of type " ++ showType bad
+    bad -> invalid $ unlines
+      [ unwords ["expected JSON value of type", showType bad]
+      , "  with context:"
+      , "    " <> unwords ["SwaggerType:", show $ fst bad]
+      , "    " <> unwords ["Aeson Value:", show $ snd bad]
+      , "    " <> unwords ["Schema title:", show $ sch ^. title]
+      ]
 
 validateParamSchemaType :: Value -> Validation (ParamSchema t) ()
 validateParamSchemaType value = withSchema $ \sch ->
