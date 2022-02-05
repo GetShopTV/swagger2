@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -42,6 +43,7 @@ import           Text.Read                (readMaybe)
 
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.Aeson.KeyMap          as KM
 
 import Generics.SOP.TH                  (deriveGeneric)
 import Data.Swagger.Internal.AesonUtils (sopSwaggerGenericToJSON
@@ -362,7 +364,7 @@ data ParamOtherSchema = ParamOtherSchema
 -- @'SwaggerItemsObject'@ should be used to specify homogenous array @'Schema'@s.
 --
 -- @'SwaggerItemsArray'@ should be used to specify tuple @'Schema'@s.
-data SwaggerItems t where
+data SwaggerItems (t :: SwaggerKind *) where
   SwaggerItemsPrimitive :: Maybe (CollectionFormat k) -> ParamSchema k-> SwaggerItems k
   SwaggerItemsObject    :: Referenced Schema   -> SwaggerItems 'SwaggerKindSchema
   SwaggerItemsArray     :: [Referenced Schema] -> SwaggerItems 'SwaggerKindSchema
@@ -370,7 +372,6 @@ data SwaggerItems t where
 
 deriving instance Eq (SwaggerItems t)
 deriving instance Show (SwaggerItems t)
---deriving instance Typeable (SwaggerItems t)
 
 swaggerItemsPrimitiveConstr :: Constr
 swaggerItemsPrimitiveConstr = mkConstr swaggerItemsDataType "SwaggerItemsPrimitive" [] Prefix
@@ -421,22 +422,17 @@ instance Data (SwaggerItems 'SwaggerKindSchema) where
   dataTypeOf _ = swaggerItemsDataType
 
 -- | Type used as a kind to avoid overlapping instances.
-data SwaggerKind t
+data SwaggerKind (t :: *)
     = SwaggerKindNormal t
     | SwaggerKindParamOtherSchema
     | SwaggerKindSchema
-    deriving (Typeable)
-
-deriving instance Typeable 'SwaggerKindNormal
-deriving instance Typeable 'SwaggerKindParamOtherSchema
-deriving instance Typeable 'SwaggerKindSchema
 
 type family SwaggerKindType (k :: SwaggerKind *) :: *
 type instance SwaggerKindType ('SwaggerKindNormal t) = t
 type instance SwaggerKindType 'SwaggerKindSchema = Schema
 type instance SwaggerKindType 'SwaggerKindParamOtherSchema = ParamOtherSchema
 
-data SwaggerType t where
+data SwaggerType (t :: SwaggerKind *) where
   SwaggerString   :: SwaggerType t
   SwaggerNumber   :: SwaggerType t
   SwaggerInteger  :: SwaggerType t
@@ -507,7 +503,7 @@ data ParamLocation
 type Format = Text
 
 -- | Determines the format of the array.
-data CollectionFormat t where
+data CollectionFormat (t :: SwaggerKind *) where
   -- Comma separated values: @foo,bar@.
   CollectionCSV :: CollectionFormat t
   -- Space separated values: @foo bar@.
@@ -1302,7 +1298,7 @@ instance FromJSON ParamOtherSchema where
 instance FromJSON Responses where
   parseJSON (Object o) = Responses
     <$> o .:? "default"
-    <*> (parseJSON (Object (HashMap.delete "default" o)))
+    <*> parseJSON (Object (KM.delete "default" o))
   parseJSON _ = empty
 
 instance FromJSON Example where

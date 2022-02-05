@@ -10,6 +10,7 @@ import           Prelude.Compat
 import           Control.Lens.Operators
 import           Control.Monad                           (filterM)
 import           Data.Aeson
+import qualified Data.Aeson.KeyMap                       as KM
 import           Data.Aeson.Types
 import qualified Data.HashMap.Strict.InsOrd              as M
 import           Data.Maybe
@@ -93,7 +94,7 @@ schemaGen defns schema =
               return . M.fromList $ zip additionalKeys (repeat . schemaGen defns $ dereference defns addlSchema)
             _                                      -> return []
           x <- sequence $ gens <> additionalGens
-          return . Object $ M.toHashMap x
+          return . Object . KM.fromHashMapText $ M.toHashMap x
   where
     dereference :: Definitions a -> Referenced a -> a
     dereference _ (Inline a)               = a

@@ -144,7 +144,7 @@ import Data.Swagger.Internal
 -- In this library you can use @'mempty'@ for a default/empty value. For instance:
 --
 -- >>> encode (mempty :: Swagger)
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"}}"
 --
 -- As you can see some spec properties (e.g. @"version"@) are there even when the spec is empty.
 -- That is because these properties are actually required ones.
@@ -153,12 +153,12 @@ import Data.Swagger.Internal
 -- although it is not strictly necessary:
 --
 -- >>> encode mempty { _infoTitle = "Todo API", _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- "{\"title\":\"Todo API\",\"version\":\"1.0\"}"
 --
 -- You can merge two values using @'mappend'@ or its infix version @('<>')@:
 --
 -- >>> encode $ mempty { _infoTitle = "Todo API" } <> mempty { _infoVersion = "1.0" }
--- "{\"version\":\"1.0\",\"title\":\"Todo API\"}"
+-- "{\"title\":\"Todo API\",\"version\":\"1.0\"}"
 --
 -- This can be useful for combining specifications of endpoints into a whole API specification:
 --
@@ -192,7 +192,7 @@ import Data.Swagger.Internal
 --         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
 --         & at 404 ?~ "User info not found")) ]
 -- :}
--- "{\"swagger\":\"2.0\",\"info\":{\"version\":\"\",\"title\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"404\":{\"description\":\"User info not found\"},\"200\":{\"schema\":{\"$ref\":\"#/definitions/User\"},\"description\":\"OK\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
+-- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"produces\":[\"application/json\"],\"responses\":{\"200\":{\"description\":\"OK\",\"schema\":{\"$ref\":\"#/definitions/User\"}},\"404\":{\"description\":\"User info not found\"}}}}},\"definitions\":{\"User\":{\"type\":\"string\"}}}"
 --
 -- In the snippet above we declare an API with a single path @/user@. This path provides method @GET@
 -- which produces @application/json@ output. It should respond with code @200@ and body specified

@@ -50,6 +50,7 @@ import           Data.Swagger.Declare
 import           Data.Swagger.Internal
 import           Data.Swagger.Internal.Schema
 import           Data.Swagger.Lens
+import qualified Data.Aeson.KeyMap                   as KM
 
 -- | Validate @'ToJSON'@ instance matches @'ToSchema'@ for a given value.
 -- This can be used with QuickCheck to ensure those instances are coherent:
@@ -101,33 +102,33 @@ validateToJSONWithPatternChecker checker = validateJSONWithPatternChecker checke
 -- <BLANKLINE>
 -- Swagger Schema:
 -- {
+--     "properties": {
+--         "name": {
+--             "type": "string"
+--         },
+--         "phone": {
+--             "$ref": "#/definitions/Phone"
+--         }
+--     },
 --     "required": [
 --         "name",
 --         "phone"
 --     ],
---     "type": "object",
---     "properties": {
---         "phone": {
---             "$ref": "#/definitions/Phone"
---         },
---         "name": {
---             "type": "string"
---         }
---     }
+--     "type": "object"
 -- }
 -- <BLANKLINE>
 -- Swagger Description Context:
 -- {
 --     "Phone": {
---         "required": [
---             "value"
---         ],
---         "type": "object",
 --         "properties": {
 --             "value": {
 --                 "type": "string"
 --             }
---         }
+--         },
+--         "required": [
+--             "value"
+--         ],
+--         "type": "object"
 --     }
 -- }
 -- <BLANKLINE>
@@ -375,7 +376,7 @@ validateObject :: HashMap Text Value -> Validation Schema ()
 validateObject o = withSchema $ \sch ->
   case sch ^. discriminator of
     Just pname -> case fromJSON <$> HashMap.lookup pname o of
-      Just (Success ref) -> validateWithSchemaRef ref (Object o)
+      Just (Success ref) -> validateWithSchemaRef ref (Object $ KM.fromHashMapText o)
       Just (Error msg)   -> invalid ("failed to parse discriminator property " ++ show pname ++ ": " ++ show msg)
       Nothing            -> invalid ("discriminator property " ++ show pname ++ "is missing")
     Nothing -> do
@@ -476,14 +477,14 @@ validateSchemaType value = withSchema $ \sch ->
     (Just SwaggerNumber,  Number n)   -> sub_ paramSchema (validateNumber n)
     (Just SwaggerString,  String s)   -> sub_ paramSchema (validateString s)
     (Just SwaggerArray,   Array xs)   -> sub_ paramSchema (validateArray xs)
-    (Just SwaggerObject,  Object o)   -> validateObject o
+    (Just SwaggerObject,  Object o)   -> validateObject $ KM.toHashMapText o
     (Nothing, Null)                   -> valid
     (Nothing, Bool _)                 -> valid
     -- Number by default
     (Nothing, Number n)               -> sub_ paramSchema (validateNumber n)
     (Nothing, String s)               -> sub_ paramSchema (validateString s)
     (Nothing, Array xs)               -> sub_ paramSchema (validateArray xs)
-    (Nothing, Object o)               -> validateObject o
+    (Nothing, Object o)               -> validateObject $ KM.toHashMapText o
     bad -> invalid $ unlines
       [ unwords ["expected JSON value of type", showType bad]
       , "  with context:"

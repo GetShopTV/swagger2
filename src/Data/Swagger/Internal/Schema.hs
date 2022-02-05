@@ -69,6 +69,8 @@ import Data.Swagger.Internal.TypeShape
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
+import qualified Data.Aeson.KeyMap as KM
+import Data.Aeson.Key (toText)
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -321,7 +323,7 @@ passwordSchema = mempty
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> encode $ sketchSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"type\":\"number\"},\"name\":{\"type\":\"string\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
+-- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"number\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -345,7 +347,7 @@ sketchSchema = sketch . toJSON
         ischema = case ys of
           (z:_) | allSame -> Just z
           _               -> Nothing
-    go (Object o) = mempty
+    go (Object o') = let o = KM.toHashMapText o' in mempty
       & type_         ?~ SwaggerObject
       & required      .~ HashMap.keys o
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
@@ -354,18 +356,18 @@ sketchSchema = sketch . toJSON
 -- Produced schema uses as much constraints as possible.
 --
 -- >>> encode $ sketchStrictSchema "hello"
--- "{\"maxLength\":5,\"pattern\":\"hello\",\"minLength\":5,\"type\":\"string\",\"enum\":[\"hello\"]}"
+-- "{\"enum\":[\"hello\"],\"maxLength\":5,\"minLength\":5,\"pattern\":\"hello\",\"type\":\"string\"}"
 --
 -- >>> encode $ sketchStrictSchema (1, 2, 3)
--- "{\"minItems\":3,\"uniqueItems\":true,\"items\":[{\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\",\"enum\":[1]},{\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\",\"enum\":[2]},{\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\",\"enum\":[3]}],\"maxItems\":3,\"type\":\"array\",\"enum\":[[1,2,3]]}"
+-- "{\"enum\":[[1,2,3]],\"items\":[{\"enum\":[1],\"maximum\":1,\"minimum\":1,\"multipleOf\":1,\"type\":\"number\"},{\"enum\":[2],\"maximum\":2,\"minimum\":2,\"multipleOf\":2,\"type\":\"number\"},{\"enum\":[3],\"maximum\":3,\"minimum\":3,\"multipleOf\":3,\"type\":\"number\"}],\"maxItems\":3,\"minItems\":3,\"type\":\"array\",\"uniqueItems\":true}"
 --
 -- >>> encode $ sketchStrictSchema ("Jack", 25)
--- "{\"minItems\":2,\"uniqueItems\":true,\"items\":[{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]},{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]}],\"maxItems\":2,\"type\":\"array\",\"enum\":[[\"Jack\",25]]}"
+-- "{\"enum\":[[\"Jack\",25]],\"items\":[{\"enum\":[\"Jack\"],\"maxLength\":4,\"minLength\":4,\"pattern\":\"Jack\",\"type\":\"string\"},{\"enum\":[25],\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\"}],\"maxItems\":2,\"minItems\":2,\"type\":\"array\",\"uniqueItems\":true}"
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
 -- >>> encode $ sketchStrictSchema (Person "Jack" 25)
--- "{\"required\":[\"age\",\"name\"],\"properties\":{\"age\":{\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\",\"enum\":[25]},\"name\":{\"maxLength\":4,\"pattern\":\"Jack\",\"minLength\":4,\"type\":\"string\",\"enum\":[\"Jack\"]}},\"maxProperties\":2,\"minProperties\":2,\"type\":\"object\",\"enum\":[{\"age\":25,\"name\":\"Jack\"}]}"
+-- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"enum\":[\"Jack\"],\"maxLength\":4,\"minLength\":4,\"pattern\":\"Jack\",\"type\":\"string\"},\"age\":{\"enum\":[25],\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\"}},\"maxProperties\":2,\"minProperties\":2,\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"type\":\"object\"}"
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
@@ -395,7 +397,7 @@ sketchStrictSchema = go . toJSON
       where
         sz = length xs
         allUnique = sz == HashSet.size (HashSet.fromList (V.toList xs))
-    go js@(Object o) = mempty
+    go js@(Object o') = let o = KM.toHashMapText o' in mempty
       & type_         ?~ SwaggerObject
       & required      .~ names
       & properties    .~ fmap (Inline . go) (InsOrdHashMap.fromHashMap o)
@@ -403,7 +405,7 @@ sketchStrictSchema = go . toJSON
       & minProperties ?~ fromIntegral (length names)
       & enum_         ?~ [js]
       where
-        names = HashMap.keys o
+        names = HashMap.keys (KM.toHashMapText o')
 
 class GToSchema (f :: * -> *) where
   gdeclareNamedSchema :: SchemaOptions -> Proxy f -> Schema -> Declare (Definitions Schema) NamedSchema
@@ -613,9 +615,9 @@ declareSchemaBoundedEnumKeyMapping _ = case toJSONKey :: ToJSONKeyFunction key o
     objectSchema keyToText = do
       valueRef <- declareSchemaRef (Proxy :: Proxy value)
       let allKeys   = [minBound..maxBound :: key]
-          mkPair k  =  (keyToText k, valueRef)
+          mkPair k  = (toText $ keyToText k, valueRef)
       return $ mempty
-        & type_ ?~ SwaggerObject
+        & type_      ?~ SwaggerObject
         & properties .~ InsOrdHashMap.fromList (map mkPair allKeys)
 
 -- | A 'Schema' for a mapping with 'Bounded' 'Enum' keys.

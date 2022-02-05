@@ -1,6 +1,15 @@
-2.6.1
------
+2.8
+---
 
+- Support GHC 9.2 (see [#231](https://github.com/GetShopTV/swagger2/pull/231), [#232](https://github.com/GetShopTV/swagger2/pull/232), [#233](https://github.com/GetShopTV/swagger2/pull/233));
+- Aeson `2.0.3.0` compatibility (see [#230]( https://github.com/GetShopTV/swagger2/pull/230 ));
+
+2.7
+---
+
+- Upgrade `aeson` to `2.0.1.0` (see [#228]( https://github.com/GetShopTV/swagger2/pull/228 ));
+- Switch from Travis CI to GitHub Actions (see [#228]( https://github.com/GetShopTV/swagger2/pull/228 ));
+- GHC 9 support (see [#228]( https://github.com/GetShopTV/swagger2/pull/228 ));
 - More GHC-8.10 related cleanup, tighten lower bound on some dependencies.
   (see [#216]( https://github.com/GetShopTV/swagger2/pull/216 ));
 - Add "format" field for uint32 and uint64
