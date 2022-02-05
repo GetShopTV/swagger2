@@ -1,3 +1,8 @@
+2.8.1
+---
+
+- Better error message in `validateSchemaType` (see [#221](https://github.com/GetShopTV/swagger2/pull/221));
+
 2.8
 ---
 
