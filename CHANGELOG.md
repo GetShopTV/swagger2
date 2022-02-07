@@ -1,3 +1,8 @@
+2.8.2
+---
+
+- `text-2.0` support (see [#234](https://github.com/GetShopTV/swagger2/pull/234));
+
 2.8.1
 ---
 
