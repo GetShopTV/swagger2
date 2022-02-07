@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -322,8 +323,13 @@ passwordSchema = mempty
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
+#if MIN_VERSION_text(2,0,0)
+-- >>> encode $ sketchSchema (Person "Jack" 25)
+-- "{\"required\":[\"age\",\"name\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"number\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
+#else
 -- >>> encode $ sketchSchema (Person "Jack" 25)
 -- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"number\"}},\"example\":{\"age\":25,\"name\":\"Jack\"},\"type\":\"object\"}"
+#endif
 sketchSchema :: ToJSON a => a -> Schema
 sketchSchema = sketch . toJSON
   where
@@ -366,8 +372,13 @@ sketchSchema = sketch . toJSON
 --
 -- >>> data Person = Person { name :: String, age :: Int } deriving (Generic)
 -- >>> instance ToJSON Person
+#if MIN_VERSION_text(2,0,0)
+-- >>> encode $ sketchStrictSchema (Person "Jack" 25)
+-- "{\"required\":[\"age\",\"name\"],\"properties\":{\"name\":{\"enum\":[\"Jack\"],\"maxLength\":4,\"minLength\":4,\"pattern\":\"Jack\",\"type\":\"string\"},\"age\":{\"enum\":[25],\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\"}},\"maxProperties\":2,\"minProperties\":2,\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"type\":\"object\"}"
+#else
 -- >>> encode $ sketchStrictSchema (Person "Jack" 25)
 -- "{\"required\":[\"name\",\"age\"],\"properties\":{\"name\":{\"enum\":[\"Jack\"],\"maxLength\":4,\"minLength\":4,\"pattern\":\"Jack\",\"type\":\"string\"},\"age\":{\"enum\":[25],\"maximum\":25,\"minimum\":25,\"multipleOf\":25,\"type\":\"number\"}},\"maxProperties\":2,\"minProperties\":2,\"enum\":[{\"age\":25,\"name\":\"Jack\"}],\"type\":\"object\"}"
+#endif
 sketchStrictSchema :: ToJSON a => a -> Schema
 sketchStrictSchema = go . toJSON
   where
