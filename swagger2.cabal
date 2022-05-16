@@ -64,10 +64,10 @@ library
     , containers       >=0.5.7.1   && <0.7
     , template-haskell >=2.11.1.0  && <2.19
     , time             >=1.6.0.1   && <1.14
-    , transformers     >=0.5.2.0   && <0.6
+    , transformers     >=0.5.2.0   && <0.7
 
   build-depends:
-      mtl              >=2.2.2   && <2.3
+      mtl              >=2.2.2   && <2.4
     , text             >=1.2.3.0 && <2.1
 
   -- other dependencies
