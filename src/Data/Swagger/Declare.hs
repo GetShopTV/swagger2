@@ -16,7 +16,6 @@ import Prelude.Compat
 
 import Control.Monad
 import Control.Monad.Cont (ContT)
-import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Trans
 import Control.Monad.Trans.Except (ExceptT)

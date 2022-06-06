@@ -27,7 +27,7 @@ import Control.Lens
 import Data.Data.Lens (template)
 
 import Control.Monad
-import Control.Monad.Writer
+import Control.Monad.Writer hiding (First, Last)
 import Data.Aeson (ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..), Object(..))
 import Data.Char
 import Data.Data (Data)
@@ -46,6 +46,7 @@ import Data.Proxy
 import Data.Scientific (Scientific)
 import Data.Fixed (Fixed, HasResolution, Pico)
 import Data.Set (Set)
+import Data.Semigroup
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Time
