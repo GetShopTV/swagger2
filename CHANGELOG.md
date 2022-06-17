@@ -1,3 +1,8 @@
+2.8.3
+---
+
+- `mtl-2.3` and `transformers-0.6` support (see [#235](https://github.com/GetShopTV/swagger2/pull/235), [#236](https://github.com/GetShopTV/swagger2/pull/236));
+
 2.8.2
 ---
 
