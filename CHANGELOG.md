@@ -1,3 +1,8 @@
+2.8.4
+---
+
+- Add GHC `9.2.3` to CI Matrix and bump stack resolver to `lts-19.11` (see [#237](https://github.com/GetShopTV/swagger2/pull/237));
+
 2.8.3
 ---
 
