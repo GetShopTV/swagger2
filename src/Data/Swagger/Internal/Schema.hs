@@ -501,9 +501,9 @@ instance ToSchema NominalDiffTime where
 
 -- |
 -- >>> toSchema (Proxy :: Proxy UTCTime) ^. format
--- Just "yyyy-mm-ddThh:MM:ssZ"
+-- Just "date-time"
 instance ToSchema UTCTime where
-  declareNamedSchema _ = pure $ named "UTCTime" $ timeSchema "yyyy-mm-ddThh:MM:ssZ"
+  declareNamedSchema _ = pure $ named "UTCTime" $ timeSchema "date-time"
     & example ?~ toJSON (UTCTime (fromGregorian 2016 7 22) 0)
 
 instance ToSchema T.Text where declareNamedSchema = plain . paramSchemaToSchema
