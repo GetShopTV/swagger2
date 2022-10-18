@@ -1,3 +1,9 @@
+2.8.5
+---
+
+- Add newer dependencies (i.e. `aeson`, `lens`, etc.) (see [#242](https://github.com/GetShopTV/swagger2/pull/242));
+
+
 2.8.4
 ---
 
