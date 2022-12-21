@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Internal where
@@ -31,6 +32,7 @@ import qualified Data.HashMap.Strict      as HashMap
 import           Data.HashSet.InsOrd      (InsOrdHashSet)
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
+import           Data.Maybe               (mapMaybe)
 import           Data.Monoid              (Monoid (..))
 import           Data.Semigroup.Compat    (Semigroup (..))
 import           Data.Scientific          (Scientific)
@@ -1319,7 +1321,22 @@ instance FromJSON Response where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Operation where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON v = do
+    x <- sopSwaggerGenericParseJSON @Operation v
+    flip (withObject "operation") v $ \obj -> pure $ x
+      { _operationExtensions
+          = InsOrdHashMap.fromList
+          $ mapMaybe getExtension
+          $ fmap (first $ K.toText)
+          $ KM.toList obj
+      }
+    where
+      getExtension :: (Text, Value) -> Maybe (Text, Value)
+      getExtension (prop, val)
+        | Text.isPrefixOf "x-" prop || Text.isPrefixOf "X-" prop
+            = Just (Text.drop 2 prop, val)
+        | otherwise = Nothing
+
 
 instance FromJSON PathItem where
   parseJSON = sopSwaggerGenericParseJSON
