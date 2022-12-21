@@ -17,6 +17,10 @@ module Data.Swagger.Operation (
   applyTags,
   applyTagsFor,
 
+  -- ** Extensions
+  addExtensions,
+  addExtensionsFor,
+
   -- ** Responses
   setResponse,
   setResponseWith,
@@ -34,11 +38,13 @@ import Prelude ()
 import Prelude.Compat
 
 import Control.Lens
+import Data.Aeson (Value)
 import Data.Data.Lens
 import Data.List.Compat
 import Data.Maybe (mapMaybe)
 import Data.Proxy
 import qualified Data.Set as Set
+import Data.Text (Text)
 
 import Data.Swagger.Declare
 import Data.Swagger.Internal
@@ -46,6 +52,7 @@ import Data.Swagger.Lens
 import Data.Swagger.Schema
 
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
 -- $setup
@@ -107,6 +114,13 @@ operationsOf sub = paths.itraversed.withIndex.subops
 -- @
 applyTags :: [Tag] -> Swagger -> Swagger
 applyTags = applyTagsFor allOperations
+
+addExtensions :: (Value -> Value -> Value) -> InsOrdHashMap Text Value -> Swagger -> Swagger
+addExtensions = addExtensionsFor allOperations
+
+addExtensionsFor :: Traversal' Swagger Operation -> (Value -> Value -> Value) -> InsOrdHashMap Text Value -> Swagger -> Swagger
+addExtensionsFor ops merge add swag = swag
+  & ops . extensions %~ InsOrdHashMap.unionWith merge add
 
 -- | Apply tags to a part of Swagger spec and update the global
 -- list of tags.

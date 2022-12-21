@@ -24,6 +24,7 @@ import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
 import           Data.Aeson
 import qualified Data.Aeson.Types         as JSON
+import           Data.Bifunctor           (first)
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.Hashable            (Hashable)
 import qualified Data.HashMap.Strict      as HashMap
@@ -43,6 +44,7 @@ import           Text.Read                (readMaybe)
 
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.Aeson.Key             as K
 import qualified Data.Aeson.KeyMap          as KM
 
 import Generics.SOP.TH                  (deriveGeneric)
@@ -297,6 +299,9 @@ data Operation = Operation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , _operationSecurity :: [SecurityRequirement]
+
+    -- These automatically get the @x-@ prefix required by the swagger specification.
+  , _operationExtensions :: InsOrdHashMap Text Value
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
@@ -1141,8 +1146,12 @@ instance ToJSON Response where
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Operation where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON t =
+    case sopSwaggerGenericToJSON t of
+      Object obj -> Object $ obj
+        & KM.delete "extensions"
+        & KM.union (KM.fromList $ fmap (first $ K.fromText . mappend "x-") $ InsOrdHashMap.toList $ _operationExtensions t)
+      _ -> error "impossible: bug in generic ToJSON for Operation"
 
 instance ToJSON PathItem where
   toJSON = sopSwaggerGenericToJSON
