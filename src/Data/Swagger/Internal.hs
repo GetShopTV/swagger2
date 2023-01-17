@@ -302,7 +302,8 @@ data Operation = Operation
     -- To remove a top-level security declaration, @Just []@ can be used.
   , _operationSecurity :: [SecurityRequirement]
 
-    -- These automatically get the @x-@ prefix required by the swagger specification.
+    -- | Extensions to the Swagger schema's operations. These automatically get
+    -- the @x-@ prefix required by the swagger specification.
   , _operationExtensions :: InsOrdHashMap Text Value
   } deriving (Eq, Show, Generic, Data, Typeable)
 
