@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Data.Swagger.Internal where
@@ -24,12 +25,14 @@ import           Control.Lens             ((&), (.~), (?~))
 import           Control.Applicative
 import           Data.Aeson
 import qualified Data.Aeson.Types         as JSON
+import           Data.Bifunctor           (first)
 import           Data.Data                (Data(..), Typeable, mkConstr, mkDataType, Fixity(..), Constr, DataType, constrIndex)
 import           Data.Hashable            (Hashable)
 import qualified Data.HashMap.Strict      as HashMap
 import           Data.HashSet.InsOrd      (InsOrdHashSet)
 import           Data.Map                 (Map)
 import qualified Data.Map                 as Map
+import           Data.Maybe               (mapMaybe)
 import           Data.Monoid              (Monoid (..))
 import           Data.Semigroup.Compat    (Semigroup (..))
 import           Data.Scientific          (Scientific)
@@ -43,6 +46,7 @@ import           Text.Read                (readMaybe)
 
 import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.Aeson.Key             as K
 import qualified Data.Aeson.KeyMap          as KM
 
 import Generics.SOP.TH                  (deriveGeneric)
@@ -297,6 +301,10 @@ data Operation = Operation
     -- This definition overrides any declared top-level security.
     -- To remove a top-level security declaration, @Just []@ can be used.
   , _operationSecurity :: [SecurityRequirement]
+
+    -- | Extensions to the Swagger schema's operations. These automatically get
+    -- the @x-@ prefix required by the swagger specification.
+  , _operationExtensions :: InsOrdHashMap Text Value
   } deriving (Eq, Show, Generic, Data, Typeable)
 
 newtype MimeList = MimeList { getMimeList :: [MediaType] }
@@ -1141,8 +1149,12 @@ instance ToJSON Response where
   toEncoding = sopSwaggerGenericToEncoding
 
 instance ToJSON Operation where
-  toJSON = sopSwaggerGenericToJSON
-  toEncoding = sopSwaggerGenericToEncoding
+  toJSON t =
+    case sopSwaggerGenericToJSON t of
+      Object obj -> Object $ obj
+        & KM.delete "extensions"
+        & KM.union (KM.fromList $ fmap (first $ K.fromText . mappend "x-") $ InsOrdHashMap.toList $ _operationExtensions t)
+      _ -> error "impossible: bug in generic ToJSON for Operation"
 
 instance ToJSON PathItem where
   toJSON = sopSwaggerGenericToJSON
@@ -1310,7 +1322,22 @@ instance FromJSON Response where
   parseJSON = sopSwaggerGenericParseJSON
 
 instance FromJSON Operation where
-  parseJSON = sopSwaggerGenericParseJSON
+  parseJSON v = do
+    x <- sopSwaggerGenericParseJSON @Operation v
+    flip (withObject "operation") v $ \obj -> pure $ x
+      { _operationExtensions
+          = InsOrdHashMap.fromList
+          $ mapMaybe getExtension
+          $ fmap (first $ K.toText)
+          $ KM.toList obj
+      }
+    where
+      getExtension :: (Text, Value) -> Maybe (Text, Value)
+      getExtension (prop, val)
+        | Text.isPrefixOf "x-" prop || Text.isPrefixOf "X-" prop
+            = Just (Text.drop 2 prop, val)
+        | otherwise = Nothing
+
 
 instance FromJSON PathItem where
   parseJSON = sopSwaggerGenericParseJSON

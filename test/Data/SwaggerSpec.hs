@@ -12,6 +12,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Aeson.QQ.Simple
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import qualified Data.HashSet.InsOrd as InsOrdHS
 import Data.Text (Text)
 
@@ -156,6 +157,7 @@ operationExample = mempty
   & at 200 ?~ "Pet updated."
   & at 405 ?~ "Invalid input"
   & security .~ [SecurityRequirement [("petstore_auth", ["write:pets", "read:pets"])]]
+  & extensions .~ InsOrdHashMap.fromList [("age", Number 42)]
   where
     stringSchema :: ParamLocation -> ParamOtherSchema
     stringSchema loc = mempty
@@ -216,7 +218,8 @@ operationExampleJSON = [aesonQQ|
         "read:pets"
       ]
     }
-  ]
+  ],
+  "x-age": 42
 }
 |]
 
