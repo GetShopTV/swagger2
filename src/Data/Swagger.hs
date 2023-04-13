@@ -124,12 +124,12 @@ import Data.Swagger.Internal
 -- $setup
 -- >>> import Control.Lens
 -- >>> import Data.Aeson
+-- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
 -- >>> import Data.Monoid
 -- >>> import Data.Proxy
 -- >>> import GHC.Generics
 -- >>> :set -XDeriveGeneric
 -- >>> :set -XOverloadedStrings
--- >>> :set -XOverloadedLists
 -- >>> :set -fno-warn-missing-methods
 
 -- $howto
@@ -185,8 +185,8 @@ import Data.Swagger.Internal
 --
 -- >>> :{
 -- encode $ (mempty :: Swagger)
---   & definitions .~ [ ("User", mempty & type_ ?~ SwaggerString) ]
---   & paths .~
+--   & definitions .~ IOHM.fromList [ ("User", mempty & type_ ?~ SwaggerString) ]
+--   & paths .~ IOHM.fromList
 --     [ ("/user", mempty & get ?~ (mempty
 --         & produces ?~ MimeList ["application/json"]
 --         & at 200 ?~ ("OK" & _Inline.schema ?~ Ref (Reference "User"))
@@ -297,7 +297,6 @@ import Data.Swagger.Internal
 -- >>> data BadMixedType = ChoiceBool Bool | JustTag deriving Generic
 -- >>> instance ToSchema BadMixedType
 -- ...
--- ... error:
 -- ... • Cannot derive Generic-based Swagger Schema for BadMixedType
 -- ...   BadMixedType is a mixed sum type (has both unit and non-unit constructors).
 -- ...   Swagger does not have a good representation for these types.

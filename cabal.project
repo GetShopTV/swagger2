@@ -1,2 +1,11 @@
 packages: .
 tests: true
+
+if(impl(ghc >= 9.6.1) && impl(ghc < 9.7))
+  allow-newer: insert-ordered-containers:base
+  allow-newer: insert-ordered-containers:transformers
+  allow-newer: insert-ordered-containers:semigroupoids
+  allow-newer: generics-sop:base
+  allow-newer: generics-sop:ghc-prim
+  allow-newer: generics-sop:template-haskell
+  allow-newer: sop-core:base

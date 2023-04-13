@@ -60,10 +60,10 @@ library
 
   -- GHC boot libraries
   build-depends:
-      base             >=4.9       && <4.18
+      base             >=4.9       && <4.19
     , bytestring       >=0.10.8.1  && <0.12
     , containers       >=0.5.7.1   && <0.7
-    , template-haskell >=2.11.1.0  && <2.20
+    , template-haskell >=2.11.1.0  && <2.21
     , time             >=1.6.0.1   && <1.14
     , transformers     >=0.5.2.0   && <0.7
 
@@ -73,7 +73,7 @@ library
 
   -- other dependencies
   build-depends:
-      base-compat-batteries     >=0.11.1   && <0.13
+      base-compat-batteries     >=0.11.1   && <0.14
     , aeson                     >=2.0.0.0  && <2.2
     , aeson-pretty              >=0.8.7    && <0.9
     -- cookie 0.4.3 is needed by GHC 7.8 due to time>=1.4 constraint

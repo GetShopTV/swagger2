@@ -57,13 +57,14 @@ import qualified Data.HashSet.InsOrd as InsOrdHS
 
 -- $setup
 -- >>> import Data.Aeson
+-- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
 -- >>> import Data.Proxy
 -- >>> import Data.Time
 
 -- | Prepend path piece to all operations of the spec.
 -- Leading and trailing slashes are trimmed/added automatically.
 --
--- >>> let api = (mempty :: Swagger) & paths .~ [("/info", mempty)]
+-- >>> let api = (mempty :: Swagger) & paths .~ IOHM.fromList [("/info", mempty)]
 -- >>> encode $ prependPath "user/{user_id}" api ^. paths
 -- "{\"/user/{user_id}/info\":{}}"
 prependPath :: FilePath -> Swagger -> Swagger
@@ -84,8 +85,8 @@ allOperations = paths.traverse.template
 -- by both path and method.
 --
 -- >>> let ok = (mempty :: Operation) & at 200 ?~ "OK"
--- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ ok & post ?~ ok)]
--- >>> let sub = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
+-- >>> let api = (mempty :: Swagger) & paths .~ IOHM.fromList [("/user", mempty & get ?~ ok & post ?~ ok)]
+-- >>> let sub = (mempty :: Swagger) & paths .~ IOHM.fromList [("/user", mempty & get ?~ mempty)]
 -- >>> encode api
 -- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"OK\"}}},\"post\":{\"responses\":{\"200\":{\"description\":\"OK\"}}}}}}"
 -- >>> encode $ api & operationsOf sub . at 404 ?~ "Not found"
@@ -150,7 +151,7 @@ declareResponse proxy = do
 --
 -- Example:
 --
--- >>> let api = (mempty :: Swagger) & paths .~ [("/user", mempty & get ?~ mempty)]
+-- >>> let api = (mempty :: Swagger) & paths .~ IOHM.fromList [("/user", mempty & get ?~ mempty)]
 -- >>> let res = declareResponse (Proxy :: Proxy Day)
 -- >>> encode $ api & setResponse 200 res
 -- "{\"swagger\":\"2.0\",\"info\":{\"title\":\"\",\"version\":\"\"},\"paths\":{\"/user\":{\"get\":{\"responses\":{\"200\":{\"description\":\"\",\"schema\":{\"$ref\":\"#/definitions/Day\"}}}}}},\"definitions\":{\"Day\":{\"example\":\"2016-07-22\",\"format\":\"date\",\"type\":\"string\"}}}"

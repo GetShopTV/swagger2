@@ -15,6 +15,7 @@
 -- library.
 --
 -- >>> import Data.Aeson
+-- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
 -- >>> import Optics.Core
 -- >>> :set -XOverloadedLabels
 --
@@ -22,8 +23,8 @@
 --
 -- >>> :{
 -- encode $ (mempty :: Swagger)
---   & #definitions .~ [ ("User", mempty & #type ?~ SwaggerString) ]
---   & #paths .~
+--   & #definitions .~ IOHM.fromList [ ("User", mempty & #type ?~ SwaggerString) ]
+--   & #paths .~ IOHM.fromList
 --     [ ("/user", mempty & #get ?~ (mempty
 --         & #produces ?~ MimeList ["application/json"]
 --         & at 200 ?~ ("OK" & #_Inline % #schema ?~ Ref (Reference "User"))
