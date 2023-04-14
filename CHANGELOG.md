@@ -1,4 +1,10 @@
-2.8.9
+2.8.7
+---
+
+- Support extensions on operations (see [#245](https://github.com/GetShopTV/swagger2/pull/245));
+- Support GHC 9.6 (see [#246](https://github.com/GetShopTV/swagger2/pull/246));
+
+2.8.6
 ---
 
 - Support GHC 9.4 (see [#244](https://github.com/GetShopTV/swagger2/pull/244));
