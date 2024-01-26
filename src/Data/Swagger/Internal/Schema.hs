@@ -40,6 +40,7 @@ import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)
+import qualified Data.List as L
 import Data.List.NonEmpty.Compat (NonEmpty)
 import Data.Map (Map)
 import Data.Proxy
@@ -686,6 +687,7 @@ genericNameSchema opts _ = NamedSchema (gdatatypeSchemaName opts (Proxy :: Proxy
 
 gdatatypeSchemaName :: forall d. Datatype d => SchemaOptions -> Proxy d -> Maybe T.Text
 gdatatypeSchemaName opts _ = case orig of
+  dtn   | L.isPrefixOf "Tuple" dtn -> Nothing -- special case for new TupleNNN types in GHC 9.8
   (c:_) | isAlpha c && isUpper c -> Just (T.pack name)
   _ -> Nothing
   where
