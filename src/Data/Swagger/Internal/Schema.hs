@@ -74,7 +74,9 @@ import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Key (toText)
+#if ( __GLASGOW_HASKELL__ > 884 )
 import Data.Time (DayOfWeek(Monday, Sunday))
+#endif
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -498,11 +500,13 @@ instance ToSchema TimeOfDay where
   declareNamedSchema _ = pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
     & example ?~ toJSON (TimeOfDay 12 33 15)
 
+#if ( __GLASGOW_HASKELL__ > 884 )
 instance ToSchema DayOfWeek where
   declareNamedSchema _ = pure $ named "DayOfWeek" $ 
     mempty
     & type_ ?~ SwaggerString
     & enum_ ?~ map toJSON [Monday .. Sunday]
+#endif
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Pico)
