@@ -74,6 +74,7 @@ import qualified Data.ByteString.Lazy as BSL
 import GHC.TypeLits (TypeError, ErrorMessage(..))
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Key (toText)
+import Data.Time (DayOfWeek(Monday, Sunday))
 
 unnamed :: Schema -> NamedSchema
 unnamed schema = NamedSchema Nothing schema
@@ -143,10 +144,6 @@ class ToSchema a where
   default declareNamedSchema :: (Generic a, GToSchema (Rep a), TypeHasSimpleShape a "genericDeclareNamedSchemaUnrestricted") =>
     Proxy a -> Declare (Definitions Schema) NamedSchema
   declareNamedSchema = genericDeclareNamedSchema defaultSchemaOptions
-
-instance ToSchema TimeOfDay where
-  declareNamedSchema _ = pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
-    & example ?~ toJSON (TimeOfDay 12 33 15)
 
 -- | Convert a type into a schema and declare all used schema definitions.
 declareSchema :: ToSchema a => Proxy a -> Declare (Definitions Schema) Schema
@@ -496,6 +493,16 @@ instance ToSchema LocalTime where
 instance ToSchema ZonedTime where
   declareNamedSchema _ = pure $ named "ZonedTime" $ timeSchema "date-time"
     & example ?~ toJSON (ZonedTime (LocalTime (fromGregorian 2016 7 22) (TimeOfDay 7 40 0)) (hoursToTimeZone 3))
+
+instance ToSchema TimeOfDay where
+  declareNamedSchema _ = pure $ named "TimeOfDay" $ timeSchema "hh:MM:ss"
+    & example ?~ toJSON (TimeOfDay 12 33 15)
+
+instance ToSchema DayOfWeek where
+  declareNamedSchema _ = pure $ named "DayOfWeek" $ 
+    mempty
+    & type_ ?~ SwaggerString
+    & enum_ ?~ map toJSON [Monday .. Sunday]
 
 instance ToSchema NominalDiffTime where
   declareNamedSchema _ = declareNamedSchema (Proxy :: Proxy Pico)
