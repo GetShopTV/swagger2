@@ -304,7 +304,6 @@ import Data.Swagger.Internal
 -- ...   that matches aeson's Generic-based toJSON,
 -- ...   but that's not supported by some Swagger tools.
 -- ...
--- ... In the instance declaration for ‘ToSchema BadMixedType’
 --
 -- We can use 'genericDeclareNamedSchemaUnrestricted' to try our best to represent this type as a Swagger Schema and match 'ToJSON':
 --
