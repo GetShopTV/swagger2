@@ -34,7 +34,7 @@ tested-with:
 custom-setup
   setup-depends:
                 base < 4.21
-              , Cabal < 3.11
+              , Cabal < 3.13
               , cabal-doctest >=1.0.6 && <1.1
 
 library
