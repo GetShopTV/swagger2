@@ -1,2 +1,5 @@
 packages: .
 tests: true
+
+allow-newer: insert-ordered-containers:base
+allow-newer: insert-ordered-containers:hashable
