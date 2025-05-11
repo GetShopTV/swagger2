@@ -1,3 +1,8 @@
+2.8.10
+---
+
+- Support GHC 9.12 (see [#257](https://github.com/GetShopTV/swagger2/pull/257)).
+
 2.8.9
 ---
 
