@@ -1,7 +1,16 @@
-2.8.9
+2.8.11
 ---
 
 - Add DayOfWeek instance for GHC >= 8.8.4 (see [#250](https://github.com/GetShopTV/swagger2/pull/250));
+2.8.10
+---
+
+- Support GHC 9.12 (see [#257](https://github.com/GetShopTV/swagger2/pull/257)).
+
+2.8.9
+---
+
+- Support GHC 9.10 (see [#255](https://github.com/GetShopTV/swagger2/pull/255))
 
 2.8.8
 ---
