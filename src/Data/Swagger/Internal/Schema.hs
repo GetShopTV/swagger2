@@ -36,7 +36,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           "unordered-containers" Data.HashSet (HashSet)
 import qualified "unordered-containers" Data.HashSet as HashSet
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import Data.Int
 import Data.IntSet (IntSet)
 import Data.IntMap (IntMap)

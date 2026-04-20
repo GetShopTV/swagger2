@@ -44,8 +44,8 @@ import           Network.Socket           (HostName, PortNumber)
 import           Network.HTTP.Media       (MediaType)
 import           Text.Read                (readMaybe)
 
-import           Data.HashMap.Strict.InsOrd (InsOrdHashMap)
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import           Data.HashMap.Strict.InsOrd.Compat (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import qualified Data.Aeson.Key             as K
 import qualified Data.Aeson.KeyMap          as KM
 

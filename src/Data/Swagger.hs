@@ -124,7 +124,7 @@ import Data.Swagger.Internal
 -- $setup
 -- >>> import Control.Lens
 -- >>> import Data.Aeson
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 -- >>> import Data.Monoid
 -- >>> import Data.Proxy
 -- >>> import GHC.Generics
