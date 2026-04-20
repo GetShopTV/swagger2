@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
@@ -34,9 +34,9 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.2.8"
+          ghc-version: "9.12.4"
           enable-stack: true
           stack-version: "latest"
       - run: |
