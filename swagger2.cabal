@@ -76,7 +76,7 @@ library
 
   -- other dependencies
   build-depends:
-      base-compat-batteries     >=0.11.1   && <0.15
+      base-compat-batteries     >=0.11.1   && <0.16
     , aeson                     >=2.0.0.0  && <2.3
     , aeson-pretty              >=0.8.7    && <0.9
     -- cookie 0.4.3 is needed by GHC 7.8 due to time>=1.4 constraint
@@ -84,7 +84,7 @@ library
     , generics-sop              >=0.5.1.0  && <0.6
     , hashable                  >=1.2.7.0  && <1.6
     , http-media                >=0.8.0.0  && <0.9
-    , insert-ordered-containers >=0.2.3    && <0.3
+    , insert-ordered-containers >=0.2.3    && <0.4
     , lens                      >=4.16.1   && <5.4
     , network                   >=2.6.3.5  && <3.3
     , optics-core               >=0.2      && <0.5
