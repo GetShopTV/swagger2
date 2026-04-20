@@ -7,6 +7,70 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+-- |
+-- Module:      Data.HashMap.Strict.InsOrd.Compat
+-- Maintainer:  Nickolay Kudasov <nickolay@getshoptv.com>
+-- Stability:   experimental
+--
+-- Compatibility wrapper around @insert-ordered-containers@ to mitigate the
+-- breaking changes introduced in @insert-ordered-containers-0.3.0@:
+-- <https://github.com/erikd/insert-ordered-containers/pull/8>.
+--
+-- That change fixed 'Eq' and Aeson instances in the upstream package, but it is
+-- a behavioral break for @swagger2@ where we need stable Swagger Schema
+-- generation and JSON object-like encoding.
+--
+-- This module keeps the old @swagger2@ expectations:
+--
+-- * 'InsOrdHashMap' values are encoded as JSON objects (not arrays of key/value
+--   tuples), so field names remain first-class object keys.
+-- * Equality intentionally ignores insertion order (compares as plain hash
+--   maps), which matches how many tests currently assert JSON equality.
+--
+-- Simple encoding examples:
+--
+-- >>> import Data.Aeson (encode, eitherDecode)
+-- >>> import qualified Data.ByteString.Lazy.Char8 as BSL8
+-- >>> import qualified Data.HashMap.Strict as HM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
+-- >>> let decodeIOHM s = either error id (eitherDecode (BSL8.pack s) :: Either String (IOHM.InsOrdHashMap String Int))
+--
+-- A regular hash map has no insertion order guarantee:
+--
+-- >>> encode (HM.fromList [("a", 1 :: Int), ("b", 2)])
+-- "{\"a\":1,\"b\":2}"
+-- >>> encode (HM.fromList [("b", 1 :: Int), ("a", 2)])
+-- "{\"a\":2,\"b\":1}"
+--
+-- Our compat 'InsOrdHashMap' encodes to a JSON object as well, but preserves insertion order:
+--
+-- >>> encode (IOHM.fromList [("a", 1 :: Int), ("b", 2)])
+-- "{\"a\":1,\"b\":2}"
+-- >>> encode (IOHM.fromList [("b", 1 :: Int), ("a", 2)])
+-- "{\"b\":1,\"a\":2}"
+--
+-- Round-tripping through decode/encode demonstrates the caveat: encoding
+-- preserves insertion order, but decoded object key order is not guaranteed.
+--
+-- >>> encode (decodeIOHM "{\"a\":1,\"b\":2}")
+-- "{\"a\":1,\"b\":2}"
+-- >>> encode (decodeIOHM "{\"b\":1,\"a\":2}")
+-- "{\"a\":2,\"b\":1}"
+--
+-- This object encoding is what @swagger2@ wants for generated Swagger
+-- definitions/properties because it keeps emitted schemas easy to consume and
+-- stable in practice.
+--
+-- Important caveat: decoding cannot be fully stable with respect to insertion
+-- order due to @aeson@ limitations. In particular, object parsing goes through
+-- structures that do not preserve all ordering guarantees end-to-end. We accept
+-- this trade-off for now because the primary requirement is deterministic
+-- /encoding/ for generated Swagger Schema artifacts.
+--
+-- Many tests rely on @aesonQQ@-style JSON equality, where semantic object
+-- equality matters more than insertion order. Comparing via plain hash maps
+-- makes those tests robust under benign key-order variation. This is a weaker
+-- notion of equality and hopefully will be revisited later.
 module Data.HashMap.Strict.InsOrd.Compat (
   InsOrdHashMap,
   -- * Construction
@@ -65,11 +129,11 @@ module Data.HashMap.Strict.InsOrd.Compat (
   fromList,
   toHashMap,
   fromHashMap,
-  -- -- * Lenses
-  -- hashMap,
-  -- unorderedTraversal,
-  -- -- * Debugging
-  -- valid,
+  -- * Lenses
+  hashMap,
+  unorderedTraversal,
+  -- * Debugging
+  valid,
   ) where
 
 #if !MIN_VERSION_insert_ordered_containers(0,3,0)
@@ -367,5 +431,12 @@ toHashMap = InsOrdHashMap.toHashMap . unCompatInsOrdHashMap
 
 fromHashMap :: HashMap k v -> InsOrdHashMap k v
 fromHashMap = InsOrdHashMap . InsOrdHashMap.fromHashMap
+
+-------------------------------------------------------------------------------
+-- * Debugging
+-------------------------------------------------------------------------------
+
+valid :: (Eq k, Hashable k) => InsOrdHashMap k v -> Bool
+valid = InsOrdHashMap.valid . unCompatInsOrdHashMap
 
 #endif
