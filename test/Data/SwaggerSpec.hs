@@ -12,7 +12,7 @@ import Control.Lens
 import Data.Aeson
 import Data.Aeson.QQ.Simple
 import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import qualified Data.HashSet.InsOrd as InsOrdHS
 import Data.Text (Text)
 

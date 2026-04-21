@@ -15,7 +15,7 @@
 -- library.
 --
 -- >>> import Data.Aeson
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 -- >>> import Optics.Core
 -- >>> :set -XOverloadedLabels
 --

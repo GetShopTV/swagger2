@@ -9,7 +9,7 @@ import Prelude.Compat
 
 import Control.Lens ((^.))
 import Data.Aeson (Value)
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import Data.Proxy
 import Data.Set (Set)
 import qualified Data.Text as Text

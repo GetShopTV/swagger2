@@ -35,7 +35,7 @@ import           Data.Foldable                       (for_, sequenceA_,
                                                       traverse_)
 import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
-import qualified Data.HashMap.Strict.InsOrd          as InsOrdHashMap
+import qualified Data.HashMap.Strict.InsOrd.Compat   as InsOrdHashMap
 import qualified "unordered-containers" Data.HashSet as HashSet
 import           Data.Proxy
 import           Data.Scientific                     (Scientific, isInteger)

@@ -51,13 +51,13 @@ import Data.Swagger.Internal
 import Data.Swagger.Lens
 import Data.Swagger.Schema
 
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
-import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
+import Data.HashMap.Strict.InsOrd.Compat (InsOrdHashMap)
 import qualified Data.HashSet.InsOrd as InsOrdHS
 
 -- $setup
 -- >>> import Data.Aeson
--- >>> import qualified Data.HashMap.Strict.InsOrd as IOHM
+-- >>> import qualified Data.HashMap.Strict.InsOrd.Compat as IOHM
 -- >>> import Data.Proxy
 -- >>> import Data.Time
 

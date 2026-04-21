@@ -10,15 +10,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        ghc: ["8.6.5", "8.8.4", "8.10.7", "9.0.2", "9.2.8", "9.4.8", "9.6.4", "9.8.1", "9.10.1"]
+        ghc: ["8.10.7", "9.0.2", "9.2.8", "9.4.8", "9.6.4", "9.8.1", "9.10.1"]
         cabal: ["3.12.1.0"]
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-latest, macos-latest]
       fail-fast: false
     name: build and test (cabal)
     steps:
       - uses: actions/checkout@v2
       - name: Run Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
@@ -30,13 +30,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-latest, macos-latest]
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.2.8"
+          ghc-version: "9.12.4"
           enable-stack: true
           stack-version: "latest"
       - run: |

@@ -18,8 +18,8 @@ import Data.Data
 import Data.Hashable (Hashable)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.HashMap.Strict.InsOrd (InsOrdHashMap)
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import Data.HashMap.Strict.InsOrd.Compat (InsOrdHashMap)
+import qualified Data.HashMap.Strict.InsOrd.Compat as InsOrdHashMap
 import Data.Map (Map)
 import Data.Set (Set)
 import Data.Text (Text)
