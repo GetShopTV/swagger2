@@ -1,3 +1,9 @@
+2.9
+---
+
+- Support `insert-ordered-containers` by adding compatibility layer (see [#262](https://github.com/GetShopTV/swagger2/pull/262)).
+- Relax upper bound for test dependencies (see [#259](https://github.com/GetShopTV/swagger2/pull/259)).
+
 2.8.11
 ---
 
