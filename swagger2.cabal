@@ -1,6 +1,6 @@
 cabal-version:       >=1.10
 name:                swagger2
-version:             2.8.11
+version:             2.8.12
 
 synopsis:            Swagger 2.0 data model
 category:            Web, Swagger
@@ -127,7 +127,7 @@ test-suite spec
   build-depends:
       hspec                >=2.5.5   && <2.12
     , HUnit                >=1.6.0.0 && <1.7
-    , quickcheck-instances >=0.3.19  && <0.14
+    , quickcheck-instances >=0.3.19  && <0.4
     , utf8-string          >=1.0.1.1 && <1.1
 
   -- https://github.com/haskell/cabal/issues/3708
