@@ -138,6 +138,7 @@ module Data.HashMap.Strict.InsOrd.Compat (
 
 #if !MIN_VERSION_insert_ordered_containers(0,3,0)
 import Data.HashMap.Strict.InsOrd
+import Prelude hiding (map, null, filter, foldr, foldl', lookup)
 #else
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 
