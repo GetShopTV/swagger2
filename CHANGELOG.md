@@ -1,3 +1,8 @@
+2.9.1
+---
+
+- Relax upper bound for `insert-ordered-containers`, `QuickCheck`, `quickcheck-instances` (see [#266](https://github.com/GetShopTV/swagger2/pull/266)).
+
 2.9
 ---
 
